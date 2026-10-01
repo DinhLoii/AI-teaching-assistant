@@ -5,11 +5,13 @@ on:
     branches:
       - main
       - master
+      - develop
       - dev
   pull_request:
     branches:
       - main
       - master
+      - develop
   workflow_dispatch:
 
 concurrency:
