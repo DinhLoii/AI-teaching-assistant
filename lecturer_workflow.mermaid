@@ -1,0 +1,81 @@
+graph LR
+    A["👨‍🏫<br/>LECTURER<br/>DASHBOARD"]
+    
+    A --> B["📚 MY CLASSES"]
+    A --> C["📝 ASSIGNMENTS"]
+    A --> D["🎯 GRADING"]
+    A --> E["📊 REPORTS"]
+    
+    %% My Classes - trải ra phải
+    B --> B1["View<br/>Classes"]
+    B --> B2["Class<br/>Details"]
+    B --> B3["Manage<br/>Students"]
+    
+    B1 --> B1A["List<br/>My Classes"]
+    B1A --> B1B["Filter by<br/>Semester"]
+    B1B --> B1C["Semester Info"]
+    
+    B2 --> B2A["View<br/>Roster"]
+    B2A --> B2B["Student<br/>Enrollment"]
+    B2B --> B2C["Class<br/>Stats"]
+    
+    B3 --> B3A["Add<br/>Student"]
+    B3A --> B3B["Remove<br/>Student"]
+    B3B --> B3C["Update<br/>Info"]
+    
+    %% Assignments Management
+    C --> C1["Create<br/>Assignment"]
+    C --> C2["Edit<br/>Assignment"]
+    C --> C3["Publish<br/>Assignment"]
+    
+    C1 --> C1A["Set<br/>Details"]
+    C1A --> C1B["Due<br/>Date"]
+    C1B --> C1C["Select<br/>Classes"]
+    
+    C2 --> C2A["Upload<br/>Files"]
+    C2A --> C2B["Add<br/>Rubric"]
+    C2B --> C2C["Test<br/>Cases"]
+    
+    C3 --> C3A["Choose<br/>Status"]
+    C3A --> C3B["Review<br/>before Publish"]
+    C3B --> C3C["Notify<br/>Students"]
+    
+    %% Grading
+    D --> D1["View<br/>Submissions"]
+    D --> D2["Grade<br/>Submission"]
+    D --> D3["View<br/>Gradebook"]
+    
+    D1 --> D1A["Filter by<br/>Class"]
+    D1A --> D1B["Sort by<br/>Student"]
+    D1B --> D1C["Show<br/>Status"]
+    
+    D2 --> D2A["Manual<br/>Grade"]
+    D2A --> D2B["Add<br/>Feedback"]
+    D2B --> D2C["Override<br/>AI Score"]
+    
+    D3 --> D3A["View All<br/>Grades"]
+    D3A --> D3B["Export<br/>CSV"]
+    D3B --> D3C["Send<br/>Feedback"]
+    
+    %% Reports
+    E --> E1["Class<br/>Report"]
+    E --> E2["Student<br/>Report"]
+    E --> E3["Performance<br/>Analytics"]
+    
+    E1 --> E1A["Grade<br/>Distribution"]
+    E1A --> E1B["Attendance"]
+    E1B --> E1C["Submission<br/>Rate"]
+    
+    E2 --> E2A["Individual<br/>Progress"]
+    E2A --> E2B["Grade<br/>Trend"]
+    E2B --> E2C["Feedback<br/>History"]
+    
+    E3 --> E3A["Class<br/>Average"]
+    E3A --> E3B["Top/Bottom<br/>Performers"]
+    E3B --> E3C["Export<br/>Report"]
+    
+    style A fill:#8B5CF6,color:#fff,stroke:#8B5CF6,stroke-width:4px
+    style B fill:#3B82F6,color:#fff,stroke:#3B82F6,stroke-width:2px
+    style C fill:#06B6D4,color:#fff,stroke:#06B6D4,stroke-width:2px
+    style D fill:#14B8A6,color:#fff,stroke:#14B8A6,stroke-width:2px
+    style E fill:#F59E0B,color:#fff,stroke:#F59E0B,stroke-width:2px

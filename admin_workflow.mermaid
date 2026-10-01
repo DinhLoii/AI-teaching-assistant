@@ -1,0 +1,57 @@
+flowchart TD
+    A["🔐 Đăng nhập Admin"] --> B["📊 Dashboard / Tổng quan<br/>/admin"]
+
+    subgraph Core["Quản trị dữ liệu nền tảng"]
+        C["👥 Người dùng<br/>/admin/users"]
+        D["📚 Lớp học<br/>/admin/classes"]
+        E["🧩 Môn học<br/>/admin/subjects"]
+        F["📝 Kỳ thi<br/>/admin/exams"]
+    end
+
+    subgraph Ops["Giám sát & vận hành"]
+        G["📈 Báo cáo<br/>/admin/reports"]
+        H["🧾 Nhật ký hệ thống<br/>/admin/audit-logs"]
+        I["🔔 Thông báo<br/>/admin/notifications"]
+    end
+
+    subgraph Config["Cấu hình hệ thống"]
+        J["🤖 Cấu hình AI<br/>/admin/ai-config"]
+        K["⚙️ Cài đặt chung<br/>/admin/settings"]
+    end
+
+    B --> C
+    B --> D
+    B --> E
+    B --> F
+    B --> G
+    B --> H
+    B --> I
+    B --> J
+    B --> K
+
+    C --> C1["Import danh sách hàng loạt"]
+    C --> C2["Tạo / cập nhật tài khoản"]
+    C --> C3["Khóa / mở / xóa tài khoản"]
+
+    D --> D1["Tạo và quản lý lớp"]
+    D --> D2["Gắn giảng viên / sinh viên"]
+
+    E --> E1["Tạo môn học"]
+    E --> E2["Quản lý học kỳ / dữ liệu nền"]
+
+    F --> F1["Quản lý đề thi / bài kiểm tra"]
+    F --> F2["Theo dõi trạng thái vận hành"]
+
+    G --> G1["Thống kê hệ thống"]
+    H --> H1["Audit hành động admin"]
+    I --> I1["Gửi thông báo hệ thống"]
+    J --> J1["Cấu hình AI / mô hình"]
+    K --> K1["Bảo trì và thiết lập chung"]
+
+    classDef main fill:#2563eb,stroke:#1d4ed8,color:#fff,stroke-width:2px;
+    classDef module fill:#0f766e,stroke:#115e59,color:#fff,stroke-width:1.5px;
+    classDef action fill:#f59e0b,stroke:#d97706,color:#111827,stroke-width:1px;
+
+    class A,B main;
+    class C,D,E,F,G,H,I,J,K module;
+    class C1,C2,C3,D1,D2,E1,E2,F1,F2,G1,H1,I1,J1,K1 action;
