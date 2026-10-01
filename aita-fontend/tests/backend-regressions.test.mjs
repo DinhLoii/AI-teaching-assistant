@@ -11,8 +11,69 @@ const candidateRoots = [
   path.resolve('../../aita-backend/src')
 ]
 const root = candidateRoots.find(p => fs.existsSync(p)) || candidateRoots[0]
+const fallbackZod = (() => {
+  const z = {
+    object: (shape) => ({
+      parse: (input) => {
+        if (!input || typeof input !== 'object') throw new Error('Invalid input');
+        const output = { ...input };
+        for (const [key, validator] of Object.entries(shape)) {
+          if (validator && typeof validator._validate === 'function') {
+            validator._validate(output[key]);
+          }
+        }
+        return output;
+      },
+      optional: function () { return this; },
+    }),
+    string: () => {
+      let isOptional = false;
+      let minLen = 0;
+      const v = {
+        min: (n) => { minLen = n; return v; },
+        optional: () => { isOptional = true; return v; },
+        _validate: (val) => {
+          if (val === undefined || val === null) {
+            if (!isOptional) throw new Error('Field required');
+            return val;
+          }
+          if (typeof val !== 'string' || val.length < minLen) {
+            throw new Error(`String too short (min ${minLen})`);
+          }
+          return val;
+        },
+      };
+      return v;
+    },
+    number: () => {
+      let isOptional = false;
+      let minVal = -Infinity;
+      let maxVal = Infinity;
+      const v = {
+        int: () => v,
+        min: (n) => { minVal = n; return v; },
+        max: (n) => { maxVal = n; return v; },
+        optional: () => { isOptional = true; return v; },
+        _validate: (val) => {
+          if (val === undefined || val === null) {
+            if (!isOptional) throw new Error('Field required');
+            return val;
+          }
+          if (typeof val !== 'number' || Number.isNaN(val) || val < minVal || val > maxVal) {
+            throw new Error(`Number out of range [${minVal}, ${maxVal}]`);
+          }
+          return val;
+        },
+      };
+      return v;
+    },
+  };
+  return { z, default: z, ...z };
+})();
+
 function loader(mocks = {}) {
   const cache = new Map()
+  const localRequire = createRequire(import.meta.url)
   function load(file) {
     const resolved = path.resolve(root, file)
     if (cache.has(resolved)) return cache.get(resolved).exports
@@ -21,9 +82,21 @@ function loader(mocks = {}) {
     const source = ts.transpileModule(fs.readFileSync(resolved, 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS } }).outputText
     const requireExternal = createRequire(resolved)
     const requireLocal = name => {
-      const match = Object.keys(mocks).find(key => name.endsWith(key))
+      const match = Object.keys(mocks).find(key => name === key || name.endsWith(key))
       if (match) return mocks[match]
-      return name.startsWith('.') ? load(path.resolve(path.dirname(resolved), name.replace(/\.js$/, '.ts'))) : requireExternal(name)
+      if (name.startsWith('.')) {
+        return load(path.resolve(path.dirname(resolved), name.replace(/\.js$/, '.ts')))
+      }
+      if (name === 'zod') return fallbackZod
+      try {
+        return requireExternal(name)
+      } catch {
+        try {
+          return localRequire(name)
+        } catch {
+          throw new Error(`Cannot find module '${name}'`)
+        }
+      }
     }
     vm.runInNewContext(`(function(require,module,exports){${source}\n})`, { console, Date })(requireLocal, record, record.exports)
     return record.exports
