@@ -1,0 +1,830 @@
+# AITA Project - Complete Entity Documentation
+
+## 1. User Management
+
+### User
+**Purpose:** Core user entity for all system participants (students, lecturers, admins)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| Id | UUID (PK) | Primary identifier |
+| Email | String (Unique) | User email address |
+| PasswordHash | String | Hashed password |
+| FullName | String | User's full name |
+| StudentCode | String | Student ID (if student) |
+| Phone | String | Contact number |
+| Avatar | String | Avatar image URL |
+| Status | String | Active/Inactive/Locked |
+| LastLoginAt | DateTime | Last login timestamp |
+| RequirePasswordChange | Boolean | Force password change on next login |
+| ResetPasswordOtp | String | One-time password for reset |
+| ResetPasswordOtpExpiry | DateTime | OTP expiration time |
+
+**Relations:** Creates/owns multiple entities (StudentClass, InstructorClass, Submission, Exam, etc.)
+
+---
+
+### UserRole
+**Purpose:** Link users to roles (many-to-many junction)
+
+| Field | Type |
+|-------|------|
+| UserId | UUID (FK/PK) |
+| RoleId | UUID (FK/PK) |
+| AssignedAt | DateTime |
+
+**Relations:** User → UserRole → Role
+
+---
+
+### Role
+**Purpose:** Define system roles (ADMIN, LECTURER, STUDENT)
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| RoleName | String (Unique) |
+
+---
+
+### RefreshToken
+**Purpose:** OAuth refresh token management
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| UserId | UUID (FK) |
+| Token | String |
+| ExpiresAt | DateTime |
+| IsRevoked | Boolean |
+
+---
+
+### OAuthIdentity
+**Purpose:** Third-party OAuth provider credentials
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| UserId | UUID (FK) |
+| Provider | String (e.g., Google, Microsoft) |
+| ProviderId | String |
+| AccessToken | String |
+| RefreshToken | String |
+
+**Unique:** [Provider, ProviderId]
+
+---
+
+## 2. Academic Structure
+
+### Semester
+**Purpose:** Time period grouping for academic year (Spring, Summer, Fall)
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| Season | String (e.g., "Spring 2024") |
+| Code | String (e.g., "SP24") |
+| StartDate | DateTime |
+| EndDate | DateTime |
+| IsActive | Boolean |
+
+**Unique:** [Season, Code]
+
+---
+
+### Subject
+**Purpose:** Academic subjects/courses
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| SubjectCode | String (Unique, e.g., "PRO232") |
+| SubjectName | String (e.g., "Database Systems") |
+| Description | String |
+| IsActive | Boolean |
+| Semester | Int | **Semester number the subject belongs to (e.g., 2nd or 3rd semester)** |
+
+**Key:** Used to determine which semester a subject inherently belongs to for retake logic
+
+---
+
+### SemesterSubject
+**Purpose:** Map subjects to semesters (many-to-many junction, enables cross-semester availability)
+
+| Field | Type |
+|-------|------|
+| SemesterId | UUID (FK/PK) |
+| SubjectId | UUID (FK/PK) |
+| AssignedAt | DateTime |
+
+**Relations:** Semester ↔ SemesterSubject ↔ Subject
+
+**Use Case:** A subject like PRO232 can exist in multiple semesters for retake options
+
+---
+
+### Class
+**Purpose:** Specific offerings of a subject in a semester with instructor
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| ClassCode | String (e.g., "SE18C01") |
+| SubjectId | UUID (FK) |
+| SemesterId | UUID (FK) |
+| Status | String (Active/Inactive) |
+| Note | String | Admin notes |
+
+**Unique:** [ClassCode, SubjectId, SemesterId]
+
+**Relations:** Semester, Subject → Class → InstructorClass, StudentClass, Submission
+
+---
+
+## 3. Enrollment & Participation
+
+### StudentClass
+**Purpose:** Student enrollment in a class (many-to-many)
+
+| Field | Type |
+|-------|------|
+| UserId | UUID (FK/PK) |
+| ClassId | UUID (FK/PK) |
+| EnrolledAt | DateTime |
+
+**Cascade:** Deletes when class deleted
+
+**Use Case:** Main enrollment tracking for normal classes and retakes
+
+---
+
+### InstructorClass
+**Purpose:** Instructor assignment to a class
+
+| Field | Type |
+|-------|------|
+| UserId | UUID (FK/PK) |
+| ClassId | UUID (FK/PK) |
+| EnrolledAt | DateTime |
+
+---
+
+### PendingEnrollment
+**Purpose:** Track pending/queued student enrollments (for import batches, retakes, debt subjects)
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| UserId | UUID (FK) |
+| SemesterCode | String |
+| Season | String |
+| ClassCode | String |
+| SubjectCode | String |
+| Status | String (Default: "Pending") |
+| CreatedAt | DateTime |
+| UpdatedAt | DateTime |
+
+**Use Case:** Holds enrollment requests before confirmation (used for retake/debt subject imports)
+
+---
+
+### Appeal
+**Purpose:** Grade/submission appeals by students
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| SubmissionId | UUID (FK) |
+| StudentId | UUID (FK) |
+| Reason | String |
+| Status | String (Pending/Approved/Rejected) |
+| CreatedAt | DateTime |
+| ResolvedAt | DateTime |
+| Resolution | String |
+
+---
+
+## 4. Assignments & Submissions
+
+### Exam
+**Purpose:** Assignment/exam/project definitions
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| Title | String |
+| Description | String |
+| AssignmentTemplateId | UUID (FK) |
+| ProjectTypeId | UUID (FK) |
+| GradingProfileId | UUID (FK) |
+| SubjectId | UUID (FK) |
+| ExamType | String (Assignment/Exam/Project) |
+| Duration | Int (minutes) |
+| StartDate | DateTime |
+| DueDate | DateTime |
+| TotalPoints | Decimal |
+| Status | String (Draft/Published/Closed) |
+| SubmissionFormat | String (Code/Document/etc) |
+| AiGeneratedContent | String |
+| OriginalPrompt | String |
+| PromptTemplateId | UUID (FK) |
+| CreatedBy | UUID (FK - User) |
+
+**Relations:** ExamClass (many-to-many with Class), Submission, ExamAttachment, ExamSection, TestCase
+
+---
+
+### ExamClass
+**Purpose:** Map exams to classes (which students can submit)
+
+| Field | Type |
+|-------|------|
+| ExamId | UUID (FK/PK) |
+| ClassId | UUID (FK/PK) |
+| AssignedAt | DateTime |
+| DueDate | DateTime |
+
+---
+
+### Submission
+**Purpose:** Student submission of exam/assignment
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| ExamId | UUID (FK) |
+| StudentId | UUID (FK - User) |
+| ClassId | UUID (FK) |
+| AttemptNumber | Int |
+| IsLatest | Boolean |
+| SubmittedAt | DateTime |
+| ZipFileUrl | String |
+| GradingStatus | String (Pending/In Progress/Completed) |
+| ReviewStatus | String (Pending/Reviewed) |
+| TotalScore | Decimal |
+| FinalScore | Decimal |
+| InstructorFeedback | String |
+| StudentFeedback | String |
+| ReviewedBy | UUID (FK - User) |
+| ReviewedAt | DateTime |
+| GradedAt | DateTime |
+| ReportData | String (NVarChar Max) |
+
+**Unique:** [StudentId, ExamId, ClassId, AttemptNumber]
+
+**Relations:** Exam, User (student), User (reviewer), Class, SubmissionArtifact, ExecutionResult, GradingSession, Appeal
+
+---
+
+### SubmissionArtifact
+**Purpose:** Files uploaded with a submission
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| SubmissionId | UUID (FK) |
+| ArtifactType | String |
+| ArtifactLabel | String |
+| FileName | String |
+| FileUrl | String |
+| FileSizeBytes | BigInt |
+| HashSha256 | String |
+| ExtractedPath | String |
+| MimeType | String |
+
+---
+
+## 5. Grading & Evaluation
+
+### GradingProfile
+**Purpose:** Defines grading strategy/steps for exams
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| Name | String |
+| ProjectTypeId | UUID (FK) |
+| Description | String |
+| IsActive | Boolean |
+
+**Relations:** GradingProfileStep, Exam, AssignmentTemplate
+
+---
+
+### GradingProfileStep
+**Purpose:** Individual grading step within a profile
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| GradingProfileId | UUID (FK) |
+| EngineType | String (AutoGrade/Manual/AIReview) |
+| StepOrder | Int |
+| ConfigJson | String |
+| IsRequired | Boolean |
+| TimeoutSeconds | Int |
+
+---
+
+### GradingSession
+**Purpose:** Track a single grading run for a submission
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| SubmissionId | UUID (FK) |
+| Version | Int |
+| TriggeredBy | UUID (FK - User) |
+| TriggerReason | String |
+| Status | String (Pending/In Progress/Completed) |
+| TotalScore | Decimal |
+| StartedAt | DateTime |
+| CompletedAt | DateTime |
+
+**Relations:** Submission, User (triggered by), GradingJob, BuildArtifact, SandboxExecution
+
+---
+
+### GradingJob
+**Purpose:** Individual job in grading pipeline
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| GradingSessionId | UUID (FK) |
+| GradingProfileStepId | UUID (FK) |
+| Engine | String |
+| Priority | Int |
+| Status | String (Queued/Running/Completed/Failed) |
+| TriggeredAt | DateTime |
+| CompletedAt | DateTime |
+| WorkerNodeId | String |
+
+**Relations:** GradingSession, GradingProfileStep, ExecutionResult, JobDependency
+
+---
+
+### JobDependency
+**Purpose:** Define dependencies between grading jobs
+
+| Field | Type |
+|-------|------|
+| JobId | UUID (FK/PK) |
+| DependsOnJobId | UUID (FK/PK) |
+| DependencyType | String |
+
+---
+
+### ExecutionResult
+**Purpose:** Output from a single grading engine execution
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| GradingJobId | UUID (FK) |
+| SubmissionId | UUID (FK) |
+| EngineType | String |
+| ExecutionLabel | String |
+| RawOutput | String |
+| Score | Decimal |
+| Status | String (Success/Failed) |
+| StartedAt | DateTime |
+| CompletedAt | DateTime |
+| DurationMs | Int |
+
+**Relations:** GradingJob, Submission, RuleScore
+
+---
+
+### RuleScore
+**Purpose:** Score for individual rubric rule
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| ExecutionResultId | UUID (FK) |
+| RubricRuleId | UUID (FK) |
+| AiScore | Decimal |
+| MaxScore | Decimal |
+| AiReasoning | String |
+| InstructorScore | Decimal |
+| InstructorComment | String |
+| IsOverridden | Boolean |
+| EffectiveScore | Decimal |
+
+**Relations:** ExecutionResult, RubricRule, CriterionScore, Evidence
+
+---
+
+### CriterionScore
+**Purpose:** Score for detailed rubric criterion
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| RuleScoreId | UUID (FK) |
+| RubricCriterionId | UUID (FK) |
+| AiScore | Decimal |
+| MaxScore | Decimal |
+| AiReasoning | String |
+| InstructorScore | Decimal |
+| IsOverridden | Boolean |
+| EffectiveScore | Decimal |
+
+---
+
+### Evidence
+**Purpose:** Evidence/proof for scoring decisions
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| RuleScoreId | UUID (FK) |
+| EvidenceType | String (Code/Image/Text) |
+| Content | String |
+| ImageUrl | String |
+| Caption | String |
+
+---
+
+## 6. Rubric & Evaluation Framework
+
+### RubricRule
+**Purpose:** Individual rule/criterion in exam section
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| SectionId | UUID (FK) |
+| RuleCode | String |
+| Description | String |
+| MaxPoints | Decimal |
+| EvaluationPrompt | String |
+| ReferenceAnswer | String |
+| RequireImageEvidence | Boolean |
+| RequireCodeEvidence | Boolean |
+| IsManualOnly | Boolean |
+| SortOrder | Int |
+
+**Relations:** ExamSection, RubricCriterion, RuleScore
+
+---
+
+### RubricCriterion
+**Purpose:** Detailed criterion within a rule
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| RubricRuleId | UUID (FK) |
+| Description | String |
+| MaxPoints | Decimal |
+| Weight | Decimal |
+| ValidationType | String |
+| ValidationConfig | String |
+| IsCritical | Boolean |
+| SortOrder | Int |
+
+---
+
+### ExamSection
+**Purpose:** Section/chapter within an exam
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| ExamId | UUID (FK) |
+| SectionCode | String |
+| Title | String |
+| Description | String |
+| MaxPoints | Decimal |
+| SortOrder | Int |
+
+---
+
+## 7. Assignment Templates & Project Types
+
+### AssignmentTemplate
+**Purpose:** Reusable template for creating similar assignments
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| SubjectId | UUID (FK) |
+| Name | String |
+| Description | String |
+| AssignmentType | String |
+| DefaultGradingProfileId | UUID (FK) |
+| DefaultProjectTypeId | UUID (FK) |
+| SortOrder | Int |
+| IsActive | Boolean |
+
+---
+
+### ProjectType
+**Purpose:** Type of project (Node.js App, Python Script, React Frontend, etc.)
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| Code | String (Unique) |
+| DisplayName | String |
+| RequiresSandbox | Boolean |
+| SandboxImage | String (Docker image) |
+| BuildCommand | String |
+| RunCommand | String |
+
+**Relations:** ProjectTypeComposition (self-referential for nested types)
+
+---
+
+### ProjectTypeComposition
+**Purpose:** Hierarchy of project types (e.g., Full-Stack = Backend + Frontend)
+
+| Field | Type |
+|-------|------|
+| ParentProjectTypeId | UUID (FK/PK) |
+| ChildProjectTypeId | UUID (FK/PK) |
+| Role | String |
+| IsRequired | Boolean |
+| SortOrder | Int |
+
+---
+
+### SubjectProjectType
+**Purpose:** Map allowed project types to subjects
+
+| Field | Type |
+|-------|------|
+| SubjectId | UUID (FK/PK) |
+| ProjectTypeId | UUID (FK/PK) |
+
+---
+
+## 8. Testing & Execution
+
+### TestCase
+**Purpose:** Test case for code evaluation
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| ExamId | UUID (FK) |
+| Input | String |
+| ExpectedOutput | String |
+| IsHidden | Boolean (visible to students?) |
+| TimeoutMs | Int |
+| MemoryLimitMb | Int |
+| Points | Decimal |
+| SortOrder | Int |
+
+---
+
+### SampleCode
+**Purpose:** Reference/example code for exam
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| ExamId | UUID (FK) |
+| Language | String (Python/Java/C#/etc) |
+| Code | String |
+| Explanation | String |
+
+---
+
+### BuildArtifact
+**Purpose:** Compiled/built code artifact from grading
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| GradingSessionId | UUID (FK) |
+| BuildStatus | String (Success/Failed) |
+| BuildLog | String |
+| DockerImageId | String |
+| ExecutablePath | String |
+| BuildHash | String |
+| DurationMs | Int |
+
+---
+
+### SandboxExecution
+**Purpose:** Record of running code in isolated sandbox
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| GradingSessionId | UUID (FK) |
+| ContainerId | String |
+| SandboxImage | String |
+| Status | String (Running/Completed/Timeout/Error) |
+| ExitCode | Int |
+| CpuTimeMs | BigInt |
+| PeakMemoryKb | BigInt |
+| NetworkDisabled | Boolean |
+| StartedAt | DateTime |
+| FinishedAt | DateTime |
+| RunLog | String |
+
+---
+
+## 9. AI Features & Utilities
+
+### AiApiKey
+**Purpose:** API keys for AI providers (OpenAI, Anthropic, etc.)
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| Provider | String |
+| KeyValue | String |
+| Label | String |
+| IsActive | Boolean |
+| IsExhausted | Boolean |
+| LastUsedAt | DateTime |
+| TotalUsageCount | Int |
+
+---
+
+### AiUsageLog
+**Purpose:** Track AI API usage for billing/monitoring
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| UserId | UUID (FK) |
+| ExamId | UUID (FK) |
+| SubmissionId | UUID (FK) |
+| RequestId | String |
+| Provider | String |
+| ActionType | String (GenerateExam/GradeSubmission/etc) |
+| ModelUsed | String |
+| PromptTokens | Int |
+| CompletionTokens | Int |
+| CostEstimate | Decimal |
+| DurationMs | Int |
+| IsSuccess | Boolean |
+| ErrorMessage | String |
+| CreatedAt | DateTime |
+
+---
+
+### PromptTemplate
+**Purpose:** Reusable AI prompts for consistent output
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| Name | String |
+| SubjectId | UUID (FK) |
+| ProjectTypeId | UUID (FK) |
+| Category | String |
+| TemplateContent | String |
+| PlaceholderSchema | String |
+| IsDefault | Boolean |
+| IsActive | Boolean |
+| UsageCount | Int |
+| CreatedBy | UUID (FK - User) |
+
+---
+
+### ExamGenerationHistory
+**Purpose:** Track AI-generated exam versions
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| ExamId | UUID (FK) |
+| Version | Int |
+| Prompt | String (original prompt) |
+| GeneratedContent | String (AI output) |
+| GeneratedBy | UUID (FK - User) |
+
+---
+
+### ExamAttachment
+**Purpose:** Files attached to exams (images, documents, datasets)
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| ExamId | UUID (FK) |
+| FileName | String |
+| FileUrl | String |
+| FileType | String |
+
+---
+
+### ReferenceArtifact
+**Purpose:** Reference materials for exam (API docs, libraries, etc.)
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| ExamId | UUID (FK) |
+| ArtifactType | String |
+| ExpectedFor | String (which rule/criterion) |
+| FileName | String |
+| FileUrl | String |
+| Description | String |
+| SortOrder | Int |
+
+---
+
+## 10. Notifications & Audit
+
+### Notification
+**Purpose:** System notifications sent to users
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| Title | String |
+| Message | String |
+| Type | String (Info/Warning/Error/Success) |
+| ReferenceId | UUID |
+| ReferenceType | String (Submission/Exam/Grade) |
+| CreatedBy | UUID (FK - User) |
+| CreatedAt | DateTime |
+
+**Relations:** NotificationRecipient (many-to-many with User)
+
+---
+
+### NotificationRecipient
+**Purpose:** Track which users received which notifications
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| NotificationId | UUID (FK) |
+| UserId | UUID (FK) |
+| IsRead | Boolean |
+| ReadAt | DateTime |
+
+---
+
+### AuditLog
+**Purpose:** Track all significant system changes
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| EntityName | String (Class/Exam/Submission) |
+| EntityId | UUID |
+| Action | String (CREATE/UPDATE/DELETE) |
+| OldValue | String |
+| NewValue | String |
+| UserId | UUID (FK) |
+| IpAddress | String |
+| CreatedAt | DateTime |
+
+---
+
+### ImportBatch
+**Purpose:** Track student import batch operations
+
+| Field | Type |
+|-------|------|
+| Id | UUID (PK) |
+| FileName | String |
+| FileUrl | String |
+| Status | String (Pending/Processing/Success/Failed) |
+| TotalRows | Int |
+| SuccessCount | Int |
+| ErrorCount | Int |
+| ErrorDetails | String |
+| ImportedBy | UUID (FK - User) |
+
+---
+
+## 11. System Configuration
+
+### SystemConfig
+**Purpose:** Key-value configuration storage
+
+| Field | Type |
+|-------|------|
+| Key | String (PK) |
+| Value | String |
+| Description | String |
+
+**Examples:**
+- `MAX_SUBMISSION_SIZE_MB`: "100"
+- `GRADING_TIMEOUT_SECONDS`: "300"
+- `AI_ENABLED`: "true"
+
+---
+
+## Key Notes for Nợ Môn (Retake) Feature
+
+**Relevant Entities:**
+1. **Subject.Semester**: Indicates which semester a subject inherently belongs to (e.g., Semester 3)
+2. **SemesterSubject**: Allows same Subject to be offered in multiple Semesters (enables cross-semester lookup)
+3. **Class**: Compound unique constraint [ClassCode, SubjectId, SemesterId] prevents duplicates
+4. **StudentClass**: Main enrollment tracking (used for retake enrollment)
+5. **PendingEnrollment**: Holds retake enrollments in "Pending" status before processing
+

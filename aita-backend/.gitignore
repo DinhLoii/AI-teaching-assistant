@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+.env.local
+# Any hand-made copy of .env is still a copy of the connection string — keep them all out.
+.env.*
+!.env.example
+# Runtime upload target (avatars, attachments): user data, not source.
+uploads/
+*.log
+.DS_Store
+artifacts/
+temp*/
+test-*.ts
+check-*.ts
+fix-*.ts

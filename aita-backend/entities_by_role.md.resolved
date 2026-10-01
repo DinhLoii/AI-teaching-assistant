@@ -1,0 +1,91 @@
+# Entities by Role
+
+## ADMIN
+- User
+- UserRole
+- Role
+- Semester
+- Subject
+- SemesterSubject
+- Class
+- InstructorClass
+- StudentClass
+- PendingEnrollment
+- Exam
+- ExamClass
+- ExamAttachment
+- ExamSection
+- Submission
+- SubmissionArtifact
+- GradingProfile
+- GradingProfileStep
+- GradingSession
+- GradingJob
+- ExecutionResult
+- RuleScore
+- CriterionScore
+- Evidence
+- RubricRule
+- RubricCriterion
+- TestCase
+- SampleCode
+- PromptTemplate
+- ExamGenerationHistory
+- ImportBatch
+- AiApiKey
+- AiUsageLog
+- Appeal
+- Notification
+- AuditLog
+- SystemConfig
+- RefreshToken
+- OAuthIdentity
+- BuildArtifact
+- SandboxExecution
+
+## LECTURER
+- Exam (own)
+- ExamClass (own)
+- ExamAttachment (view)
+- ExamSection (view)
+- Submission (view/grade)
+- SubmissionArtifact (view)
+- GradingSession (trigger/grade)
+- GradingJob (view)
+- ExecutionResult (view)
+- RuleScore (grade)
+- CriterionScore (grade)
+- Evidence (view)
+- RubricRule (view)
+- RubricCriterion (view)
+- TestCase (view)
+- SampleCode (view)
+- PromptTemplate (create own)
+- Appeal (view/resolve own)
+- Notification (view)
+- InstructorClass (view own)
+- StudentClass (view own)
+- Class (view)
+- Subject (view)
+- Semester (view)
+- AiUsageLog (view own)
+
+## STUDENT
+- Submission (own)
+- SubmissionArtifact (own)
+- StudentClass (own)
+- Class (view)
+- Exam (view assigned)
+- ExamClass (view assigned)
+- ExamAttachment (view)
+- ExamSection (view)
+- TestCase (view non-hidden)
+- SampleCode (view)
+- GradingSession (view own)
+- RuleScore (view own)
+- CriterionScore (view own)
+- Appeal (create own/view)
+- Notification (view)
+- Subject (view)
+- Semester (view)
+- SandboxExecution (view)
