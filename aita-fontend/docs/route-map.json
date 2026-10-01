@@ -1,0 +1,277 @@
+[
+  {
+    "route": "/",
+    "entry": "src/app/page.tsx",
+    "screen": "src/features/home/screens/HomePage.tsx"
+  },
+  {
+    "route": "/login",
+    "entry": "src/app/login/page.tsx",
+    "screen": "src/features/auth/screens/LoginPage.tsx"
+  },
+  {
+    "route": "/profile",
+    "entry": "src/app/profile/page.tsx",
+    "screen": "src/features/profile/screens/ProfilePage.tsx"
+  },
+  {
+    "route": "/admin",
+    "entry": "src/app/admin/page.tsx",
+    "screen": "src/features/dashboard/screens/AdminOverviewPage.tsx"
+  },
+  {
+    "route": "/admin/users",
+    "entry": "src/app/admin/users/page.tsx",
+    "screen": "src/features/users/screens/AdminUsersPage.tsx"
+  },
+  {
+    "route": "/admin/classes",
+    "entry": "src/app/admin/classes/page.tsx",
+    "screen": "src/features/classes/screens/AdminClassesPage.tsx"
+  },
+  {
+    "route": "/admin/subjects",
+    "entry": "src/app/admin/subjects/page.tsx",
+    "screen": "src/features/subjects/screens/AdminSubjectsPage.tsx"
+  },
+  {
+    "route": "/admin/exams",
+    "entry": "src/app/admin/exams/page.tsx",
+    "screen": "src/features/exams/screens/AdminExamsPage.tsx"
+  },
+  {
+    "route": "/admin/exams/:id/submissions",
+    "entry": "src/app/admin/exams/[id]/submissions/page.tsx",
+    "screen": "src/features/submissions/screens/AdminSubmissionsPage.tsx"
+  },
+  {
+    "route": "/admin/ai-config",
+    "entry": "src/app/admin/ai-config/page.tsx",
+    "screen": "src/features/settings/screens/AdminAIConfigPage.tsx"
+  },
+  {
+    "route": "/admin/settings",
+    "entry": "src/app/admin/settings/page.tsx",
+    "screen": "src/features/settings/screens/AdminSettingsPage.tsx"
+  },
+  {
+    "route": "/admin/reports",
+    "entry": "src/app/admin/reports/page.tsx",
+    "screen": "src/features/reports/screens/AdminReportsPage.tsx"
+  },
+  {
+    "route": "/admin/audit-logs",
+    "entry": "src/app/admin/audit-logs/page.tsx",
+    "screen": "src/features/audit/screens/AdminAuditLogsPage.tsx"
+  },
+  {
+    "route": "/lecturer",
+    "entry": "src/app/lecturer/page.tsx",
+    "screen": "src/features/dashboard/screens/LecturerOverviewPage.tsx"
+  },
+  {
+    "route": "/lecturer/classes",
+    "entry": "src/app/lecturer/classes/page.tsx",
+    "screen": "src/features/classes/screens/LecturerClassesPage.tsx"
+  },
+  {
+    "route": "/lecturer/subjects",
+    "entry": "src/app/lecturer/subjects/page.tsx",
+    "screen": "src/features/subjects/screens/LecturerSubjectsPage.tsx"
+  },
+  {
+    "route": "/lecturer/prompts",
+    "entry": "src/app/lecturer/prompts/page.tsx",
+    "screen": "src/features/prompts/screens/LecturerPromptsPage.tsx"
+  },
+  {
+    "route": "/lecturer/notifications",
+    "entry": "src/app/lecturer/notifications/page.tsx",
+    "screen": "src/features/notifications/screens/LecturerNotificationsPage.tsx"
+  },
+  {
+    "route": "/lecturer/grading/assignments",
+    "entry": "src/app/lecturer/grading/assignments/page.tsx",
+    "screen": "src/features/assignments/screens/LecturerAssignmentsPage.tsx"
+  },
+  {
+    "route": "/lecturer/assignments/:id/submissions",
+    "entry": "src/app/lecturer/assignments/[id]/submissions/page.tsx",
+    "screen": "src/features/submissions/screens/LecturerSubmissionsPage.tsx"
+  },
+  {
+    "route": "/student",
+    "entry": "src/app/student/page.tsx",
+    "screen": "src/features/dashboard/screens/StudentOverviewPage.tsx"
+  },
+  {
+    "route": "/student/classes",
+    "entry": "src/app/student/classes/page.tsx",
+    "screen": "src/features/classes/screens/StudentClassesPage.tsx"
+  },
+  {
+    "route": "/student/courses",
+    "entry": "src/app/student/courses/page.tsx",
+    "screen": "src/features/subjects/screens/StudentCoursesPage.tsx"
+  },
+  {
+    "route": "/student/courses/:code",
+    "entry": "src/app/student/courses/[code]/page.tsx",
+    "screen": "src/features/subjects/screens/StudentCourseDetailPage.tsx"
+  },
+  {
+    "route": "/student/subjects",
+    "entry": "src/app/student/subjects/page.tsx",
+    "screen": "src/features/subjects/screens/StudentSubjectsPage.tsx"
+  },
+  {
+    "route": "/student/assignments/:id",
+    "entry": "src/app/student/assignments/[id]/page.tsx",
+    "screen": "src/features/assignments/screens/StudentAssignmentDetailPage.tsx"
+  },
+  {
+    "route": "/student/grading/result/:id",
+    "entry": "src/app/student/grading/result/[id]/page.tsx",
+    "screen": "src/features/submissions/screens/StudentResultPage.tsx"
+  },
+  {
+    "route": "/student/notifications",
+    "entry": "src/app/student/notifications/page.tsx",
+    "screen": "src/features/notifications/screens/StudentNotificationsPage.tsx"
+  },
+  {
+    "route": "/admin/notifications",
+    "entry": "src/app/admin/notifications/page.tsx",
+    "screen": "src/features/notifications/screens/AdminNotificationsPage.tsx"
+  },
+  {
+    "route": "/lecturer/classes/:id",
+    "entry": "src/app/lecturer/classes/[id]/page.tsx",
+    "screen": "src/features/classes/screens/LecturerClassDetailPage.tsx"
+  },
+  {
+    "route": "/student/classes/:id",
+    "entry": "src/app/student/classes/[id]/page.tsx",
+    "screen": "src/features/classes/screens/StudentClassDetailPage.tsx"
+  },
+  {
+    "route": "/about",
+    "entry": "src/app/about/page.tsx",
+    "screen": "src/features/home/screens/AboutPage.tsx"
+  },
+  {
+    "route": "/features",
+    "entry": "src/app/features/page.tsx",
+    "screen": "src/features/home/screens/FeaturesPage.tsx"
+  },
+  {
+    "route": "/admin/classes/:id",
+    "entry": "src/app/admin/classes/[id]/page.tsx",
+    "screen": "src/features/classes/screens/AdminClassDetailPage.tsx"
+  },
+  {
+    "route": "/admin/seasons",
+    "entry": "src/app/admin/seasons/page.tsx",
+    "screen": "src/features/semesters/screens/AdminSeasonsPage.tsx"
+  },
+  {
+    "route": "/admin/subjects/:id",
+    "entry": "src/app/admin/subjects/[id]/page.tsx",
+    "screen": "src/features/subjects/screens/AdminSubjectDetailPage.tsx"
+  },
+  {
+    "route": "/lecturer/assignments/:id",
+    "entry": "src/app/lecturer/assignments/[id]/page.tsx",
+    "screen": "src/features/assignments/screens/LecturerAssignmentWorkspacePage.tsx"
+  },
+  {
+    "route": "/lecturer/grading/assignments/:id",
+    "entry": "src/app/lecturer/grading/assignments/[id]/page.tsx",
+    "screen": "src/features/assignments/screens/LecturerAssignmentWorkspacePage.tsx"
+  },
+  {
+    "route": "/lecturer/grading/assignments/:id/rubric",
+    "entry": "src/app/lecturer/grading/assignments/[id]/rubric/page.tsx",
+    "screen": "src/features/assignments/screens/LecturerAssignmentWorkspacePage.tsx"
+  },
+  {
+    "route": "/lecturer/grading/assignments/:id/submit",
+    "entry": "src/app/lecturer/grading/assignments/[id]/submit/page.tsx",
+    "screen": "src/features/grading/screens/BatchDashboardPage.tsx"
+  },
+  {
+    "route": "/lecturer/grading/batch",
+    "entry": "src/app/lecturer/grading/batch/page.tsx",
+    "screen": "src/features/grading/screens/BatchDashboardPage.tsx"
+  },
+  {
+    "route": "/lecturer/grading/history",
+    "entry": "src/app/lecturer/grading/history/page.tsx",
+    "screen": "src/features/grading/screens/GradingHistoryPage.tsx"
+  },
+  {
+    "route": "/lecturer/grading/hub",
+    "entry": "src/app/lecturer/grading/hub/page.tsx",
+    "screen": "src/features/grading/screens/GradingHubPage.tsx"
+  },
+  {
+    "route": "/lecturer/grading/live/:id",
+    "entry": "src/app/lecturer/grading/live/[id]/page.tsx",
+    "screen": "src/features/grading/screens/LiveJobPage.tsx"
+  },
+  {
+    "route": "/lecturer/grading",
+    "entry": "src/app/lecturer/grading/page.tsx",
+    "screen": "src/features/grading/screens/GradingHubPage.tsx"
+  },
+  {
+    "route": "/lecturer/grading/result/:id",
+    "entry": "src/app/lecturer/grading/result/[id]/page.tsx",
+    "screen": "src/features/grading/screens/GradingResultPage.tsx"
+  },
+  {
+    "route": "/lecturer/subjects/:id",
+    "entry": "src/app/lecturer/subjects/[id]/page.tsx",
+    "screen": "src/features/subjects/screens/LecturerSubjectDetailPage.tsx"
+  },
+  {
+    "route": "/student/assignments",
+    "entry": "src/app/student/assignments/page.tsx",
+    "screen": "src/features/assignments/screens/StudentAssignmentsPage.tsx"
+  },
+  {
+    "route": "/student/results",
+    "entry": "src/app/student/results/page.tsx",
+    "screen": "src/features/submissions/screens/StudentResultsPage.tsx"
+  },
+  {
+    "route": "/lecturer/grading/upload",
+    "entry": "src/app/lecturer/grading/upload/page.tsx",
+    "screen": "src/features/grading/screens/GradingHubPage.tsx"
+  },
+  {
+    "route": "/lecturer/grading/assignments/upload",
+    "entry": "src/app/lecturer/grading/assignments/upload/page.tsx",
+    "screen": "src/features/grading/screens/AssignmentUploadPage.tsx"
+  },
+  {
+    "route": "/lecturer/rubric-generator",
+    "entry": "src/app/lecturer/rubric-generator/page.tsx",
+    "screen": "src/features/grading/screens/LecturerAIRubricPage.tsx"
+  },
+  {
+    "route": "/lecturer/prompts/:subjectId",
+    "entry": "src/app/lecturer/prompts/[subjectId]/page.tsx",
+    "screen": "src/features/prompts/screens/PromptListBySubjectPage.tsx"
+  },
+  {
+    "route": "/lecturer/prompts/:subjectId/create",
+    "entry": "src/app/lecturer/prompts/[subjectId]/create/page.tsx",
+    "screen": "src/features/prompts/screens/PromptCreateEditPage.tsx"
+  },
+  {
+    "route": "/lecturer/prompts/:subjectId/edit/:promptId",
+    "entry": "src/app/lecturer/prompts/[subjectId]/edit/[promptId]/page.tsx",
+    "screen": "src/features/prompts/screens/PromptCreateEditPage.tsx"
+  }
+]

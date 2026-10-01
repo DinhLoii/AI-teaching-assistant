@@ -1,0 +1,35 @@
+import type { NextConfig } from "next";
+
+const rawApiTarget = process.env.API_PROXY_TARGET || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const apiTarget = rawApiTarget.replace(/\/api\/?$/, '').replace(/\/+$/, '');
+
+const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      ...['admin', 'lecturer', 'student'].map(role => ({
+        source: `/${role}/profile`,
+        destination: '/profile',
+        permanent: false,
+      })),
+      {
+        source: '/lecturer/grading/upload',
+        destination: '/lecturer/grading/hub',
+        permanent: false,
+      },
+    ];
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${apiTarget}/api/:path*`,
+      },
+      {
+        source: '/uploads/:path*',
+        destination: `${apiTarget}/uploads/:path*`,
+      },
+    ];
+  },
+};
+
+export default nextConfig;
