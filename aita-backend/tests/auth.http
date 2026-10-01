@@ -1,0 +1,86 @@
+@baseUrl = http://localhost:3001/api/auth
+@email = teststudent@gmail.com
+@password = Password123!
+@newPassword = NewPassword123!
+
+### 1. Register a new user
+# @name register
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "fullName": "Test Student"
+}
+
+### 2. Login (Should return Token and RefreshToken)
+# @name login
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Store tokens from login response
+@authToken = {{login.response.body.Data.token}}
+@refreshToken = {{login.response.body.Data.refreshToken}}
+
+### 3. Get Current User (Get Me)
+GET {{baseUrl}}/me
+Authorization: Bearer {{authToken}}
+
+### 4. Refresh Token (Get new Access Token)
+# @name refresh
+POST {{baseUrl}}/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Store new tokens from refresh response
+@newAuthToken = {{refresh.response.body.Data.token}}
+@newRefreshToken = {{refresh.response.body.Data.refreshToken}}
+
+### 5. Change Password
+POST {{baseUrl}}/change-password
+Authorization: Bearer {{newAuthToken}}
+Content-Type: application/json
+
+{
+  "oldPassword": "{{password}}",
+  "newPassword": "{{newPassword}}"
+}
+
+### 6. Login with New Password
+# @name loginNew
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{newPassword}}"
+}
+
+### Extract final refresh token
+@finalRefreshToken = {{loginNew.response.body.Data.refreshToken}}
+
+### 7. Logout (Revoke refresh token)
+POST {{baseUrl}}/logout
+Authorization: Bearer {{loginNew.response.body.Data.token}}
+Content-Type: application/json
+
+{
+  "refreshToken": "{{finalRefreshToken}}"
+}
+
+### 8. Try to refresh with revoked token (Should fail with 401)
+POST {{baseUrl}}/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "{{finalRefreshToken}}"
+}
