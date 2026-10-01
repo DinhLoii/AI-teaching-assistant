@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: aita-mssql
+    user: root
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourPassword123!
+      - MSSQL_PID=Developer
+    ports:
+      - "14333:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql/data
+    restart: always
+
+  backend:
+    build:
+      context: ./aita-backend
+      dockerfile: Dockerfile
+    container_name: aita-backend
+    ports:
+      - "3002:3001"
+    env_file:
+      - ./aita-backend/.env
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+      - DATABASE_URL=sqlserver://mssql:1433;database=AITA_DB;user=sa;password=YourPassword123!;encrypt=true;trustServerCertificate=true
+      - JWT_SECRET=aita_super_secret_key_production_2026!
+      # ✅ ĐÃ ĐỔI SANG FEAITA:
+      - CORS_ORIGIN=https://feaita.edubridge.edu.vn,https://apiaita.edubridge.edu.vn,https://api.edubridge.edu.vn
+      - FRONTEND_URL=https://feaita.edubridge.edu.vn
+    depends_on:
+      - mssql
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /app/temp:/app/temp
+      - /app/uploads:/app/uploads
+    restart: always
+
+  frontend:
+    build:
+      context: ./aita-fontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=https://apiaita.edubridge.edu.vn/api
+    container_name: aita-frontend
+    ports:
+      - "8088:3000"
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  mssql_data:
