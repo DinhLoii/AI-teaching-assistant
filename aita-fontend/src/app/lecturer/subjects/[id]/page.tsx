@@ -1,0 +1,2 @@
+﻿import LecturerSubjectDetailPage from '@/features/subjects/screens/LecturerSubjectDetailPage'
+export default LecturerSubjectDetailPage
