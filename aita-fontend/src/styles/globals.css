@@ -1,0 +1,175 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --background: #f8fafc;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --primary: #F26F21;
+    --primary-foreground: #ffffff;
+    --primary-hover: #d95a10;
+    --secondary: #0054A6;
+    --secondary-foreground: #ffffff;
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+    --border: #e2e8f0;
+    --ring: rgba(242, 111, 33, 0.4);
+  }
+
+  .dark {
+    --background: #080c14;
+    --foreground: #f8fafc;
+    --card: #0f172a;
+    --card-foreground: #f8fafc;
+    --primary: #F26F21;
+    --primary-foreground: #ffffff;
+    --primary-hover: #ff843d;
+    --secondary: #0284c7;
+    --secondary-foreground: #ffffff;
+    --muted: #1e293b;
+    --muted-foreground: #94a3b8;
+    --border: #1e293b;
+    --ring: rgba(242, 111, 33, 0.5);
+  }
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-light {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.glow-orange {
+  box-shadow: 0 0 35px -5px rgba(242, 111, 33, 0.25);
+}
+
+.glow-orange-sm {
+  box-shadow: 0 0 15px -2px rgba(242, 111, 33, 0.2);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(242, 111, 33, 0.5);
+}
+
+/* Code & Mono */
+pre, code {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Disable browser spellcheck, grammar wavy lines & Edge Editor overlays */
+::spelling-error,
+::grammar-error {
+  text-decoration: none !important;
+  text-decoration-line: none !important;
+  text-decoration-style: none !important;
+  text-decoration-color: transparent !important;
+  background-color: transparent !important;
+  color: inherit !important;
+}
+
+[spellcheck="false"],
+[data-gramm="false"],
+[data-ms-editor],
+[data-ms-editor="false"],
+button,
+button *,
+input,
+textarea {
+  text-decoration: none !important;
+  text-decoration-line: none !important;
+  text-decoration-style: none !important;
+  text-decoration-color: transparent !important;
+  -webkit-text-decorations-in-effect: none !important;
+}
+
+/* Assignment specification rich HTML styling */
+.assignment-specification {
+  line-height: 1.7;
+}
+.assignment-specification h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-bottom: 0.75rem;
+}
+.assignment-specification h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+.assignment-specification h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-top: 1rem;
+  margin-bottom: 0.35rem;
+  color: #f26f21;
+}
+.assignment-specification ul {
+  list-style-type: disc;
+  padding-left: 1.25rem;
+  margin-top: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+.assignment-specification li {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+.assignment-specification code {
+  font-size: 0.85em;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.375rem;
+  background-color: rgba(242, 111, 33, 0.1);
+  color: #ea580c;
+}
+.dark .assignment-specification code {
+  background-color: rgba(242, 111, 33, 0.15);
+  color: #fb923c;
+}
+
+
+/* ─── Notification bell animations ─────────────────────────────── */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  15%       { transform: rotate(-14deg); }
+  30%       { transform: rotate(14deg); }
+  45%       { transform: rotate(-10deg); }
+  60%       { transform: rotate(10deg); }
+  75%       { transform: rotate(-5deg); }
+}
+
+@keyframes pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  60%  { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
