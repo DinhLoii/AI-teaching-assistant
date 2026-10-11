@@ -3,12 +3,14 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlserver"
-  url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
-  Id                                     String                  @id @default(uuid()) @db.UniqueIdentifier
+  Note                                   Note[]
+  Id                                     String                  @id @default(uuid())
   Email                                  String?                 @unique
   PasswordHash                           String?
   FullName                               String?
@@ -17,10 +19,10 @@ model User {
   Phone                                  String?
   Avatar                                 String?
   Status                                 String?
-  LastLoginAt                            DateTime?               @db.DateTime2
+  LastLoginAt                            DateTime?
   RequirePasswordChange                  Boolean?                @default(false)
   ResetPasswordOtp                       String?
-  ResetPasswordOtpExpiry                 DateTime?               @db.DateTime2
+  ResetPasswordOtpExpiry                 DateTime?
   AiUsageLog                             AiUsageLog[]
   AuditLog                               AuditLog[]
   Exam                                   Exam[]
@@ -41,13 +43,16 @@ model User {
   PendingEnrollment                      PendingEnrollment[]
   SubmissionOverride_Student             SubmissionOverride[]    @relation("SubmissionOverride_StudentIdToUser")
   SubmissionOverride_Creator             SubmissionOverride[]    @relation("SubmissionOverride_CreatedByToUser")
+
+  @@index([StudentCode])
+  @@index([LecturerCode])
 }
 
 model Class {
-  Id              String            @id @default(uuid()) @db.UniqueIdentifier
+  Id              String            @id @default(uuid())
   ClassCode       String?
-  SubjectId       String?           @db.UniqueIdentifier
-  SemesterId      String?           @db.UniqueIdentifier
+  SubjectId       String?
+  SemesterId      String?
   Status          String?
   Note            String?
   Semester        Semester?         @relation(fields: [SemesterId], references: [Id], onDelete: Cascade, onUpdate: NoAction)
@@ -58,16 +63,19 @@ model Class {
   ExamClass       ExamClass[]
 
   @@unique([ClassCode, SubjectId, SemesterId])
+  @@index([SubjectId])
+  @@index([SemesterId])
+  @@index([Status])
 }
 
 model Submission {
-  Id                               String               @id @default(uuid()) @db.UniqueIdentifier
-  ExamId                           String?              @db.UniqueIdentifier
-  StudentId                        String?              @db.UniqueIdentifier
-  ClassId                          String?              @db.UniqueIdentifier
+  Id                               String               @id @default(uuid())
+  ExamId                           String?
+  StudentId                        String?
+  ClassId                          String?
   AttemptNumber                    Int?
   IsLatest                         Boolean?
-  SubmittedAt                      DateTime?            @db.DateTime2
+  SubmittedAt                      DateTime?
   ZipFileUrl                       String?
   GradingStatus                    String?
   ReviewStatus                     String?
@@ -79,10 +87,10 @@ model Submission {
   ReopenReason                     String?
   InstructorFeedback               String?
   StudentFeedback                  String?
-  ReviewedBy                       String?              @db.UniqueIdentifier
-  ReviewedAt                       DateTime?            @db.DateTime2
-  GradedAt                         DateTime?            @db.DateTime2
-  ReportData                       String?              @db.NVarChar(Max)
+  ReviewedBy                       String?
+  ReviewedAt                       DateTime?
+  GradedAt                         DateTime?
+  ReportData                       String?              @db.Text
   AiUsageLog                       AiUsageLog[]
   ExecutionResult                  ExecutionResult[]
   GradingSession                   GradingSession[]
@@ -94,17 +102,25 @@ model Submission {
   SubmissionArtifact               SubmissionArtifact[]
 
   @@unique([StudentId, ExamId, ClassId, AttemptNumber], map: "Submission_StudentId_ExamId_ClassId_AttemptNumber_idx")
+  @@index([StudentId])
+  @@index([ClassId])
+  @@index([ExamId])
+  @@index([SubmittedAt])
+  @@index([GradingStatus])
+  @@index([ReviewStatus])
+  @@index([StudentId, ReviewStatus])
+  @@index([ClassId, ReviewStatus])
 }
 
 model Subject {
-  Id                 String               @id @default(uuid()) @db.UniqueIdentifier
+  Id                 String               @id @default(uuid())
   SubjectCode        String?              @unique
   SubjectName        String?
   Description        String?
   IsActive           Boolean?
   Semester           Int?
   Credit             Int?
-  SyllabusData       String?              @db.NVarChar(Max)
+  SyllabusData       String?              @db.Text
   AssignmentTemplate AssignmentTemplate[]
   Class              Class[]
   Exam               Exam[]
@@ -114,36 +130,36 @@ model Subject {
 }
 
 model Notification {
-  Id                    String                  @id @default(uuid()) @db.UniqueIdentifier
+  Id                    String                  @id @default(uuid())
   Title                 String?
   Message               String?
   Type                  String?
-  ReferenceId           String?                 @db.UniqueIdentifier
+  ReferenceId           String?
   ReferenceType         String?
-  CreatedBy             String?                 @db.UniqueIdentifier
-  CreatedAt             DateTime?               @db.DateTime2
+  CreatedBy             String?
+  CreatedAt             DateTime?
   User                  User?                   @relation(fields: [CreatedBy], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   NotificationRecipient NotificationRecipient[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model AiApiKey {
-  Id              String    @id @default(uuid()) @db.UniqueIdentifier
+  Id              String    @id @default(uuid())
   Provider        String?
   KeyValue        String?
   Label           String?
   IsActive        Boolean?
   IsExhausted     Boolean?
-  LastUsedAt      DateTime? @db.DateTime2
+  LastUsedAt      DateTime?
   TotalUsageCount Int?
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model AiUsageLog {
-  Id               String      @id @default(uuid()) @db.UniqueIdentifier
-  UserId           String?     @db.UniqueIdentifier
-  ExamId           String?     @db.UniqueIdentifier
-  SubmissionId     String?     @db.UniqueIdentifier
+  Id               String      @id @default(uuid())
+  UserId           String?
+  ExamId           String?
+  SubmissionId     String?
   RequestId        String?
   Provider         String?
   ActionType       String?
@@ -154,7 +170,7 @@ model AiUsageLog {
   DurationMs       Int?
   IsSuccess        Boolean?
   ErrorMessage     String?
-  CreatedAt        DateTime?   @db.DateTime2
+  CreatedAt        DateTime?
   Exam             Exam?       @relation(fields: [ExamId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   Submission       Submission? @relation(fields: [SubmissionId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   User             User?       @relation(fields: [UserId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
@@ -162,13 +178,13 @@ model AiUsageLog {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model AssignmentTemplate {
-  Id                      String          @id @default(uuid()) @db.UniqueIdentifier
-  SubjectId               String?         @db.UniqueIdentifier
+  Id                      String          @id @default(uuid())
+  SubjectId               String?
   Name                    String?
   Description             String?
   AssignmentType          String?
-  DefaultGradingProfileId String?         @db.UniqueIdentifier
-  DefaultProjectTypeId    String?         @db.UniqueIdentifier
+  DefaultGradingProfileId String?
+  DefaultProjectTypeId    String?
   SortOrder               Int?
   IsActive                Boolean?
   GradingProfile          GradingProfile? @relation(fields: [DefaultGradingProfileId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
@@ -179,22 +195,26 @@ model AssignmentTemplate {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model AuditLog {
-  Id         String    @id @default(uuid()) @db.UniqueIdentifier
+  Id         String    @id @default(uuid())
   EntityName String?
-  EntityId   String?   @db.UniqueIdentifier
+  EntityId   String?
   Action     String?
   OldValue   String?
   NewValue   String?
-  UserId     String?   @db.UniqueIdentifier
+  UserId     String?
   IpAddress  String?
-  CreatedAt  DateTime? @db.DateTime2
+  CreatedAt  DateTime?
   User       User?     @relation(fields: [UserId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([UserId])
+  @@index([CreatedAt])
+  @@index([Action])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model BuildArtifact {
-  Id               String          @id @default(uuid()) @db.UniqueIdentifier
-  GradingSessionId String?         @db.UniqueIdentifier
+  Id               String          @id @default(uuid())
+  GradingSessionId String?
   BuildStatus      String?
   BuildLog         String?
   DockerImageId    String?
@@ -206,9 +226,9 @@ model BuildArtifact {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model CriterionScore {
-  Id                String           @id @default(uuid()) @db.UniqueIdentifier
-  RuleScoreId       String?          @db.UniqueIdentifier
-  RubricCriterionId String?          @db.UniqueIdentifier
+  Id                String           @id @default(uuid())
+  RuleScoreId       String?
+  RubricCriterionId String?
   AiScore           Decimal?         @db.Decimal(18, 2)
   MaxScore          Decimal?         @db.Decimal(18, 2)
   AiReasoning       String?
@@ -217,12 +237,14 @@ model CriterionScore {
   EffectiveScore    Decimal?         @db.Decimal(18, 2)
   RubricCriterion   RubricCriterion? @relation(fields: [RubricCriterionId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   RuleScore         RuleScore?       @relation(fields: [RuleScoreId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([RuleScoreId])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model Evidence {
-  Id           String     @id @default(uuid()) @db.UniqueIdentifier
-  RuleScoreId  String?    @db.UniqueIdentifier
+  Id           String     @id @default(uuid())
+  RuleScoreId  String?
   EvidenceType String?
   Content      String?
   ImageUrl     String?
@@ -232,32 +254,32 @@ model Evidence {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model Exam {
-  Id                    String                  @id @default(uuid()) @db.UniqueIdentifier
+  Id                    String                  @id @default(uuid())
   Title                 String?
   Description           String?
-  AssignmentTemplateId  String?                 @db.UniqueIdentifier
-  ProjectTypeId         String?                 @db.UniqueIdentifier
-  GradingProfileId      String?                 @db.UniqueIdentifier
-  SubjectId             String?                 @db.UniqueIdentifier
+  AssignmentTemplateId  String?
+  ProjectTypeId         String?
+  GradingProfileId      String?
+  SubjectId             String?
   ExamType              String?
   Duration              Int?
-  StartDate             DateTime?               @db.DateTime2
-  DueDate               DateTime?               @db.DateTime2
+  StartDate             DateTime?
+  DueDate               DateTime?
   TotalPoints           Decimal?                @db.Decimal(18, 2)
   WeightPercentage      Decimal?                @db.Decimal(5, 2)
   Status                String?
   GradingStrategy       String?                 @default("CONTINUOUS_QUEUE")
   SubmissionFormat      String?
-  AiGeneratedContent    String?                 @db.NVarChar(Max)
-  OriginalPrompt        String?                 @db.NVarChar(Max)
-  PromptTemplateId      String?                 @db.UniqueIdentifier
-  CreatedBy             String?                 @db.UniqueIdentifier
+  AiGeneratedContent    String?                 @db.Text
+  OriginalPrompt        String?                 @db.Text
+  PromptTemplateId      String?
+  CreatedBy             String?
   LatePenaltyType       String?                 @default("NONE")
   LatePenaltyValue      Decimal?                @db.Decimal(18, 2)
   MaxLatePenalty        Decimal?                @db.Decimal(18, 2)
   AllowLateSubmission   Boolean?                @default(true)
   IsDeleted             Boolean?                @default(false)
-  DeletedAt             DateTime?               @db.DateTime2
+  DeletedAt             DateTime?
   AiUsageLog            AiUsageLog[]
   AssignmentTemplate    AssignmentTemplate?     @relation(fields: [AssignmentTemplateId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   User                  User?                   @relation(fields: [CreatedBy], references: [Id], onDelete: NoAction, onUpdate: NoAction)
@@ -274,12 +296,17 @@ model Exam {
   TestCase              TestCase[]
   ExamClass             ExamClass[]
   SubmissionOverride    SubmissionOverride[]
+
+  @@index([SubjectId])
+  @@index([CreatedBy])
+  @@index([Status])
+  @@index([DueDate])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model ExamAttachment {
-  Id       String  @id @default(uuid()) @db.UniqueIdentifier
-  ExamId   String? @db.UniqueIdentifier
+  Id       String  @id @default(uuid())
+  ExamId   String?
   FileName String?
   FileUrl  String?
   FileType String?
@@ -288,20 +315,20 @@ model ExamAttachment {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model ExamGenerationHistory {
-  Id               String  @id @default(uuid()) @db.UniqueIdentifier
-  ExamId           String? @db.UniqueIdentifier
+  Id               String  @id @default(uuid())
+  ExamId           String?
   Version          Int?
-  Prompt           String? @db.NVarChar(Max)
-  GeneratedContent String? @db.NVarChar(Max)
-  GeneratedBy      String? @db.UniqueIdentifier
+  Prompt           String? @db.Text
+  GeneratedContent String? @db.Text
+  GeneratedBy      String?
   Exam             Exam?   @relation(fields: [ExamId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   User             User?   @relation(fields: [GeneratedBy], references: [Id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model ExamSection {
-  Id          String       @id @default(uuid()) @db.UniqueIdentifier
-  ExamId      String?      @db.UniqueIdentifier
+  Id          String       @id @default(uuid())
+  ExamId      String?
   SectionCode String?
   Title       String?
   Description String?
@@ -313,45 +340,50 @@ model ExamSection {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model ExecutionResult {
-  Id             String      @id @default(uuid()) @db.UniqueIdentifier
-  GradingJobId   String?     @db.UniqueIdentifier
-  SubmissionId   String?     @db.UniqueIdentifier
+  Id             String      @id @default(uuid())
+  GradingJobId   String?
+  SubmissionId   String?
   EngineType     String?
   ExecutionLabel String?
   RawOutput      String?
   Score          Decimal?    @db.Decimal(18, 2)
   Status         String?
-  StartedAt      DateTime?   @db.DateTime2
-  CompletedAt    DateTime?   @db.DateTime2
+  StartedAt      DateTime?
+  CompletedAt    DateTime?
   DurationMs     Int?
   GradingJob     GradingJob? @relation(fields: [GradingJobId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   Submission     Submission? @relation(fields: [SubmissionId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   RuleScore      RuleScore[]
+
+  @@index([SubmissionId])
+  @@index([GradingJobId])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model GradingJob {
-  Id                                                     String              @id @default(uuid()) @db.UniqueIdentifier
-  GradingSessionId                                       String?             @db.UniqueIdentifier
-  GradingProfileStepId                                   String?             @db.UniqueIdentifier
+  Id                                                     String              @id @default(uuid())
+  GradingSessionId                                       String?
+  GradingProfileStepId                                   String?
   Engine                                                 String?
   Priority                                               Int?
   Status                                                 String?
-  TriggeredAt                                            DateTime?           @db.DateTime2
-  CompletedAt                                            DateTime?           @db.DateTime2
+  TriggeredAt                                            DateTime?
+  CompletedAt                                            DateTime?
   WorkerNodeId                                           String?
   ExecutionResult                                        ExecutionResult[]
   GradingProfileStep                                     GradingProfileStep? @relation(fields: [GradingProfileStepId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   GradingSession                                         GradingSession?     @relation(fields: [GradingSessionId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   JobDependency_JobDependency_DependsOnJobIdToGradingJob JobDependency[]     @relation("JobDependency_DependsOnJobIdToGradingJob")
   JobDependency_JobDependency_JobIdToGradingJob          JobDependency[]     @relation("JobDependency_JobIdToGradingJob")
+
+  @@index([GradingSessionId])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model GradingProfile {
-  Id                 String               @id @default(uuid()) @db.UniqueIdentifier
+  Id                 String               @id @default(uuid())
   Name               String?
-  ProjectTypeId      String?              @db.UniqueIdentifier
+  ProjectTypeId      String?
   Description        String?
   IsActive           Boolean?
   AssignmentTemplate AssignmentTemplate[]
@@ -362,8 +394,8 @@ model GradingProfile {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model GradingProfileStep {
-  Id               String          @id @default(uuid()) @db.UniqueIdentifier
-  GradingProfileId String?         @db.UniqueIdentifier
+  Id               String          @id @default(uuid())
+  GradingProfileId String?
   EngineType       String?
   StepOrder        Int?
   ConfigJson       String?
@@ -375,51 +407,54 @@ model GradingProfileStep {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model GradingSession {
-  Id               String             @id @default(uuid()) @db.UniqueIdentifier
-  SubmissionId     String?            @db.UniqueIdentifier
+  Id               String             @id @default(uuid())
+  SubmissionId     String?
   Version          Int?
-  TriggeredBy      String?            @db.UniqueIdentifier
+  TriggeredBy      String?
   TriggerReason    String?
   Status           String?
   TotalScore       Decimal?           @db.Decimal(18, 2)
-  StartedAt        DateTime?          @db.DateTime2
-  CompletedAt      DateTime?          @db.DateTime2
+  StartedAt        DateTime?
+  CompletedAt      DateTime?
   BuildArtifact    BuildArtifact[]
   GradingJob       GradingJob[]
   Submission       Submission?        @relation(fields: [SubmissionId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   User             User?              @relation(fields: [TriggeredBy], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   SandboxExecution SandboxExecution[]
+
+  @@index([SubmissionId])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model ImportBatch {
-  Id           String  @id @default(uuid()) @db.UniqueIdentifier
+  Id           String  @id @default(uuid())
   FileName     String?
   FileUrl      String?
   Status       String?
   TotalRows    Int?
   SuccessCount Int?
   ErrorCount   Int?
-  ErrorDetails String? @db.NVarChar(Max)
-  ImportedBy   String? @db.UniqueIdentifier
+  ErrorDetails String? @db.Text
+  ImportedBy   String?
   User         User?   @relation(fields: [ImportedBy], references: [Id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model InstructorClass {
-  UserId     String    @db.UniqueIdentifier
-  ClassId    String    @db.UniqueIdentifier
-  EnrolledAt DateTime? @db.DateTime2
+  UserId     String
+  ClassId    String
+  EnrolledAt DateTime?
   Class      Class     @relation(fields: [ClassId], references: [Id], onDelete: Cascade, onUpdate: NoAction)
   User       User      @relation(fields: [UserId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
 
   @@id([UserId, ClassId])
+  @@index([ClassId])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model JobDependency {
-  JobId                                               String     @db.UniqueIdentifier
-  DependsOnJobId                                      String     @db.UniqueIdentifier
+  JobId                                               String
+  DependsOnJobId                                      String
   DependencyType                                      String?
   GradingJob_JobDependency_DependsOnJobIdToGradingJob GradingJob @relation("JobDependency_DependsOnJobIdToGradingJob", fields: [DependsOnJobId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   GradingJob_JobDependency_JobIdToGradingJob          GradingJob @relation("JobDependency_JobIdToGradingJob", fields: [JobId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
@@ -429,18 +464,21 @@ model JobDependency {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model NotificationRecipient {
-  Id             String        @id @default(uuid()) @db.UniqueIdentifier
-  NotificationId String?       @db.UniqueIdentifier
-  UserId         String?       @db.UniqueIdentifier
+  Id             String        @id @default(uuid())
+  NotificationId String?
+  UserId         String?
   IsRead         Boolean?
-  ReadAt         DateTime?     @db.DateTime2
+  ReadAt         DateTime?
   Notification   Notification? @relation(fields: [NotificationId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   User           User?         @relation(fields: [UserId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([UserId, IsRead])
+  @@index([NotificationId])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model ProjectType {
-  Id                                                                             String                   @id @default(uuid()) @db.UniqueIdentifier
+  Id                                                                             String                   @id @default(uuid())
   Code                                                                           String?                  @unique
   DisplayName                                                                    String?
   RequiresSandbox                                                                Boolean?
@@ -458,8 +496,8 @@ model ProjectType {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model ProjectTypeComposition {
-  ParentProjectTypeId                                                 String      @db.UniqueIdentifier
-  ChildProjectTypeId                                                  String      @db.UniqueIdentifier
+  ParentProjectTypeId                                                 String
+  ChildProjectTypeId                                                  String
   Role                                                                String?
   IsRequired                                                          Boolean?
   SortOrder                                                           Int?
@@ -471,17 +509,17 @@ model ProjectTypeComposition {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model PromptTemplate {
-  Id                String       @id @default(uuid()) @db.UniqueIdentifier
+  Id                String       @id @default(uuid())
   Name              String?
-  SubjectId         String?      @db.UniqueIdentifier
-  ProjectTypeId     String?      @db.UniqueIdentifier
+  SubjectId         String?
+  ProjectTypeId     String?
   Category          String?
-  TemplateContent   String?      @db.NVarChar(Max)
-  PlaceholderSchema String?      @db.NVarChar(Max)
+  TemplateContent   String?      @db.Text
+  PlaceholderSchema String?      @db.Text
   IsDefault         Boolean?
   IsActive          Boolean?
   UsageCount        Int?
-  CreatedBy         String?      @db.UniqueIdentifier
+  CreatedBy         String?
   Exam              Exam[]
   User              User?        @relation(fields: [CreatedBy], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   ProjectType       ProjectType? @relation(fields: [ProjectTypeId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
@@ -490,8 +528,8 @@ model PromptTemplate {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model ReferenceArtifact {
-  Id           String  @id @default(uuid()) @db.UniqueIdentifier
-  ExamId       String? @db.UniqueIdentifier
+  Id           String  @id @default(uuid())
+  ExamId       String?
   ArtifactType String?
   ExpectedFor  String?
   FileName     String?
@@ -502,17 +540,17 @@ model ReferenceArtifact {
 }
 
 model RefreshToken {
-  Id        String    @id @default(uuid()) @db.UniqueIdentifier
-  UserId    String?   @db.UniqueIdentifier
+  Id        String    @id @default(uuid())
+  UserId    String?
   Token     String?
-  ExpiresAt DateTime? @db.DateTime2
+  ExpiresAt DateTime?
   IsRevoked Boolean?
   User      User?     @relation(fields: [UserId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model OAuthIdentity {
-  Id           String  @id @default(uuid()) @db.UniqueIdentifier
-  UserId       String? @db.UniqueIdentifier
+  Id           String  @id @default(uuid())
+  UserId       String?
   Provider     String?
   ProviderId   String?
   AccessToken  String?
@@ -524,15 +562,15 @@ model OAuthIdentity {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model Role {
-  Id       String     @id @default(uuid()) @db.UniqueIdentifier
+  Id       String     @id @default(uuid())
   RoleName String?    @unique
   UserRole UserRole[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model RubricCriterion {
-  Id               String           @id @default(uuid()) @db.UniqueIdentifier
-  RubricRuleId     String?          @db.UniqueIdentifier
+  Id               String           @id @default(uuid())
+  RubricRuleId     String?
   Description      String?
   MaxPoints        Decimal?         @db.Decimal(18, 2)
   Weight           Decimal?         @db.Decimal(18, 2)
@@ -546,8 +584,8 @@ model RubricCriterion {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model RubricRule {
-  Id                   String            @id @default(uuid()) @db.UniqueIdentifier
-  SectionId            String?           @db.UniqueIdentifier
+  Id                   String            @id @default(uuid())
+  SectionId            String?
   RuleCode             String?
   Description          String?
   MaxPoints            Decimal?          @db.Decimal(18, 2)
@@ -564,9 +602,9 @@ model RubricRule {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model RuleScore {
-  Id                String           @id @default(uuid()) @db.UniqueIdentifier
-  ExecutionResultId String?          @db.UniqueIdentifier
-  RubricRuleId      String?          @db.UniqueIdentifier
+  Id                String           @id @default(uuid())
+  ExecutionResultId String?
+  RubricRuleId      String?
   AiScore           Decimal?         @db.Decimal(18, 2)
   MaxScore          Decimal?         @db.Decimal(18, 2)
   AiReasoning       String?
@@ -578,12 +616,14 @@ model RuleScore {
   Evidence          Evidence[]
   ExecutionResult   ExecutionResult? @relation(fields: [ExecutionResultId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   RubricRule        RubricRule?      @relation(fields: [RubricRuleId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([ExecutionResultId])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model SampleCode {
-  Id          String  @id @default(uuid()) @db.UniqueIdentifier
-  ExamId      String? @db.UniqueIdentifier
+  Id          String  @id @default(uuid())
+  ExamId      String?
   Language    String?
   Code        String?
   Explanation String?
@@ -592,8 +632,8 @@ model SampleCode {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model SandboxExecution {
-  Id               String          @id @default(uuid()) @db.UniqueIdentifier
-  GradingSessionId String?         @db.UniqueIdentifier
+  Id               String          @id @default(uuid())
+  GradingSessionId String?
   ContainerId      String?
   SandboxImage     String?
   Status           String?
@@ -601,19 +641,19 @@ model SandboxExecution {
   CpuTimeMs        BigInt?
   PeakMemoryKb     BigInt?
   NetworkDisabled  Boolean?
-  StartedAt        DateTime?       @db.DateTime2
-  FinishedAt       DateTime?       @db.DateTime2
+  StartedAt        DateTime?
+  FinishedAt       DateTime?
   RunLog           String?
   GradingSession   GradingSession? @relation(fields: [GradingSessionId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model Semester {
-  Id              String            @id @default(uuid()) @db.UniqueIdentifier
+  Id              String            @id @default(uuid())
   Season          String?
   Code            String?
-  StartDate       DateTime?         @db.DateTime2
-  EndDate         DateTime?         @db.DateTime2
+  StartDate       DateTime?
+  EndDate         DateTime?
   IsActive        Boolean?
   Class           Class[]
   SemesterSubject SemesterSubject[]
@@ -623,9 +663,9 @@ model Semester {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model SemesterSubject {
-  SemesterId String   @db.UniqueIdentifier
-  SubjectId  String   @db.UniqueIdentifier
-  AssignedAt DateTime @default(now()) @db.DateTime2
+  SemesterId String
+  SubjectId  String
+  AssignedAt DateTime @default(now())
 
   Semester Semester @relation(fields: [SemesterId], references: [Id], onDelete: Cascade, onUpdate: NoAction)
   Subject  Subject  @relation(fields: [SubjectId], references: [Id], onDelete: Cascade, onUpdate: NoAction)
@@ -635,19 +675,20 @@ model SemesterSubject {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model StudentClass {
-  UserId     String    @db.UniqueIdentifier
-  ClassId    String    @db.UniqueIdentifier
-  EnrolledAt DateTime? @db.DateTime2
+  UserId     String
+  ClassId    String
+  EnrolledAt DateTime?
   Class      Class     @relation(fields: [ClassId], references: [Id], onDelete: Cascade, onUpdate: NoAction)
   User       User      @relation(fields: [UserId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
 
   @@id([UserId, ClassId])
+  @@index([ClassId])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model SubjectProjectType {
-  SubjectId     String      @db.UniqueIdentifier
-  ProjectTypeId String      @db.UniqueIdentifier
+  SubjectId     String
+  ProjectTypeId String
   ProjectType   ProjectType @relation(fields: [ProjectTypeId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   Subject       Subject     @relation(fields: [SubjectId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -656,8 +697,8 @@ model SubjectProjectType {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model SubmissionArtifact {
-  Id            String      @id @default(uuid()) @db.UniqueIdentifier
-  SubmissionId  String?     @db.UniqueIdentifier
+  Id            String      @id @default(uuid())
+  SubmissionId  String?
   ArtifactType  String?
   ArtifactLabel String?
   FileName      String?
@@ -667,6 +708,8 @@ model SubmissionArtifact {
   ExtractedPath String?
   MimeType      String?
   Submission    Submission? @relation(fields: [SubmissionId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([SubmissionId])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -678,8 +721,8 @@ model SystemConfig {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model TestCase {
-  Id             String   @id @default(uuid()) @db.UniqueIdentifier
-  ExamId         String?  @db.UniqueIdentifier
+  Id             String   @id @default(uuid())
+  ExamId         String?
   Input          String?
   ExpectedOutput String?
   IsHidden       Boolean?
@@ -688,13 +731,15 @@ model TestCase {
   Points         Decimal? @db.Decimal(18, 2)
   SortOrder      Int?
   Exam           Exam?    @relation(fields: [ExamId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([ExamId])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model UserRole {
-  UserId     String    @db.UniqueIdentifier
-  RoleId     String    @db.UniqueIdentifier
-  AssignedAt DateTime? @db.DateTime2
+  UserId     String
+  RoleId     String
+  AssignedAt DateTime?
   Role       Role      @relation(fields: [RoleId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   User       User      @relation(fields: [UserId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -703,72 +748,78 @@ model UserRole {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model ExamClass {
-  ExamId     String    @db.UniqueIdentifier
-  ClassId    String    @db.UniqueIdentifier
-  AssignedAt DateTime? @db.DateTime2
-  DueDate    DateTime? @db.DateTime2
+  ExamId     String
+  ClassId    String
+  AssignedAt DateTime?
+  DueDate    DateTime?
   Class      Class     @relation(fields: [ClassId], references: [Id], onDelete: Cascade, onUpdate: NoAction)
   Exam       Exam      @relation(fields: [ExamId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
 
   @@id([ExamId, ClassId])
+  @@index([ClassId])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model Appeal {
-  Id           String      @id @default(uuid()) @db.UniqueIdentifier
-  SubmissionId String?     @db.UniqueIdentifier
-  StudentId    String?     @db.UniqueIdentifier
+  Id           String      @id @default(uuid())
+  SubmissionId String?
+  StudentId    String?
   Reason       String?
   Status       String?
-  CreatedAt    DateTime?   @db.DateTime2
-  ResolvedAt   DateTime?   @db.DateTime2
+  CreatedAt    DateTime?
+  ResolvedAt   DateTime?
   Resolution   String?
   Submission   Submission? @relation(fields: [SubmissionId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   User         User?       @relation(fields: [StudentId], references: [Id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([SubmissionId])
+  @@index([StudentId])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model PendingEnrollment {
-  Id           String    @id @default(uuid()) @db.UniqueIdentifier
-  UserId       String    @db.UniqueIdentifier
+  Id           String    @id @default(uuid())
+  UserId       String
   SemesterCode String?
   Season       String?
   ClassCode    String?
   SubjectCode  String?
   Status       String?   @default("Pending")
-  CreatedAt    DateTime? @default(now()) @db.DateTime2
-  UpdatedAt    DateTime? @updatedAt @db.DateTime2
+  CreatedAt    DateTime? @default(now())
+  UpdatedAt    DateTime? @updatedAt
   User         User      @relation(fields: [UserId], references: [Id], onDelete: Cascade)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model PublishedAssignment {
-  Id          String   @id @db.UniqueIdentifier
+  Id          String   @id
   Version     String?
   Title       String?
-  Description String?  @db.NVarChar(Max)
+  Description String?  @db.Text
   ProjectType String?
   BlueprintId String?
-  Data        String?  @db.NVarChar(Max)
-  CreatedAt   DateTime  @default(now()) @db.DateTime2
-  UpdatedAt   DateTime  @updatedAt @db.DateTime2
+  Data        String?  @db.Text
+  CreatedAt   DateTime  @default(now())
+  UpdatedAt   DateTime  @updatedAt
   IsDeleted   Boolean?  @default(false)
-  DeletedAt   DateTime? @db.DateTime2
+  DeletedAt   DateTime?
+
+  @@index([IsDeleted])
 }
 
 model SubmissionOverride {
-  Id                 String    @id @default(uuid()) @db.UniqueIdentifier
-  ExamId             String?   @db.UniqueIdentifier
-  StudentId          String?   @db.UniqueIdentifier
-  ClassId            String?   @db.UniqueIdentifier
-  ExtendedDueDate    DateTime? @db.DateTime2
+  Id                 String    @id @default(uuid())
+  ExamId             String?
+  StudentId          String?
+  ClassId            String?
+  ExtendedDueDate    DateTime?
   PenaltyMode        String?   @default("SYSTEM_DEFAULT")
   CustomPenaltyRate  Decimal?  @db.Decimal(18, 2)
   FlatPenaltyAmount  Decimal?  @db.Decimal(18, 2)
   ScoreCap           Decimal?  @db.Decimal(18, 2)
   Reason             String?
-  CreatedBy          String?   @db.UniqueIdentifier
-  CreatedAt          DateTime? @default(now()) @db.DateTime2
+  CreatedBy          String?
+  CreatedAt          DateTime? @default(now())
 
   Exam               Exam?     @relation(fields: [ExamId], references: [Id], onDelete: Cascade, onUpdate: NoAction)
   Student            User?     @relation("SubmissionOverride_StudentIdToUser", fields: [StudentId], references: [Id], onDelete: Cascade, onUpdate: NoAction)
@@ -777,3 +828,15 @@ model SubmissionOverride {
   @@unique([ExamId, StudentId], map: "SubmissionOverride_ExamId_StudentId_idx")
 }
 
+
+model Note {
+  Id        String   @id @default(uuid())
+  UserId    String?
+  DateStr   String
+  TimeStr   String
+  Content   String   @db.Text
+  Status    String   @default("pending")
+  CreatedAt DateTime @default(now())
+  UpdatedAt DateTime @updatedAt
+  User      User?    @relation(fields: [UserId], references: [Id], onDelete: Cascade)
+}

@@ -13,6 +13,8 @@ import { CreateSemesterRequestDto, CreateSeasonRequestDto, UpdateSemesterRequest
 import { MESSAGES } from '../../../shared/constants/messages.js'
 import { ValidationError } from '../../../shared/application/app.error.js'
 
+import { memoryCache } from '../../../shared/infrastructure/memory-cache.js'
+
 export class SemestersController extends BaseController {
   constructor(
     private readonly semesterRepo: any,
@@ -30,12 +32,19 @@ export class SemestersController extends BaseController {
 
   async list(req: Request, res: Response): Promise<void> {
     this.logger.info(`Fetching semesters by user ${req.user!.id}`)
+    const cached = memoryCache.get('semesters_list')
+    if (cached) {
+      this.ok(res, cached, MESSAGES.SUCCESS)
+      return
+    }
     const result = await this.listSemestersUseCase.execute()
+    memoryCache.set('semesters_list', result, 60)
     this.ok(res, result, MESSAGES.SUCCESS)
   }
 
   async create(req: Request, res: Response): Promise<void> {
     this.logger.info(`Creating new semester`)
+    memoryCache.del('semesters_list')
     const dto = CreateSemesterRequestDto.from(req.body)
     const result = await this.createSemesterUseCase.execute(dto)
     this.created(res, result, MESSAGES.SUCCESS)
@@ -43,6 +52,7 @@ export class SemestersController extends BaseController {
 
   async createSeason(req: Request, res: Response): Promise<void> {
     this.logger.info(`Creating new season with 9 semesters`)
+    memoryCache.del('semesters_list')
     const dto = CreateSeasonRequestDto.from(req.body)
     const result = await this.createSeasonUseCase.execute(dto)
     this.created(res, result, MESSAGES.SUCCESS)
@@ -55,6 +65,7 @@ export class SemestersController extends BaseController {
     }
 
     this.logger.info(`Updating semester ${id}`)
+    memoryCache.del('semesters_list')
     const dto = UpdateSemesterRequestDto.from(req.body, id)
     const result = await this.updateSemesterUseCase.execute(dto)
     this.ok(res, result, MESSAGES.SUCCESS)
@@ -67,6 +78,7 @@ export class SemestersController extends BaseController {
     }
 
     this.logger.info(`Deleting semester ${id}`)
+    memoryCache.del('semesters_list')
     await this.deleteSemesterUseCase.execute(id)
     this.noContent(res)
   }

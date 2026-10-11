@@ -1,11 +1,9 @@
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../../../../database/prisma.js'
 import * as xlsx from 'xlsx'
 import { AppError } from '../../../../shared/application/app.error.js'
 import { detectSeasonFromFilename, SeasonDetectorError, matchesSeason } from '../../../../shared/utils/season-detector.util.js'
 import { getAvatarFromRow, normalizeExcelHeader, resolveCloudinaryAvatarUrl } from '../../../../shared/utils/avatar-extractor.util.js'
 import { validateRealEmail } from '../../../../shared/utils/email-validator.util.js'
-
-const prisma = new PrismaClient()
 
 type ImportLecturerRow = Record<string, unknown>
 

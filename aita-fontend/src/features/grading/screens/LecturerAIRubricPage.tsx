@@ -133,7 +133,7 @@ export function LecturerAIRubricPage() {
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <Sparkles className="w-5 h-5 text-orange-500 dark:text-orange-400" />
               <h1 className="text-xl font-bold tracking-tight">AI Rubric Generator</h1>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -148,15 +148,15 @@ export function LecturerAIRubricPage() {
               <button
                 type="button"
                 onClick={handleCopy}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md hover:bg-muted"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-xl hover:bg-orange-50/60 transition-colors"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? <Check className="w-3.5 h-3.5 text-orange-600" /> : <Copy className="w-3.5 h-3.5" />}
                 {copied ? 'Đã sao chép' : 'Sao chép JSON'}
               </button>
               <button
                 type="button"
                 onClick={handleExportJson}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-md hover:bg-muted"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-xl hover:bg-orange-50/60 transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
                 Tải file .json
@@ -169,8 +169,8 @@ export function LecturerAIRubricPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Form */}
         <div className="lg:col-span-1 space-y-5">
-          <div className="border rounded-xl p-5 bg-card shadow-xs space-y-4">
-            <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold text-sm border-b pb-2">
+          <div className="relative overflow-hidden border border-orange-100/90 dark:border-orange-900/30 rounded-2xl p-5 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 shadow-xs space-y-4">
+            <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 font-semibold text-sm border-b border-orange-100/80 pb-2">
               <FileCheck2 className="w-4 h-4" />
               <span>Cấu hình đề bài & AI</span>
             </div>
@@ -183,7 +183,7 @@ export function LecturerAIRubricPage() {
                 <select
                   value={selectedAssignmentId}
                   onChange={e => handleSelectAssignment(e.target.value)}
-                  className="w-full text-sm border rounded-lg px-3 py-2 bg-background focus:ring-2 focus:ring-emerald-500/20"
+                  className="w-full text-sm border border-orange-100/90 rounded-xl px-3 py-2 bg-white dark:bg-slate-900 focus:outline-none focus:border-orange-400"
                 >
                   <option value="">-- Tạo tự do (chưa gán) --</option>
                   {assignments.map(a => (
@@ -204,7 +204,7 @@ export function LecturerAIRubricPage() {
                   placeholder="Ví dụ: Xây dựng RESTful API quản lý sinh viên với NestJS, Prisma, PostgreSQL..."
                   value={form.topic}
                   onChange={e => setForm(prev => ({ ...prev, topic: e.target.value }))}
-                  className="w-full text-sm border rounded-lg p-2.5 bg-background focus:ring-2 focus:ring-emerald-500/20 resize-none"
+                  className="w-full text-sm border border-orange-100/90 rounded-xl p-2.5 bg-white dark:bg-slate-900 focus:outline-none focus:border-orange-400 resize-none"
                 />
               </div>
 
@@ -216,7 +216,7 @@ export function LecturerAIRubricPage() {
                   <select
                     value={form.difficulty}
                     onChange={e => setForm(prev => ({ ...prev, difficulty: e.target.value }))}
-                    className="w-full text-sm border rounded-lg px-2.5 py-1.5 bg-background"
+                    className="w-full text-sm border border-orange-100/90 rounded-xl px-2.5 py-1.5 bg-white dark:bg-slate-900 focus:outline-none focus:border-orange-400"
                   >
                     <option value="easy">Cơ bản (Easy)</option>
                     <option value="medium">Trung bình (Medium)</option>
@@ -234,7 +234,7 @@ export function LecturerAIRubricPage() {
                     max={100}
                     value={form.totalScore}
                     onChange={e => setForm(prev => ({ ...prev, totalScore: Number(e.target.value) || 10 }))}
-                    className="w-full text-sm border rounded-lg px-2.5 py-1.5 bg-background"
+                    className="w-full text-sm border border-orange-100/90 rounded-xl px-2.5 py-1.5 bg-white dark:bg-slate-900 focus:outline-none focus:border-orange-400"
                   />
                 </div>
               </div>
@@ -247,14 +247,14 @@ export function LecturerAIRubricPage() {
                   type="file"
                   accept=".pdf,.docx,.txt"
                   onChange={e => setForm(prev => ({ ...prev, fileRef: e.target.files?.[0] || null }))}
-                  className="w-full text-xs text-muted-foreground file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
+                  className="w-full text-xs text-muted-foreground file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-medium file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={generating || !form.topic.trim()}
-                className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-medium text-sm rounded-lg flex items-center justify-center gap-2 transition-colors shadow-xs"
+                className="w-full py-2.5 px-4 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 hover:from-orange-600 hover:via-amber-500 hover:to-orange-500 disabled:opacity-50 text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-orange-500/20"
               >
                 {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                 {generating ? 'AI đang phân tích...' : 'Sinh tiêu chí Rubric với AI'}
@@ -265,20 +265,20 @@ export function LecturerAIRubricPage() {
 
         {/* Right Output & Editor */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="border rounded-xl p-5 bg-card shadow-xs min-h-[460px] flex flex-col justify-between">
+          <div className="border border-orange-100/90 dark:border-orange-900/30 rounded-2xl p-5 bg-white dark:bg-slate-900 shadow-xs min-h-[460px] flex flex-col justify-between">
             <div className="space-y-4">
-              <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center justify-between border-b pb-3 border-orange-100/80">
                 <div>
                   <h2 className="font-semibold text-sm">Bảng tiêu chí Rubric</h2>
                   <p className="text-xs text-muted-foreground">
-                    Tổng điểm tiêu chí: <span className={`font-bold ${calculatedTotal === form.totalScore ? 'text-emerald-600' : 'text-amber-600'}`}>{calculatedTotal}</span> / {form.totalScore}
+                    Tổng điểm tiêu chí: <span className={`font-bold ${calculatedTotal === form.totalScore ? 'text-orange-600 font-mono' : 'text-amber-600 font-mono'}`}>{calculatedTotal}</span> / {form.totalScore}
                   </p>
                 </div>
                 {criteria.length > 0 && (
                   <button
                     type="button"
                     onClick={() => setCriteria(prev => [...prev, { name: '', maxPoints: 1, description: '' }])}
-                    className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                    className="inline-flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700 font-semibold"
                   >
                     <Plus className="w-3.5 h-3.5" /> Thêm tiêu chí
                   </button>
@@ -287,7 +287,7 @@ export function LecturerAIRubricPage() {
 
               {criteria.length === 0 && !rawText && !generating && (
                 <div className="py-20 text-center text-muted-foreground">
-                  <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-30 text-emerald-500" />
+                  <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-30 text-orange-500" />
                   <p className="text-sm font-medium">Chưa có rubric nào được sinh</p>
                   <p className="text-xs text-muted-foreground max-w-sm mx-auto mt-1">
                     Nhập thông tin đề bài bên trái và bấm &quot;Sinh tiêu chí Rubric với AI&quot; để tạo bộ tiêu chí chấm điểm tự động.
@@ -297,7 +297,7 @@ export function LecturerAIRubricPage() {
 
               {generating && (
                 <div className="py-24 text-center">
-                  <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-emerald-600" />
+                  <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-orange-500" />
                   <p className="text-sm font-medium">AI đang xử lý yêu cầu...</p>
                   <p className="text-xs text-muted-foreground mt-1">Đang phân tích cấu trúc, độ khó và phân bổ điểm theo ma trận đánh giá</p>
                 </div>
@@ -306,9 +306,9 @@ export function LecturerAIRubricPage() {
               {criteria.length > 0 && (
                 <div className="space-y-3">
                   {criteria.map((c, idx) => (
-                    <div key={idx} className="border rounded-lg p-3 bg-muted/20 space-y-2">
+                    <div key={idx} className="border border-orange-100/80 dark:border-slate-800 rounded-xl p-3 bg-orange-50/20 dark:bg-slate-800/30 space-y-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-muted-foreground w-6">#{idx + 1}</span>
+                        <span className="text-xs font-bold text-slate-500 w-6">#{idx + 1}</span>
                         <input
                           type="text"
                           placeholder="Tên tiêu chí (ví dụ: Tính năng Authentication, Viết Unit Test...)"
@@ -317,7 +317,7 @@ export function LecturerAIRubricPage() {
                             const val = e.target.value
                             setCriteria(prev => prev.map((item, i) => i === idx ? { ...item, name: val } : item))
                           }}
-                          className="flex-1 text-sm font-medium border rounded px-2.5 py-1 bg-background"
+                          className="flex-1 text-sm font-medium border border-orange-100/90 rounded-xl px-2.5 py-1 bg-white dark:bg-slate-900 focus:outline-none focus:border-orange-400"
                         />
                         <div className="flex items-center gap-1">
                           <input
@@ -329,7 +329,7 @@ export function LecturerAIRubricPage() {
                               const val = Number(e.target.value) || 0
                               setCriteria(prev => prev.map((item, i) => i === idx ? { ...item, maxPoints: val } : item))
                             }}
-                            className="w-16 text-sm text-right border rounded px-2 py-1 bg-background font-mono"
+                            className="w-16 text-sm text-right border border-orange-100/90 rounded-xl px-2 py-1 bg-white dark:bg-slate-900 font-mono focus:outline-none focus:border-orange-400"
                           />
                           <span className="text-xs text-muted-foreground">đ</span>
                         </div>
@@ -349,7 +349,7 @@ export function LecturerAIRubricPage() {
                           const val = e.target.value
                           setCriteria(prev => prev.map((item, i) => i === idx ? { ...item, description: val } : item))
                         }}
-                        className="w-full text-xs text-muted-foreground border rounded px-2.5 py-1 bg-background"
+                        className="w-full text-xs text-muted-foreground border border-orange-100/90 rounded-xl px-2.5 py-1 bg-white dark:bg-slate-900 focus:outline-none focus:border-orange-400"
                       />
                     </div>
                   ))}
@@ -357,14 +357,14 @@ export function LecturerAIRubricPage() {
               )}
 
               {rawText && criteria.length === 0 && (
-                <pre className="p-4 bg-muted/40 rounded-lg text-xs font-mono whitespace-pre-wrap overflow-x-auto border max-h-96">
+                <pre className="p-4 bg-muted/40 rounded-xl text-xs font-mono whitespace-pre-wrap overflow-x-auto border max-h-96">
                   {rawText}
                 </pre>
               )}
             </div>
 
             {criteria.length > 0 && (
-              <div className="pt-4 border-t mt-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="pt-4 border-t mt-4 flex flex-wrap items-center justify-between gap-3 border-orange-100/80">
                 <div>
                   {saveSuccess && (
                     <span className="text-xs font-medium text-emerald-600 flex items-center gap-1">
@@ -376,7 +376,7 @@ export function LecturerAIRubricPage() {
                   type="button"
                   disabled={saving || !selectedAssignmentId}
                   onClick={handleSave}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg inline-flex items-center gap-1.5 shadow-xs transition-colors"
+                  className="px-4 py-2 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 hover:from-orange-600 hover:via-amber-500 hover:to-orange-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl inline-flex items-center gap-1.5 shadow-md shadow-orange-500/20 transition-all"
                 >
                   {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                   {saving ? 'Đang lưu...' : 'Lưu vào bài tập đã chọn'}

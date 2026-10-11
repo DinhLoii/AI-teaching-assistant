@@ -11,6 +11,8 @@ import { MESSAGES } from '../../../shared/constants/messages.js'
 import { GetSubjectStudentsUseCase } from '../application/use-cases/get-subject-students.use-case.js'
 import { GetSubjectByIdUseCase } from '../application/use-cases/get-subject-by-id.use-case.js'
 
+import { memoryCache } from '../../../shared/infrastructure/memory-cache.js'
+
 export class SubjectsController extends BaseController {
   constructor(
     private readonly listSubjectsUseCase: ListSubjectsUseCase,
@@ -26,19 +28,33 @@ export class SubjectsController extends BaseController {
 
   async list(_req: Request, res: Response): Promise<void> {
     this.logger.debug('Fetching list of subjects')
+    const cached = memoryCache.get('subjects_list')
+    if (cached) {
+      this.ok(res, cached, MESSAGES.SUBJECT_LIST_SUCCESS)
+      return
+    }
     const result = await this.listSubjectsUseCase.execute()
+    memoryCache.set('subjects_list', result, 60)
     this.ok(res, result, MESSAGES.SUBJECT_LIST_SUCCESS)
   }
 
   async getById(req: Request, res: Response): Promise<void> {
     const id = req.params.id as string
     this.logger.debug(`Fetching subject by id: ${id}`)
+    const cacheKey = `subject_detail_${id}`
+    const cached = memoryCache.get(cacheKey)
+    if (cached) {
+      this.ok(res, cached, 'Lấy chi tiết môn học thành công')
+      return
+    }
     const result = await this.getSubjectByIdUseCase.execute(id)
+    memoryCache.set(cacheKey, result, 60)
     this.ok(res, result, 'Lấy chi tiết môn học thành công')
   }
 
   async create(req: Request, res: Response): Promise<void> {
     this.logger.info('Creating new subject')
+    memoryCache.del('subjects_list')
     const dto = SubjectRequestDto.from(req.body)
     const result = await this.createSubjectUseCase.execute(dto)
     this.created(res, result, MESSAGES.SUBJECT_CREATE_SUCCESS)
@@ -47,6 +63,8 @@ export class SubjectsController extends BaseController {
   async update(req: Request, res: Response): Promise<void> {
     const id = req.params.id as string
     this.logger.info(`Updating subject: ${id}`)
+    memoryCache.del('subjects_list')
+    memoryCache.del(`subject_detail_${id}`)
     const dto = SubjectRequestDto.from(req.body)
     const result = await this.updateSubjectUseCase.execute({ id, dto })
     this.ok(res, result, MESSAGES.SUBJECT_UPDATE_SUCCESS)
@@ -55,6 +73,8 @@ export class SubjectsController extends BaseController {
   async remove(req: Request, res: Response): Promise<void> {
     const id = req.params.id as string
     this.logger.info(`Removing subject: ${id}`)
+    memoryCache.del('subjects_list')
+    memoryCache.del(`subject_detail_${id}`)
     await this.deleteSubjectUseCase.execute(id)
     this.ok(res, null, MESSAGES.SUBJECT_DELETE_SUCCESS)
   }

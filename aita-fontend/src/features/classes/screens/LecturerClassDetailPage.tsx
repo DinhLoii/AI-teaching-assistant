@@ -14,7 +14,7 @@ import { assignmentsApi } from '@/lib/api/modules/assignments'
 import { submissionsApi } from '@/lib/api/modules/submissions'
 import {
   ArrowLeft, BookOpen, Clock, FileText, CheckCircle2, Users, FileEdit,
-  GraduationCap, XCircle, Megaphone, Plus, Pencil, Trash2, Loader2, Bell
+  GraduationCap, XCircle, Megaphone, Plus, Pencil, Trash2, Loader2, Bell, Download
 } from 'lucide-react'
 
 type TabId = 'assignments' | 'roster' | 'announcements'
@@ -98,6 +98,37 @@ export default function LecturerClassDetailPage() {
       setStudents(studentsWithGrades)
     }).finally(() => setLoading(false))
   }, [classId])
+
+  const handleExportGradebookCSV = () => {
+    if (!students || students.length === 0) {
+      alert('Không có dữ liệu sinh viên để xuất bảng điểm.')
+      return
+    }
+    const headers = ['Mã SV', 'Họ và tên', 'Số bài nộp', 'Điểm trung bình', ...assignments.map((a: any) => `"${(a.title || 'Bài tập').replace(/"/g, '""')}"`)]
+    const rows = students.map((s: any) => {
+      const row = [
+        s.studentId || s.studentCode || '',
+        `"${(s.name || s.fullName || '').replace(/"/g, '""')}"`,
+        `${s.submitCount}/${assignments.length}`,
+        s.avgScore ?? '',
+      ]
+      assignments.forEach((a: any) => {
+        const sub = s.submissions?.[a.id]
+        const score = sub ? (sub.score ?? sub.finalScore ?? sub.totalScore ?? 'Đã nộp') : 'Chưa nộp'
+        row.push(score)
+      })
+      return row.join(',')
+    })
+    const csvContent = [headers.join(','), ...rows].join('\n')
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `Bang_Diem_${classData?.classCode || classId}_${new Date().toISOString().slice(0, 10)}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   async function saveAnnouncement(e: React.FormEvent) {
     e.preventDefault()
@@ -286,7 +317,20 @@ export default function LecturerClassDetailPage() {
         {/* Tab: Roster */}
         {activeTab === 'roster' && (
           <div className="space-y-4">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Sinh viên & Tiến độ ({students.length})</h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Sinh viên & Tiến độ ({students.length})</h3>
+              {students.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportGradebookCSV}
+                  className="gap-1.5 text-xs self-start sm:self-auto cursor-pointer font-semibold border-slate-200 dark:border-slate-700"
+                >
+                  <Download className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Xuất bảng điểm Excel (CSV)</span>
+                </Button>
+              )}
+            </div>
 
             {students.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl bg-white/50 dark:bg-slate-900/50">

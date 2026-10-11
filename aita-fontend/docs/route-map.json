@@ -2,7 +2,7 @@
   {
     "route": "/",
     "entry": "src/app/page.tsx",
-    "screen": "src/features/home/screens/HomePage.tsx"
+    "screen": "src/features/auth/screens/LoginPage.tsx"
   },
   {
     "route": "/login",
@@ -273,5 +273,10 @@
     "route": "/lecturer/prompts/:subjectId/edit/:promptId",
     "entry": "src/app/lecturer/prompts/[subjectId]/edit/[promptId]/page.tsx",
     "screen": "src/features/prompts/screens/PromptCreateEditPage.tsx"
+  },
+  {
+    "route": "/student/results/:id",
+    "entry": "src/app/student/results/[id]/page.tsx",
+    "screen": "src/features/submissions/screens/StudentResultPage.tsx"
   }
 ]

@@ -39,7 +39,7 @@ export default function HomePage() {
         <div className="max-w-7xl w-full mx-auto flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#F26F21] to-[#FB923C] flex items-center justify-center text-white shadow-lg shadow-orange-500/30 ring-2 ring-orange-400/20 group-hover:scale-105 transition-transform">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#FA7014] to-[#FB923C] flex items-center justify-center text-white shadow-lg shadow-orange-500/30 ring-2 ring-orange-400/20 group-hover:scale-105 transition-transform">
               <Sparkles className="w-5 h-5 animate-pulse" />
             </div>
             <div>
@@ -119,7 +119,7 @@ export default function HomePage() {
         <div className="max-w-4xl space-y-4">
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
             {isVi ? 'Chấm bài Code Chuẩn Barem với ' : 'Standard Rubric Code Grading with '}
-            <span className="bg-gradient-to-r from-[#F26F21] via-amber-500 to-[#FB923C] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#FA7014] via-amber-500 to-[#FB923C] bg-clip-text text-transparent">
               {isVi ? 'Trí Tuệ Nhân Tạo' : 'Artificial Intelligence'}
             </span>
           </h1>

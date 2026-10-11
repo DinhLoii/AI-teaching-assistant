@@ -4,6 +4,9 @@ const rawApiTarget = process.env.API_PROXY_TARGET || process.env.NEXT_PUBLIC_API
 const apiTarget = rawApiTarget.replace(/\/api\/?$/, '').replace(/\/+$/, '');
 
 const nextConfig: NextConfig = {
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
+  },
   async redirects() {
     return [
       ...['admin', 'lecturer', 'student'].map(role => ({

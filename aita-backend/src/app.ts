@@ -3,6 +3,7 @@ import path from 'path'
 import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
+import compression from 'compression'
 import { env } from './config/env.js'
 import { routeManager } from './shared/presentation/route-manager.js'
 import { errorHandler } from './middleware/errorHandler.js'
@@ -12,6 +13,7 @@ import { ApiResponse } from './shared/presentation/api-response.js'
 export function createApp() {
   const app = express()
 
+  app.use(compression())
   app.use(helmet())
   // Accept both :5173 and :5174 for frontend dev.
   // :8081 = Expo/Metro web (mobile app reviewed in the browser).

@@ -88,7 +88,7 @@ export default function GradingHistoryPage() {
     >
       <div className="space-y-6 max-w-7xl mx-auto">
         {/* Header Banner */}
-        <div className="rounded-3xl p-6 bg-gradient-to-r from-orange-50 via-amber-50/60 to-blue-50/70 dark:bg-gradient-to-r dark:from-orange-950/40 dark:via-slate-900/90 dark:to-blue-950/30 border border-orange-200/80 dark:border-orange-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Badge variant="orange">Audit & History</Badge>
@@ -124,6 +124,7 @@ export default function GradingHistoryPage() {
                 setSearch(e.target.value)
                 setPage(1)
               }}
+              className="border-orange-100/90 dark:border-slate-800 focus:border-orange-400"
             />
           </div>
 
@@ -134,7 +135,7 @@ export default function GradingHistoryPage() {
                 setStatusFilter(e.target.value)
                 setPage(1)
               }}
-              className="px-3 py-2 rounded-xl text-xs border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:border-orange-500"
+              className="px-3 py-2 rounded-xl text-xs border border-orange-100/90 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:border-orange-400 shadow-2xs"
             >
               <option value="all">Tất cả trạng thái</option>
               <option value="completed">Đã hoàn thành</option>
@@ -148,7 +149,7 @@ export default function GradingHistoryPage() {
                 setScoreRange(e.target.value)
                 setPage(1)
               }}
-              className="px-3 py-2 rounded-xl text-xs border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:border-orange-500"
+              className="px-3 py-2 rounded-xl text-xs border border-orange-100/90 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:border-orange-400 shadow-2xs"
             >
               <option value="all">Tất cả khoảng điểm</option>
               <option value="high">Điểm cao (≥ 8.0)</option>
@@ -159,11 +160,11 @@ export default function GradingHistoryPage() {
         </div>
 
         {/* History Table */}
-        <Card className="overflow-hidden">
+        <div className="rounded-2xl border border-orange-100/90 dark:border-orange-900/30 overflow-hidden shadow-xs bg-white dark:bg-slate-900">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <tr className="border-b border-orange-100/90 bg-gradient-to-r from-orange-50/70 via-amber-50/40 to-orange-50/50 dark:bg-slate-950/60 text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   <th className="p-4 pl-6">Sinh viên & MSSV</th>
                   <th className="p-4">Bài tập / Môn học</th>
                   <th className="p-4">Thời gian thực hiện</th>
@@ -270,7 +271,7 @@ export default function GradingHistoryPage() {
               onChange={(newPage) => setPage(newPage)}
             />
           </div>
-        </Card>
+        </div>
       </div>
     </DashboardLayout>
   )

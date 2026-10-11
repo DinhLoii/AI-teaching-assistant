@@ -11,6 +11,8 @@ import type { IExamRepository } from '../domain/repositories/exam-repository.int
 import path from 'path'
 import fs from 'fs'
 
+import { memoryCache } from '../../../shared/infrastructure/memory-cache.js'
+
 export class ExamsController extends BaseController {
   constructor(
     private readonly listExamsUseCase: ListExamsUseCase,
@@ -31,12 +33,20 @@ export class ExamsController extends BaseController {
       type: req.query.type as any,
       tab: req.query.tab as string | undefined,
     }
+    const cacheKey = `exams_list_${req.user?.id}_${req.user?.role}_${JSON.stringify(params)}`
+    const cached = memoryCache.get(cacheKey)
+    if (cached) {
+      this.ok(res, cached, MESSAGES.SUCCESS)
+      return
+    }
     const result = await this.listExamsUseCase.execute({ user: req.user!, params })
+    memoryCache.set(cacheKey, result, 20)
     this.ok(res, result, MESSAGES.SUCCESS)
   }
 
   async create(req: Request, res: Response): Promise<void> {
     this.logger.debug('Received request to create exam')
+    memoryCache.invalidatePrefix('exams_list_')
     const dto = CreateExamRequestDto.from(req.body)
     const result = await this.createExamUseCase.execute({ dto, file: req.file, userId: req.user?.id })
     this.created(res, result, MESSAGES.SUCCESS)
@@ -45,6 +55,8 @@ export class ExamsController extends BaseController {
   async update(req: Request, res: Response): Promise<void> {
     const id = req.params.id as string
     this.logger.debug(`Received request to update exam: ${id}`)
+    memoryCache.invalidatePrefix('exams_list_')
+    memoryCache.del(`exam_detail_${id}`)
     const dto = UpdateExamRequestDto.from(req.body)
     const result = await this.updateExamUseCase.execute({ id, dto })
     this.ok(res, result, MESSAGES.SUCCESS)
@@ -53,8 +65,15 @@ export class ExamsController extends BaseController {
   async getOne(req: Request, res: Response): Promise<void> {
     const id = req.params.id as string
     this.logger.debug(`Received request to get exam details: ${id}`)
+    const cacheKey = `exam_detail_${id}_${req.user?.id || 'anon'}`
+    const cached = memoryCache.get(cacheKey)
+    if (cached) {
+      this.ok(res, cached, MESSAGES.SUCCESS)
+      return
+    }
     // Pass the caller so a student sees the lecturer of the class they belong to.
     const result = await this.getExamUseCase.execute(id, req.user?.id)
+    memoryCache.set(cacheKey, result, 30)
     this.ok(res, result, MESSAGES.SUCCESS)
   }
 

@@ -93,7 +93,7 @@ function QuickNotesPanel({
     <div className="absolute top-full right-0 mt-3 w-84 rounded-2xl border border-slate-200/90 bg-white/95 backdrop-blur-xl shadow-[0_20px_50px_-10px_rgba(0,0,0,0.15)] dark:border-slate-800 dark:bg-[#0f1117]/95 z-50 overflow-hidden animate-fade-in-up">
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-500/10 text-[#F26F21] dark:bg-orange-500/20 dark:text-orange-400">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-500/10 text-[#FA7014] dark:bg-orange-500/20 dark:text-orange-400">
             <ListTodo size={14} />
           </div>
           <h3 className="text-[13px] font-bold text-slate-800 dark:text-slate-200">
@@ -314,12 +314,12 @@ export function LiveClock({ showNotes = true }: LiveClockProps) {
             showQuickNotes
               ? 'border-orange-500 bg-orange-50 text-orange-600 dark:border-orange-500 dark:bg-orange-500/15 dark:text-orange-400 ring-2 ring-orange-500/20'
               : totalPending > 0
-              ? 'border-orange-200 bg-orange-50/60 text-[#F26F21] hover:border-orange-400 dark:border-orange-900/60 dark:bg-orange-950/30 dark:text-orange-400'
+              ? 'border-orange-200 bg-orange-50/60 text-[#FA7014] hover:border-orange-400 dark:border-orange-900/60 dark:bg-orange-950/30 dark:text-orange-400'
               : 'border-slate-200 bg-white/80 text-slate-500 hover:text-slate-800 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-400 dark:hover:text-slate-200'
           }`}
           title={t('notes.pending_title', 'Pending Notes')}
         >
-          <ListTodo size={17} className={totalPending > 0 ? 'text-[#F26F21]' : ''} />
+          <ListTodo size={17} className={totalPending > 0 ? 'text-[#FA7014]' : ''} />
           {totalPending > 0 && (
             <span
               className={`absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full text-[9px] font-black text-white px-1 shadow-sm ${
@@ -327,7 +327,7 @@ export function LiveClock({ showNotes = true }: LiveClockProps) {
                   ? 'bg-red-500'
                   : urgencyLevel === 'imminent'
                   ? 'bg-orange-500'
-                  : 'bg-[#F26F21]'
+                  : 'bg-[#FA7014]'
               }`}
             >
               {totalPending}
@@ -355,8 +355,8 @@ export function LiveClock({ showNotes = true }: LiveClockProps) {
         <div
           className={`relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl shadow-xs transition-colors ${
             isOpen
-              ? 'bg-[#F26F21] text-white'
-              : 'bg-orange-500/15 text-[#F26F21] dark:bg-orange-500/20 dark:text-orange-400'
+              ? 'bg-[#FA7014] text-white'
+              : 'bg-orange-500/15 text-[#FA7014] dark:bg-orange-500/20 dark:text-orange-400'
           }`}
         >
           <CalendarIcon size={14} />
@@ -411,7 +411,7 @@ export function LiveClock({ showNotes = true }: LiveClockProps) {
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800/80">
                 <button
                   onClick={handleResetToToday}
-                  className="text-[14px] font-extrabold text-slate-800 dark:text-slate-100 hover:text-[#F26F21] dark:hover:text-orange-400 transition-colors capitalize tracking-tight"
+                  className="text-[14px] font-extrabold text-slate-800 dark:text-slate-100 hover:text-[#FA7014] dark:hover:text-orange-400 transition-colors capitalize tracking-tight"
                 >
                   {new Date(viewYear, viewMonth).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US', {
                     month: 'long',
@@ -440,7 +440,7 @@ export function LiveClock({ showNotes = true }: LiveClockProps) {
                   <div
                     key={day}
                     className={`text-center text-[10px] font-extrabold tracking-wider uppercase pb-1 ${
-                      idx >= 5 ? 'text-[#F26F21]' : 'text-slate-400 dark:text-slate-500'
+                      idx >= 5 ? 'text-[#FA7014]' : 'text-slate-400 dark:text-slate-500'
                     }`}
                   >
                     {day}
@@ -466,7 +466,7 @@ export function LiveClock({ showNotes = true }: LiveClockProps) {
                         onClick={() => handleDayClick(day)}
                         className={`h-9 w-9 rounded-full flex items-center justify-center text-[13px] font-semibold transition-all ${
                           isToday
-                            ? 'bg-gradient-to-br from-[#F26F21] to-orange-600 text-white shadow-md shadow-orange-500/35 font-bold scale-105 ring-2 ring-orange-500/20'
+                            ? 'bg-gradient-to-br from-[#FA7014] to-orange-600 text-white shadow-md shadow-orange-500/35 font-bold scale-105 ring-2 ring-orange-500/20'
                             : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-orange-500 dark:hover:text-orange-400'
                         }`}
                       >
@@ -620,7 +620,7 @@ export function LiveClock({ showNotes = true }: LiveClockProps) {
                   <button
                     onClick={handleAddNote}
                     disabled={!newNoteContent.trim()}
-                    className="w-full h-8 rounded-lg bg-slate-900 dark:bg-orange-500 text-white font-bold text-xs hover:bg-[#F26F21] disabled:opacity-50 transition-colors shadow-sm"
+                    className="w-full h-8 rounded-lg bg-slate-900 dark:bg-orange-500 text-white font-bold text-xs hover:bg-[#FA7014] disabled:opacity-50 transition-colors shadow-sm"
                   >
                     {t('notes.save', 'Save Note')}
                   </button>

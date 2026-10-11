@@ -16,6 +16,7 @@ import { DetectDuplicateSubmissionsUseCase } from '../application/use-cases/dete
 import { ApplyDuplicatePenaltyUseCase } from '../application/use-cases/apply-duplicate-penalty.use-case.js'
 import { ListSubmissionsQueryDto, ReopenSubmissionRequestDto } from '../application/dtos/submission.dto.js'
 import type { ILogger } from '../../../shared/application/ports/logger.interface.js'
+import { memoryCache } from '../../../shared/infrastructure/memory-cache.js'
 
 export class SubmissionsController extends BaseController {
     constructor(
@@ -34,31 +35,51 @@ export class SubmissionsController extends BaseController {
 
     async list(req: Request, res: Response): Promise<void> {
         this.logger.debug('Received request to list submissions')
-        // Hand-building the params here dropped `examId` — the one filter every caller
-        // actually sends — so ListSubmissionsUseCase saw no exam at all and returned every
-        // submission the caller owns. On the student's assignment detail that meant
-        // "Bài nộp của tôi" showed a submission belonging to a different assignment.
-        // Parsing through the Zod DTO keeps the query and the schema in one place.
         const query = ListSubmissionsQueryDto.from(req.query)
+        const cacheKey = `subs_list_${req.user!.id}_${req.user!.role}_${JSON.stringify(req.query)}`
+        const cached = memoryCache.get(cacheKey)
+        if (cached) {
+            this.ok(res, cached, MESSAGES.SUBMISSION_LIST_SUCCESS)
+            return
+        }
         const result = await this.listUseCase.execute({ user: req.user!, query })
+        memoryCache.set(cacheKey, result, 12)
         this.ok(res, result, MESSAGES.SUBMISSION_LIST_SUCCESS)
     }
 
     async recent(req: Request, res: Response): Promise<void> {
         this.logger.debug('Received request to get recent submissions')
         const limit = Math.min(Number(req.query.limit) || 5, 20)
+        const cacheKey = `subs_recent_${req.user!.id}_${limit}`
+        const cached = memoryCache.get(cacheKey)
+        if (cached) {
+            this.ok(res, cached, MESSAGES.SUBMISSION_RECENT_SUCCESS)
+            return
+        }
         const result = await this.recentUseCase.execute({ user: req.user!, limit })
+        memoryCache.set(cacheKey, result, 15)
         this.ok(res, result, MESSAGES.SUBMISSION_RECENT_SUCCESS)
     }
 
     async getOne(req: Request, res: Response): Promise<void> {
-        this.logger.debug(`Received request to get submission: ${req.params.id}`)
-        const result = await this.getOneUseCase.execute({ id: String(req.params.id), user: req.user! })
+        const id = String(req.params.id)
+        this.logger.debug(`Received request to get submission: ${id}`)
+        const cacheKey = `sub_detail_${id}`
+        const cached = memoryCache.get(cacheKey)
+        if (cached) {
+            this.ok(res, cached, MESSAGES.SUBMISSION_GET_SUCCESS)
+            return
+        }
+        const result = await this.getOneUseCase.execute({ id, user: req.user! })
+        memoryCache.set(cacheKey, result, 20)
         this.ok(res, result, MESSAGES.SUBMISSION_GET_SUCCESS)
     }
 
     async submit(req: Request, res: Response): Promise<void> {
         this.logger.debug('Received request to create submission')
+        memoryCache.invalidatePrefix('subs_list_')
+        memoryCache.invalidatePrefix('subs_recent_')
+        memoryCache.invalidatePrefix('student_dash_')
         const data = { ...req.body }
         
         // Pass the uploaded file buffer to the usecase
@@ -133,21 +154,32 @@ export class SubmissionsController extends BaseController {
 
 
     async publishGrade(req: Request, res: Response): Promise<void> {
-        this.logger.debug(`Received request to publish grade for submission: ${req.params.id}`)
-        const result = await this.publishGradeUseCase.execute({ id: String(req.params.id), dto: { data: req.body } as any, user: req.user! })
+        const id = String(req.params.id)
+        this.logger.debug(`Received request to publish grade for submission: ${id}`)
+        const result = await this.publishGradeUseCase.execute({ id, dto: { data: req.body } as any, user: req.user! })
+        memoryCache.del(`sub_detail_${id}`)
+        memoryCache.invalidatePrefix('subs_list_')
+        memoryCache.invalidatePrefix('subs_recent_')
+        memoryCache.invalidatePrefix('student_dash_')
         this.ok(res, result, MESSAGES.SUBMISSION_PUBLISH_SUCCESS)
     }
 
     async bulkPublish(req: Request, res: Response): Promise<void> {
         this.logger.debug(`Received request to bulk publish grades for assignment: ${req.body.assignmentId}`)
         const result = await this.bulkPublishGradesUseCase.execute({ assignmentId: String(req.body.assignmentId), user: req.user! })
+        memoryCache.invalidatePrefix('sub_detail_')
+        memoryCache.invalidatePrefix('subs_list_')
+        memoryCache.invalidatePrefix('subs_recent_')
+        memoryCache.invalidatePrefix('student_dash_')
         const message = result.count ? `Successfully published grades for ${result.count} student(s)` : 'Successfully published grades for all students'
         this.ok(res, result, message)
     }
 
     async submitFeedback(req: Request, res: Response): Promise<void> {
-        this.logger.debug(`Received request to submit feedback for submission: ${req.params.id}`)
-        const result = await this.submitFeedbackUseCase.execute({ id: String(req.params.id), user: req.user!, feedback: req.body.feedback })
+        const id = String(req.params.id)
+        this.logger.debug(`Received request to submit feedback for submission: ${id}`)
+        const result = await this.submitFeedbackUseCase.execute({ id, user: req.user!, feedback: req.body.feedback })
+        memoryCache.del(`sub_detail_${id}`)
         this.ok(res, result, 'Feedback submitted successfully')
     }
 
@@ -173,6 +205,10 @@ export class SubmissionsController extends BaseController {
         this.logger.debug(`Received request to apply duplicate penalty for assignment: ${req.body.assignmentId}`)
         const useCase = new ApplyDuplicatePenaltyUseCase()
         const result = await useCase.execute({ dto: req.body, user: req.user! })
+        memoryCache.invalidatePrefix('sub_detail_')
+        memoryCache.invalidatePrefix('subs_list_')
+        memoryCache.invalidatePrefix('subs_recent_')
+        memoryCache.invalidatePrefix('student_dash_')
         this.ok(res, result, 'Đã áp dụng trừ điểm bài trùng lặp thành công')
     }
 
@@ -181,6 +217,10 @@ export class SubmissionsController extends BaseController {
         const dto = ReopenSubmissionRequestDto.from(req.body)
         const useCase = new ReopenSubmissionUseCase()
         const result = await useCase.execute({ dto, user: req.user! })
+        memoryCache.invalidatePrefix('sub_detail_')
+        memoryCache.invalidatePrefix('subs_list_')
+        memoryCache.invalidatePrefix('subs_recent_')
+        memoryCache.invalidatePrefix('student_dash_')
         this.ok(res, result, 'Đã mở lại bài nộp thành công')
     }
 }

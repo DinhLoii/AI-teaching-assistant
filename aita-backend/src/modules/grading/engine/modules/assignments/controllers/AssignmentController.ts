@@ -73,10 +73,31 @@ export class AssignmentController extends BaseController {
     uploadAssignment = async (req: Request, res: Response): Promise<void> => {
         try {
             if (!req.file) throw new BadRequestError('No file');
-            // mock impl
-            this.ok(res, { id: 'temp' }, 'Assignment uploaded');
-        } catch (err) {
-            throw new Error('Error upload');
+            const docExt = new DocumentExtractor();
+            const extracted = await docExt.extractAsync(req.file.buffer, req.file.mimetype);
+            const requirementParser = new RequirementParserService(this.aiProvider);
+            const draft = await requirementParser.parseRequirementsAsync(extracted.rawText);
+            const rubricGen = new RubricGeneratorService(this.aiProvider);
+            const rubric = await rubricGen.generateRubricAsync(draft);
+            const testSuiteGen = new TestSuiteGeneratorService();
+            const testSuites = await testSuiteGen.generateTestSuitesAsync(draft);
+            const assignment: PublishedAssignment = {
+                id: uuidv4(),
+                version: '1.0.0',
+                blueprintId: draft.id || uuidv4(),
+                metadata: {
+                    title: draft.assignmentTitle || req.file.originalname,
+                    description: draft.description || '',
+                    projectType: draft.projectType || 'backend'
+                },
+                rubric,
+                testSuites
+            };
+            await this.assignmentRepository.saveAsync(assignment);
+            this.created(res, assignment, 'Assignment uploaded and saved to database');
+        } catch (err: any) {
+            console.error('[AssignmentController] uploadAssignment failed:', err);
+            res.status(500).json(ApiResponse.error(err.message || 'Error uploading assignment', 500));
         }
     };
 

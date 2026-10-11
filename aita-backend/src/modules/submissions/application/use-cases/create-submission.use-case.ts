@@ -112,9 +112,12 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
 
     let publishedMeta: any = null
     try {
-      const pubRow: any = await prisma.$queryRaw`SELECT Data FROM PublishedAssignment WHERE Id = ${examId}`
-      if (pubRow && pubRow[0]?.Data) {
-        publishedMeta = JSON.parse(pubRow[0].Data)?.metadata
+      const pubRow = await prisma.publishedAssignment.findUnique({
+        where: { Id: examId },
+        select: { Data: true },
+      })
+      if (pubRow?.Data) {
+        publishedMeta = JSON.parse(pubRow.Data)?.metadata
       }
     } catch (e) {}
 
@@ -241,6 +244,12 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
 
     try {
       await this.submissionRepo.save(targetSubmission)
+
+      // Invalidate student dashboard cache
+      try {
+        const { memoryCache } = await import('../../../../shared/infrastructure/memory-cache.js');
+        memoryCache.del(`student_dash_${user.id}`);
+      } catch (_) {}
 
       try {
         const { globalJobManager } = await import('../../../grading/engine/application/queue/SubmissionJobManager.js');

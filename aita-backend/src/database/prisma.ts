@@ -18,6 +18,18 @@ export const checkDbConnection = async (): Promise<boolean> => {
   }
 }
 
+// ─── Neon Serverless Postgres Warm-up & Keep-Alive ───────────────────────────
+// Neon computes auto-suspend after 5 mins of inactivity. A periodic lightweight
+// ping ensures 0ms cold-start latency for all user requests.
+const KEEP_ALIVE_INTERVAL_MS = 3 * 60 * 1000 // 3 minutes
+setInterval(async () => {
+  try {
+    await prisma.$queryRaw`SELECT 1`
+  } catch (_) {
+    // Ignore ping errors in background
+  }
+}, KEEP_ALIVE_INTERVAL_MS).unref?.()
+
 export { Prisma }
 
 export type {

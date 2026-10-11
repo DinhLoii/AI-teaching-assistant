@@ -9,9 +9,12 @@ import { syncClassSemesters } from './sync-class-semesters.js'
  * still comes from `prisma/seed.ts` via `npm run setup`.
  */
 const ACCOUNTS = [
+  { role: 'ADMIN', email: 'admin@fpt.vn', password: 'admin123', fullName: 'Quản trị viên (Admin)', code: 'ADM002' },
+  { role: 'LECTURER', email: 'teacher@fpt.vn', password: 'teacher123', fullName: 'Giáo viên (Teacher)', code: 'GV999' },
   { role: 'ADMIN', email: 'admin@fpt.edu.vn', password: 'admin123', fullName: 'Quản trị AITA', code: 'ADM001' },
   { role: 'LECTURER', email: 'lecturer@fpt.edu.vn', password: 'lecturer123', fullName: 'Nguyễn Văn Giảng', code: 'GV001' },
   { role: 'STUDENT', email: 'student@fpt.edu.vn', password: 'student123', fullName: 'Trần Thị Sinh', code: 'HE170001' },
+  { role: 'STUDENT', email: 'user@fpt.vn', password: 'user123', fullName: 'Người dùng (User)', code: 'HE170099' },
 ] as const
 
 export async function seedTestAccounts(): Promise<void> {
@@ -20,12 +23,19 @@ export async function seedTestAccounts(): Promise<void> {
     await prisma.$connect()
   } catch (error: any) {
     if (error?.message?.includes("Can't reach database server") || error?.code === 'P1001') {
-      throw new Error("Cannot reach SQL Server at localhost:1433. Please verify SQL Server (SQLEXPRESS) service is running and TCP/IP port 1433 is enabled.")
+      throw new Error("Cannot reach database server. Please verify DATABASE_URL and network connectivity.")
     }
     throw new Error(error?.message?.split('\n').pop() || 'Database connection failed.')
   }
 
   try {
+    const existingCount = await prisma.user.count({
+      where: { Email: { in: ACCOUNTS.map(a => a.email) } }
+    })
+    if (existingCount >= ACCOUNTS.length) {
+      return
+    }
+
     for (const acc of ACCOUNTS) {
       const role = await prisma.role.upsert({
         where: { RoleName: acc.role },

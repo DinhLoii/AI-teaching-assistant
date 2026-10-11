@@ -280,16 +280,17 @@ export default function StudentSubjectDetailPage() {
         </div>
 
         {/* Hero Header Banner */}
-        <div className="rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-blue-500/5 dark:bg-gradient-to-r dark:from-orange-950/40 dark:via-slate-900/90 dark:to-blue-950/30 border border-orange-200/80 dark:border-orange-500/20 relative overflow-hidden shadow-xs dark:shadow-xl transition-all">
+        <div className="rounded-2xl p-6 sm:p-8 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 relative overflow-hidden shadow-xs transition-all group">
+          <div className="absolute -right-6 -bottom-6 w-40 h-40 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-3xl group-hover:from-orange-400/25 pointer-events-none" />
           <div className="space-y-4 max-w-3xl relative z-10">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="orange" className="font-mono text-xs px-2.5 py-1">
+              <Badge variant="orange" className="font-mono text-xs px-2.5 py-1 font-bold">
                 {code}
               </Badge>
-              <Badge variant="outline" className="text-xs bg-white/60 dark:bg-slate-900/60">
+              <Badge variant="outline" className="text-xs bg-white/60 dark:bg-slate-900/60 border-orange-200/80">
                 {syllabus.degreeLevel}
               </Badge>
-              <Badge variant="outline" className="text-xs bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800">
+              <Badge variant="outline" className="text-xs bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 font-bold">
                 {syllabus.credits} {isVi ? 'Tín chỉ' : 'Credits'}
               </Badge>
             </div>
@@ -302,7 +303,7 @@ export default function StudentSubjectDetailPage() {
               {syllabus.description}
             </p>
 
-            <div className="pt-3 border-t border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-500 dark:text-slate-400">
+            <div className="pt-3 border-t border-orange-100/90 dark:border-slate-800 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-500 dark:text-slate-400">
               <span className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-orange-500" />
                 <span>{isVi ? 'Thời lượng' : 'Duration'}: <strong className="text-slate-700 dark:text-slate-200">{syllabus.timeAllocation}</strong></span>
@@ -320,59 +321,61 @@ export default function StudentSubjectDetailPage() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 dark:bg-slate-900/80 rounded-2xl border border-slate-200/80 dark:border-slate-800 w-fit text-xs font-semibold">
+        <div className="inline-flex flex-wrap items-center gap-1 p-1.5 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 rounded-2xl border border-orange-100/90 dark:border-orange-900/30 w-fit text-xs font-bold shadow-xs">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`px-4 py-2 rounded-xl transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
               activeTab === 'overview'
-                ? 'bg-white dark:bg-slate-800 text-orange-600 dark:text-orange-400 shadow-xs font-bold'
-                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 text-white shadow-md shadow-orange-500/20 font-bold'
+                : 'text-slate-600 hover:text-orange-600 dark:text-slate-300 dark:hover:text-white hover:bg-orange-50/60'
             }`}
           >
             {isVi ? 'Tổng quan đề cương' : 'Syllabus Overview'}
           </button>
           <button
             onClick={() => setActiveTab('clos')}
-            className={`px-4 py-2 rounded-xl transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
               activeTab === 'clos'
-                ? 'bg-white dark:bg-slate-800 text-orange-600 dark:text-orange-400 shadow-xs font-bold'
-                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 text-white shadow-md shadow-orange-500/20 font-bold'
+                : 'text-slate-600 hover:text-orange-600 dark:text-slate-300 dark:hover:text-white hover:bg-orange-50/60'
             }`}
           >
             {isVi ? `Chuẩn đầu ra CLO (${syllabus.clos.length})` : `CLO List (${syllabus.clos.length})`}
           </button>
           <button
             onClick={() => setActiveTab('sessions')}
-            className={`px-4 py-2 rounded-xl transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
               activeTab === 'sessions'
-                ? 'bg-white dark:bg-slate-800 text-orange-600 dark:text-orange-400 shadow-xs font-bold'
-                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 text-white shadow-md shadow-orange-500/20 font-bold'
+                : 'text-slate-600 hover:text-orange-600 dark:text-slate-300 dark:hover:text-white hover:bg-orange-50/60'
             }`}
           >
             {isVi ? `Lịch trình buổi học (${syllabus.sessions.length})` : `Sessions (${syllabus.sessions.length})`}
           </button>
           <button
             onClick={() => setActiveTab('assessment')}
-            className={`px-4 py-2 rounded-xl transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
               activeTab === 'assessment'
-                ? 'bg-white dark:bg-slate-800 text-orange-600 dark:text-orange-400 shadow-xs font-bold'
-                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 text-white shadow-md shadow-orange-500/20 font-bold'
+                : 'text-slate-600 hover:text-orange-600 dark:text-slate-300 dark:hover:text-white hover:bg-orange-50/60'
             }`}
           >
             {isVi ? 'Cơ cấu điểm số' : 'Assessment Scheme'}
           </button>
           <button
             onClick={() => setActiveTab('assignments')}
-            className={`px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'assignments'
-                ? 'bg-white dark:bg-slate-800 text-orange-600 dark:text-orange-400 shadow-xs font-bold'
-                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
+                ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 text-white shadow-md shadow-orange-500/20 font-bold'
+                : 'text-slate-600 hover:text-orange-600 dark:text-slate-300 dark:hover:text-white hover:bg-orange-50/60'
             }`}
           >
             <span>{isVi ? 'Bài tập nộp bài' : 'Assignments'}</span>
-            <Badge variant="orange" className="text-[10px] px-1.5 py-0">
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${
+              activeTab === 'assignments' ? 'bg-white/20 text-white' : 'bg-orange-100/80 text-orange-700'
+            }`}>
               {assignments.length}
-            </Badge>
+            </span>
           </button>
         </div>
 

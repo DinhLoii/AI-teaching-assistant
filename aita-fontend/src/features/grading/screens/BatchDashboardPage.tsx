@@ -407,19 +407,19 @@ export default function BatchDashboardPage() {
               placeholder="Tìm theo tên sinh viên, file..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-orange-500"
+              className="w-full text-xs rounded-xl border border-orange-100/90 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-orange-400"
             />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="inline-flex p-1.5 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 rounded-2xl border border-orange-100/90 dark:border-orange-900/30 shadow-xs">
             {(['all', 'processing', 'completed', 'failed'] as const).map(st => (
               <button
                 key={st}
                 onClick={() => setFilterState(st)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   filterState === st
-                    ? 'bg-orange-500 text-white shadow-sm'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 text-white shadow-md shadow-orange-500/20'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400'
                 }`}
               >
                 {st === 'all' ? `Tất cả (${totalCount})` :
@@ -432,11 +432,11 @@ export default function BatchDashboardPage() {
         </div>
 
         {/* Batch Jobs Table */}
-        <Card className="overflow-hidden">
+        <div className="rounded-2xl border border-orange-100/90 dark:border-orange-900/30 overflow-hidden shadow-xs bg-white dark:bg-slate-900">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <tr className="border-b border-orange-100/90 bg-gradient-to-r from-orange-50/70 via-amber-50/40 to-orange-50/50 dark:bg-slate-950/60 text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   <th className="p-4 pl-6">Sinh viên & File</th>
                   <th className="p-4">Trạng thái</th>
                   <th className="p-4">Tiến trình & Nhiệm vụ</th>
@@ -545,7 +545,7 @@ export default function BatchDashboardPage() {
               </tbody>
             </table>
           </div>
-        </Card>
+        </div>
 
         {/* Cancel Confirmation Modal */}
         <Modal

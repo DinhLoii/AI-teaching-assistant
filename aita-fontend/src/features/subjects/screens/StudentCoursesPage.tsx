@@ -96,16 +96,95 @@ export default function StudentCoursesPage() {
       headerSubtitle={t('student.courses.subtitle', 'Danh sách các môn học CNTT và chương trình đào tạo')}
     >
       <div className="space-y-6 max-w-7xl mx-auto pb-12">
+        {/* Executive KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Môn đang học
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
+              {loading ? '…' : subjects.length}
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span>Đã đăng ký học phần</span>
+            </div>
+          </div>
+
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Tổng tín chỉ
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+                <Layers className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
+              {loading ? '…' : subjects.reduce((acc, cur) => acc + (cur.credit || cur.credits || 3), 0)}
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+              <span>Tiêu chuẩn tốt nghiệp</span>
+            </div>
+          </div>
+
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Khung chương trình
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+                <BookOpen className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
+              {loading ? '…' : filteredSubjects.length}
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+              <span>Ngành Kỹ thuật phần mềm</span>
+            </div>
+          </div>
+
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Học kỳ hiện tại
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+                <BookOpen className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              SP26
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+              <span>Spring 2026 Active</span>
+            </div>
+          </div>
+        </div>
+
         {/* Controls Bar */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs">
           {/* Tabs: Enrolled vs All */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl">
+          <div className="inline-flex p-1 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 rounded-2xl border border-orange-100/90 dark:border-orange-900/30 shadow-xs gap-1">
             <button
               onClick={() => setViewTab('enrolled')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 viewTab === 'enrolled'
-                  ? 'bg-orange-500 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 text-white shadow-md shadow-orange-500/20'
+                  : 'text-slate-600 hover:text-orange-600 dark:text-slate-300 dark:hover:text-white hover:bg-orange-50/60'
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
@@ -113,10 +192,10 @@ export default function StudentCoursesPage() {
             </button>
             <button
               onClick={() => setViewTab('all')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 viewTab === 'all'
-                  ? 'bg-orange-500 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 text-white shadow-md shadow-orange-500/20'
+                  : 'text-slate-600 hover:text-orange-600 dark:text-slate-300 dark:hover:text-white hover:bg-orange-50/60'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
@@ -132,7 +211,7 @@ export default function StudentCoursesPage() {
               <select
                 value={selectedSemester}
                 onChange={(e) => setSelectedSemester(e.target.value)}
-                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-orange-500"
+                className="bg-white dark:bg-slate-800 border border-orange-200/80 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-orange-400/25"
               >
                 <option value="all">{t('student.courses.all_semesters', 'Tất cả học kỳ')}</option>
                 {semesters.map((sem: any) => (
@@ -148,7 +227,7 @@ export default function StudentCoursesPage() {
               <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
               <Input
                 placeholder={t('student.courses.search_placeholder', 'Tìm theo mã hoặc tên môn...')}
-                className="pl-9 h-9 text-xs"
+                className="pl-9 h-9 text-xs rounded-xl border-orange-200/80 focus:border-orange-400"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -221,7 +300,7 @@ export default function StudentCoursesPage() {
               return (
                 <Card
                   key={sub.id || code}
-                  className="p-6 hover:border-orange-500/40 transition-all flex flex-col justify-between group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs hover:shadow-md"
+                  className="p-6 hover:border-orange-300 dark:hover:border-orange-800/60 transition-all flex flex-col justify-between group bg-white dark:bg-slate-900 border border-orange-100/90 dark:border-orange-900/30 rounded-2xl shadow-xs hover:shadow-md"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">

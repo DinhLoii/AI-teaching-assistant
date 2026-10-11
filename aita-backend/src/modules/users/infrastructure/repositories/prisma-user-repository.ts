@@ -15,23 +15,34 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   async findByEmail(email: string): Promise<User | null> {
+    const trimmed = email.trim()
+
+    // 1. Try exact email, exact prefix (e.g. admin@, teacher@), or user codes
     let raw = await this.client.user.findFirst({
-      where: { Email: email },
+      where: {
+        OR: [
+          { Email: { equals: trimmed, mode: 'insensitive' } },
+          { Email: { startsWith: `${trimmed}@`, mode: 'insensitive' } },
+          { StudentCode: { equals: trimmed, mode: 'insensitive' } },
+          { LecturerCode: { equals: trimmed, mode: 'insensitive' } },
+        ]
+      },
       include: this.include,
     })
-    
+
+    // 2. Fallback alias if not found (e.g. teacher <-> lecturer)
     if (!raw) {
-      raw = await this.client.user.findFirst({
-        where: { StudentCode: email },
-        include: this.include,
-      })
-    }
-    
-    if (!raw) {
-      raw = await this.client.user.findFirst({
-        where: { LecturerCode: email },
-        include: this.include,
-      })
+      if (trimmed.toLowerCase() === 'teacher') {
+        raw = await this.client.user.findFirst({
+          where: { Email: { startsWith: 'lecturer@', mode: 'insensitive' } },
+          include: this.include,
+        })
+      } else if (trimmed.toLowerCase() === 'lecturer') {
+        raw = await this.client.user.findFirst({
+          where: { Email: { startsWith: 'teacher@', mode: 'insensitive' } },
+          include: this.include,
+        })
+      }
     }
     
     return raw ? UserMapper.toDomain(raw) : null

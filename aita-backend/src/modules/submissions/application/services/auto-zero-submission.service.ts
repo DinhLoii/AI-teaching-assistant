@@ -3,12 +3,22 @@ import { v4 as uuidv4 } from 'uuid'
 import { logger } from '../../../../shared/infrastructure/logger.js'
 
 export class AutoZeroSubmissionService {
+  private static lastSyncStudent = new Map<string, number>()
+  private static lastSyncExam = new Map<string, number>()
+
   /**
    * Đồng bộ tạo điểm 0 cho một học sinh đối với tất cả các bài tập đã quá hạn mà học sinh chưa nộp.
    */
   async syncZeroScoresForStudent(studentId: string): Promise<number> {
     try {
       const now = new Date()
+
+      // Throttle: chỉ chạy tối đa 1 lần mỗi 60 giây cho mỗi student để tránh nghẽn database roundtrips
+      const last = AutoZeroSubmissionService.lastSyncStudent.get(studentId)
+      if (last && now.getTime() - last < 60000) {
+        return 0
+      }
+      AutoZeroSubmissionService.lastSyncStudent.set(studentId, now.getTime())
 
       // 1. Lấy danh sách các lớp học mà sinh viên đang tham gia
       const enrollments = await prisma.studentClass.findMany({
@@ -48,14 +58,29 @@ export class AutoZeroSubmissionService {
 
       // 3. Lấy các bài nộp đã có của sinh viên cho các bài thi này
       const examIds = expiredExams.map(e => e.Id)
-      const existingSubmissions = await prisma.submission.findMany({
-        where: {
-          StudentId: studentId,
-          ExamId: { in: examIds }
-        },
-        select: { ExamId: true }
-      })
+      const [existingSubmissions, publishedRows] = await Promise.all([
+        prisma.submission.findMany({
+          where: {
+            StudentId: studentId,
+            ExamId: { in: examIds }
+          },
+          select: { ExamId: true }
+        }),
+        (prisma as any).publishedAssignment.findMany({
+          where: { Id: { in: examIds } },
+          select: { Id: true, Data: true }
+        }).catch(() => [])
+      ])
       const submittedExamIds = new Set(existingSubmissions.map(s => s.ExamId))
+
+      const publishedMetaMap = new Map<string, any>()
+      for (const pub of (publishedRows || [])) {
+        try {
+          if (pub?.Data) {
+            publishedMetaMap.set(pub.Id, JSON.parse(pub.Data)?.metadata)
+          }
+        } catch {}
+      }
 
       let createdCount = 0
 
@@ -69,16 +94,7 @@ export class AutoZeroSubmissionService {
           continue
         }
 
-        // LƯU Ý: Nếu bài tập cho phép nộp trễ và CÓ CHỌN hình thức trừ điểm (LatePenaltyType !== 'NONE')
-        // Thì sinh viên vẫn được phép nộp trễ (và bị trừ điểm khi nộp), KHÔNG tự động chốt 0 điểm
-        // Chỉ chốt 0 điểm khi bài tập không cho nộp trễ (LatePenaltyType === 'NONE' / AllowLateSubmission === false) hoặc bài đã Closed
-        let publishedMeta: any = null
-        try {
-          const pubRow: any = await prisma.$queryRaw`SELECT Data FROM PublishedAssignment WHERE Id = ${exam.Id}`
-          if (pubRow && pubRow[0]?.Data) {
-            publishedMeta = JSON.parse(pubRow[0].Data)?.metadata
-          }
-        } catch (e) {}
+        const publishedMeta = publishedMetaMap.get(exam.Id)
 
         const allowLate = exam.AllowLateSubmission ?? publishedMeta?.allowLateSubmission ?? true
         const latePenaltyType = (exam.LatePenaltyType && exam.LatePenaltyType !== 'NONE') ? exam.LatePenaltyType : (publishedMeta?.latePenaltyType || 'NONE')
@@ -153,6 +169,13 @@ export class AutoZeroSubmissionService {
     try {
       const now = new Date()
 
+      // Throttle: chỉ chạy tối đa 1 lần mỗi 60 giây cho mỗi exam
+      const last = AutoZeroSubmissionService.lastSyncExam.get(examId)
+      if (last && now.getTime() - last < 60000) {
+        return 0
+      }
+      AutoZeroSubmissionService.lastSyncExam.set(examId, now.getTime())
+
       // 1. Tìm thông tin bài thi
       const exam: any = await (prisma.exam as any).findUnique({
         where: { Id: examId },
@@ -179,9 +202,12 @@ export class AutoZeroSubmissionService {
       // Chỉ chốt 0 điểm khi bài tập không cho nộp trễ hoặc bài đã Closed
       let publishedMeta: any = null
       try {
-        const pubRow: any = await prisma.$queryRaw`SELECT Data FROM PublishedAssignment WHERE Id = ${exam.Id}`
-        if (pubRow && pubRow[0]?.Data) {
-          publishedMeta = JSON.parse(pubRow[0].Data)?.metadata
+        const pubRow = await prisma.publishedAssignment.findUnique({
+          where: { Id: exam.Id },
+          select: { Data: true },
+        })
+        if (pubRow?.Data) {
+          publishedMeta = JSON.parse(pubRow.Data)?.metadata
         }
       } catch (e) {}
 

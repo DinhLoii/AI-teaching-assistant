@@ -15,6 +15,7 @@ import { prisma } from '../../../database/prisma.js'
 import { classEvents } from '../../../shared/infrastructure/events/class-events.js'
 import { NodemailerService } from '../../../shared/infrastructure/email/nodemailer.service.js'
 import { ValidationError, NotFoundError, ForbiddenError } from '../../../shared/application/app.error.js'
+import { memoryCache } from '../../../shared/infrastructure/memory-cache.js'
 
 export class ClassesController extends BaseController {
   constructor(
@@ -35,12 +36,20 @@ export class ClassesController extends BaseController {
     this.logger.info(`Fetching classes for user ${req.user!.id}`)
     const page = parseInt(req.query.page as string) || 1
     const limit = parseInt(req.query.limit as string) || 10
+    const cacheKey = `classes_list_${req.user!.id}_${req.user!.role}_${page}_${limit}`
+    const cached = memoryCache.get(cacheKey)
+    if (cached) {
+      this.ok(res, cached, MESSAGES.CLASS_LIST_SUCCESS)
+      return
+    }
     const result = await this.listClassesUseCase.execute({ user: req.user!, page, limit })
+    memoryCache.set(cacheKey, result, 20)
     this.ok(res, result, MESSAGES.CLASS_LIST_SUCCESS)
   }
 
   async create(req: Request, res: Response): Promise<void> {
     this.logger.info(`Creating new class`)
+    memoryCache.invalidatePrefix('classes_')
     const dto = CreateClassRequestDto.from(req.body)
     if (req.user!.role === 'LECTURER') {
       dto.data.lecturerId = req.user!.id
@@ -52,6 +61,12 @@ export class ClassesController extends BaseController {
   async getById(req: Request, res: Response): Promise<void> {
     const classId = req.params.id as string
     this.logger.info(`Fetching class ${classId}`)
+    const cacheKey = `class_detail_${classId}_${req.user?.role}`
+    const cached = memoryCache.get(cacheKey)
+    if (cached) {
+      this.ok(res, cached, MESSAGES.SUCCESS)
+      return
+    }
     const raw = await prisma.class.findUnique({
       where: { Id: classId },
       include: {
@@ -68,19 +83,31 @@ export class ClassesController extends BaseController {
     const { ClassResponseDto } = await import('../application/dtos/class.dto.js')
     const domainClass = ClassMapper.toDomain(raw)
     const isInstructorOrAdmin = req.user?.role === 'ADMIN' || req.user?.role === 'LECTURER'
-    this.ok(res, ClassResponseDto.from(domainClass, isInstructorOrAdmin), MESSAGES.SUCCESS)
+    const result = ClassResponseDto.from(domainClass, isInstructorOrAdmin)
+    memoryCache.set(cacheKey, result, 25)
+    this.ok(res, result, MESSAGES.SUCCESS)
   }
 
   async getStudents(req: Request, res: Response): Promise<void> {
     const classId = req.params.id as string
     this.logger.info(`Fetching students for class ${classId}`)
+    const cacheKey = `class_students_${classId}`
+    const cached = memoryCache.get(cacheKey)
+    if (cached) {
+      this.ok(res, cached, MESSAGES.SUCCESS)
+      return
+    }
     const result = await this.getClassStudentsUseCase.execute(classId)
+    memoryCache.set(cacheKey, result, 20)
     this.ok(res, result, MESSAGES.SUCCESS)
   }
 
   async enroll(req: Request, res: Response): Promise<void> {
     const classId = req.params.id as string
     this.logger.info(`Enrolling student to class ${classId}`)
+    memoryCache.invalidatePrefix('classes_')
+    memoryCache.del(`class_students_${classId}`)
+    memoryCache.del(`class_detail_${classId}`)
     const dto = EnrollStudentRequestDto.from(req.body)
     const result = await this.enrollStudentUseCase.execute({ classId, dto, user: req.user! })
     this.created(res, result, MESSAGES.SUCCESS)
@@ -89,6 +116,7 @@ export class ClassesController extends BaseController {
   async updateNote(req: Request, res: Response): Promise<void> {
     const classId = req.params.id as string
     this.logger.info(`Updating note for class ${classId}`)
+    memoryCache.invalidatePrefix('classes_')
     const dto = UpdateClassNoteDto.from(req.body)
     const result = await this.updateClassNoteUseCase.execute({ classId, dto, user: req.user! })
     this.ok(res, result, MESSAGES.CLASS_NOTE_UPDATED)
@@ -97,6 +125,7 @@ export class ClassesController extends BaseController {
   async update(req: Request, res: Response): Promise<void> {
     const classId = req.params.id as string
     this.logger.info(`Updating class ${classId}`)
+    memoryCache.invalidatePrefix('classes_')
     const dto = UpdateClassRequestDto.from(req.body)
     const result = await this.updateClassUseCase.execute({ classId, dto })
     this.ok(res, result, MESSAGES.SUCCESS)
@@ -105,6 +134,7 @@ export class ClassesController extends BaseController {
   async delete(req: Request, res: Response): Promise<void> {
     const classId = req.params.id as string
     this.logger.info(`Deleting class ${classId}`)
+    memoryCache.invalidatePrefix('classes_')
     await this.deleteClassUseCase.execute(classId)
     this.ok(res, null, MESSAGES.SUCCESS)
   }
