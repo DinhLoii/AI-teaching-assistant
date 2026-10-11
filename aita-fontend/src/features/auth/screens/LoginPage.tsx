@@ -327,7 +327,8 @@ function LoginForm() {
           <div className="flex items-center gap-3 p-3.5 rounded-xl bg-orange-50/70 dark:bg-orange-950/20 border border-orange-200/60 dark:border-orange-900/40">
             <GoogleIcon className="w-6 h-6 shrink-0" />
             <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              Enter your Gmail address to authenticate and proceed.
+              <span className="font-semibold text-orange-600 dark:text-orange-400">[Demo Simulation] </span>
+              Enter your FPT or Gmail address to authenticate. Matches seed demo accounts (Admin, Lecturer, Student).
             </div>
           </div>
 
