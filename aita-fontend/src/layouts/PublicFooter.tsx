@@ -13,7 +13,7 @@ export function PublicFooter() {
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
         <p>© 2026 AI Teaching Assistant (AITA) — Trường Đại Học FPT. Thiết kế và phát triển phục vụ công tác giảng dạy & học tập.</p>
         <div className="flex items-center gap-6">
-          <Link href="/" className="hover:text-orange-500 transition-colors">{isVi ? 'Trang chủ' : 'Home'}</Link>
+          <Link href="/login" className="hover:text-orange-500 transition-colors">{isVi ? 'Trang chủ' : 'Home'}</Link>
           <Link href="/features" className="hover:text-orange-500 transition-colors">{isVi ? 'Tính năng' : 'Features'}</Link>
           <Link href="/about" className="hover:text-orange-500 transition-colors">{isVi ? 'Về dự án' : 'About'}</Link>
         </div>

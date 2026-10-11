@@ -90,6 +90,7 @@ export interface CreateClassBody {
   schedule?: string
   lecturerId?: string
   keepExistingInstructors?: boolean
+  studentIds?: string[]
 }
 
 export interface ImportUsersResult {

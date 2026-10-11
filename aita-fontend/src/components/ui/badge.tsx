@@ -12,7 +12,7 @@ export function Badge({ className, variant = "default", ...props }: BadgeProps) 
     blue: "bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-500/30",
     success: "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30",
     warning: "bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/30",
-    danger: "bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/30",
+    danger: "bg-[#FF000B]/10 text-[#FF000B] border-[#FF000B]/30",
     outline: "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 bg-transparent",
   }
 

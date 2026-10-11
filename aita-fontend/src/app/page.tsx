@@ -1,5 +1,6 @@
-import HomePage from '@/features/home/screens/HomePage'
+import { redirect } from 'next/navigation'
+import LoginPage from '@/features/auth/screens/LoginPage'
 
 export default function Page() {
-  return <HomePage />
+  redirect('/login')
 }
