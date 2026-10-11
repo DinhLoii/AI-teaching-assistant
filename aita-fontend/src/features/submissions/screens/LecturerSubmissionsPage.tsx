@@ -390,10 +390,98 @@ export default function LecturerSubmissionsPage() {
     return text.includes(search.toLowerCase())
   })
 
+  const gradedCount = submissions.filter(s => s.score !== null || String(s.gradingStatus || s.status || '').toLowerCase() === 'graded').length
+  const avgScore = gradedCount > 0
+    ? (submissions.reduce((acc, sub) => acc + (sub.finalScore ?? sub.score ?? 0), 0) / gradedCount).toFixed(1)
+    : '--'
+
   return (
     <div className="space-y-6">
+      {/* Executive KPI Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+          <div className="flex items-start justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Tổng đã nộp
+            </span>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+              <Users className="w-5 h-5 text-white" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{submissions.length}</span>
+            <span className="text-xs font-semibold text-slate-500">/ {roster.length > 0 ? roster.length : submissions.length} SV</span>
+          </div>
+          <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+            <span>Tỷ lệ nộp {roster.length > 0 ? Math.round((submissions.length / roster.length) * 100) : 100}%</span>
+          </p>
+        </div>
+
+        <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+          <div className="flex items-start justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Đã có điểm (AI)
+            </span>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+              <CheckCircle2 className="w-5 h-5 text-white" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{gradedCount}</span>
+            <span className="text-xs font-semibold text-slate-500">bài</span>
+          </div>
+          <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+            <span>Đã hoàn thành Rubric</span>
+          </p>
+        </div>
+
+        <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+          <div className="flex items-start justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Điểm trung bình
+            </span>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+              <Award className="w-5 h-5 text-white" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-3xl font-black text-orange-600 dark:text-orange-400 tracking-tight font-mono">{avgScore}</span>
+            <span className="text-xs font-semibold text-slate-500">/ 10</span>
+          </div>
+          <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+            <span>Phổ điểm toàn lớp</span>
+          </p>
+        </div>
+
+        <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+          <div className="flex items-start justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Chưa nộp bài
+            </span>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+              <Clock className="w-5 h-5 text-white" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{missingStudents.length}</span>
+            <span className="text-xs font-semibold text-slate-500">SV</span>
+          </div>
+          <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+            <span>Cần đôn đốc nộp bài</span>
+          </p>
+        </div>
+      </div>
+
       {/* Header Actions */}
-      <div className="rounded-3xl p-6 bg-gradient-to-r from-orange-50 via-amber-50/60 to-blue-50/70 dark:bg-gradient-to-r dark:from-orange-950/40 dark:via-slate-900/90 dark:to-blue-950/30 border border-orange-200/80 dark:border-orange-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs dark:shadow-xl transition-colors">
+      <div className="rounded-2xl p-6 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:bg-gradient-to-r dark:from-orange-950/40 dark:via-slate-900/90 dark:to-blue-950/30 border border-orange-100/90 dark:border-orange-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs transition-colors">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Badge variant="orange">{assignment?.subjectCode || 'Môn học'}</Badge>
@@ -405,25 +493,23 @@ export default function LecturerSubmissionsPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <Button
-            variant="outline"
-            size="sm"
+          <button
+            type="button"
             onClick={loadData}
-            className="text-xs gap-1.5"
+            className="border border-orange-200/80 dark:border-orange-900/40 bg-gradient-to-br from-orange-50/60 via-white to-amber-50/30 dark:from-slate-900 dark:to-slate-800 text-slate-700 dark:text-slate-200 hover:border-orange-300 rounded-2xl h-10 px-4 font-semibold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-            {t('ui.refresh', 'Làm mới')}
-          </Button>
+            <RefreshCw className="w-3.5 h-3.5 text-orange-500" />
+            <span>{t('ui.refresh', 'Làm mới')}</span>
+          </button>
 
           <Link href={`/lecturer/grading/assignments/${assignmentId}/submit`}>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs gap-1.5 border-orange-200 text-orange-600 hover:bg-orange-50 dark:border-orange-500/30 dark:text-orange-400"
+            <button
+              type="button"
+              className="border border-orange-200/80 dark:border-orange-900/40 bg-gradient-to-br from-orange-50/60 via-white to-amber-50/30 dark:from-slate-900 dark:to-slate-800 text-orange-700 dark:text-orange-300 hover:border-orange-300 rounded-2xl h-10 px-4 font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
             >
-              <UploadCloud className="w-3.5 h-3.5" />
+              <UploadCloud className="w-3.5 h-3.5 text-orange-500" />
               <span>Chấm hàng loạt (Batch)</span>
-            </Button>
+            </button>
           </Link>
 
           {selectedIds.length > 0 && (
@@ -432,75 +518,79 @@ export default function LecturerSubmissionsPage() {
               size="sm"
               onClick={handleBatchRegrade}
               isLoading={regradingBatch}
-              className="text-xs gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-900/40 dark:text-blue-400"
+              className="text-xs gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-900/40 dark:text-blue-400 rounded-2xl h-10 px-4 font-bold"
             >
               <Play className="w-3.5 h-3.5" />
               <span>Chấm lại ({selectedIds.length}) bài chọn</span>
             </Button>
           )}
 
-          <Button
-            variant="primary"
-            size="sm"
+          <button
+            type="button"
             onClick={handleBulkPublish}
-            isLoading={publishing}
-            className="text-xs gap-1.5 bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-500/20"
+            disabled={publishing}
+            className="bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 hover:from-orange-600 hover:via-amber-600 hover:to-orange-600 shadow-orange-500/25 rounded-2xl h-10 px-5 text-white font-bold text-xs gap-1.5 shadow-md active:scale-95 transition-all flex items-center cursor-pointer"
           >
             <Share2 className="w-3.5 h-3.5" />
             <span>Công bố điểm toàn bộ</span>
-          </Button>
+          </button>
         </div>
       </div>
 
       {/* Filter Tabs & Search Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        <div className="w-full sm:max-w-sm">
+      <div className="p-4 sm:p-5 rounded-2xl shadow-xs bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div className="w-full sm:max-w-md">
           <Input
             type="text"
             placeholder={t('lecturer.submissions.search_placeholder', 'Tìm kiếm theo tên sinh viên, MSSV, file...')}
-            icon={<Search className="w-4 h-4" />}
+            icon={<Search className="w-4 h-4 text-orange-500" />}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            className="border-orange-200/80 focus:ring-2 focus:ring-orange-400/25 focus:border-orange-400 rounded-xl"
           />
         </div>
 
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="inline-flex flex-wrap p-1.5 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 rounded-2xl border border-orange-100/90 dark:border-orange-900/30 shadow-xs gap-1">
           <button
+            type="button"
             onClick={() => setStatusFilter('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
               statusFilter === 'all'
-                ? 'bg-orange-500 text-white shadow-sm'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 text-white shadow-md shadow-orange-500/20'
+                : 'text-slate-600 hover:text-orange-600 dark:text-slate-300 dark:hover:text-white hover:bg-orange-50/60'
             }`}
           >
             Tất cả ({submissions.length + missingStudents.length})
           </button>
           <button
+            type="button"
             onClick={() => setStatusFilter('submitted')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
               statusFilter === 'submitted'
-                ? 'bg-orange-500 text-white shadow-sm'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 text-white shadow-md shadow-orange-500/20'
+                : 'text-slate-600 hover:text-orange-600 dark:text-slate-300 dark:hover:text-white hover:bg-orange-50/60'
             }`}
           >
             Đã nộp ({submissions.length})
           </button>
           <button
+            type="button"
             onClick={() => setStatusFilter('graded')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
               statusFilter === 'graded'
-                ? 'bg-orange-500 text-white shadow-sm'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 text-white shadow-md shadow-orange-500/20'
+                : 'text-slate-600 hover:text-orange-600 dark:text-slate-300 dark:hover:text-white hover:bg-orange-50/60'
             }`}
           >
-            Đã chấm
+            Đã chấm ({gradedCount})
           </button>
           <button
+            type="button"
             onClick={() => setStatusFilter('missing')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
               statusFilter === 'missing'
-                ? 'bg-rose-500 text-white shadow-sm'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-md shadow-rose-500/20'
+                : 'text-slate-600 hover:text-rose-600 dark:text-slate-300 dark:hover:text-white hover:bg-rose-50/60'
             }`}
           >
             Chưa nộp ({missingStudents.length})
@@ -509,11 +599,11 @@ export default function LecturerSubmissionsPage() {
       </div>
 
       {/* Submissions Table */}
-      <Card className="overflow-hidden">
+      <div className="rounded-2xl border border-orange-100/90 dark:border-orange-900/30 overflow-hidden shadow-xs bg-white dark:bg-slate-900">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-sm">
             <thead>
-              <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+              <tr className="border-b border-orange-100/90 dark:border-slate-800 bg-gradient-to-r from-orange-50/70 via-amber-50/40 to-orange-50/50 dark:bg-slate-950/60 text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 <th className="p-4 pl-6 w-10">
                   <input
                     type="checkbox"
@@ -750,7 +840,7 @@ export default function LecturerSubmissionsPage() {
             </tbody>
           </table>
         </div>
-      </Card>
+      </div>
 
       {/* Edit Score Modal */}
       <Modal

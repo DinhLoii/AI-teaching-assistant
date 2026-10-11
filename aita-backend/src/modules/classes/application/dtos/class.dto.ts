@@ -9,6 +9,7 @@ export const CreateClassRequestSchema = z.object({
   campus: z.string().optional(),
   schedule: z.string().optional(),
   lecturerId: z.string().optional(),
+  studentIds: z.array(z.string()).optional(),
 })
 
 export type CreateClassRequestDtoType = z.infer<typeof CreateClassRequestSchema>

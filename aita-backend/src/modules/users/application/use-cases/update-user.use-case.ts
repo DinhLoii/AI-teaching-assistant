@@ -63,8 +63,7 @@ export class UpdateUserUseCase implements IUseCase<UpdateUserInput, UserResponse
         }
 
         if (dto.updatedClasses && dto.updatedClasses.length > 0) {
-            const { PrismaClient } = await import('@prisma/client');
-            const prisma = new (PrismaClient as any)();
+            const { prisma } = await import('../../../../database/prisma.js');
             for (const item of dto.updatedClasses) {
                 try {
                     if (item.classId && item.classId.startsWith('pending-')) {

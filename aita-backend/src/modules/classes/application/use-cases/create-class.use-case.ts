@@ -67,6 +67,31 @@ export class CreateClassUseCase implements IUseCase<CreateClassRequestDto, Retur
       return finalClass
     })
 
+    // Batch enroll selected students if provided
+    if (result && data.studentIds && Array.isArray(data.studentIds) && data.studentIds.length > 0) {
+      try {
+        const { prisma } = await import('../../../../database/prisma.js')
+        const classId = result.id
+        for (const sId of data.studentIds) {
+          try {
+            await (prisma as any).studentClass.upsert({
+              where: { UserId_ClassId: { UserId: sId, ClassId: classId } },
+              update: {},
+              create: {
+                UserId: sId,
+                ClassId: classId,
+                EnrolledAt: new Date(),
+              },
+            })
+          } catch {
+            // Ignore single duplicate enrollment
+          }
+        }
+      } catch (err) {
+        console.error('Failed to batch enroll students:', err)
+      }
+    }
+
     // Auto-enrollment logic
     try {
       const { prisma } = await import('../../../../database/prisma.js')

@@ -3,6 +3,7 @@ import type { Request, Response } from 'express'
 import { GetGradingSessionStatusUseCase, StartGradingSessionUseCase } from '../application/use-cases/grading.use-case.js'
 import { BaseController } from '../../../shared/presentation/base-controller.js'
 import type { ILogger } from '../../../shared/application/ports/logger.interface.js'
+import { memoryCache } from '../../../shared/infrastructure/memory-cache.js'
 
 export class GradingController extends BaseController {
     constructor(
@@ -24,6 +25,10 @@ export class GradingController extends BaseController {
         const { assignmentId } = req.body
         this.logger.info(`Starting grading session for assignment: ${assignmentId}`)
         const result = await this.startGradingSessionUseCase.execute(assignmentId)
+        memoryCache.invalidatePrefix('sub_detail_')
+        memoryCache.invalidatePrefix('subs_list_')
+        memoryCache.invalidatePrefix('subs_recent_')
+        memoryCache.invalidatePrefix('student_dash_')
         // 202 Accepted
         this.ok(res, result, MESSAGES.GRADING_START_SUCCESS) 
     }

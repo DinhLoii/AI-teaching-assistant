@@ -6,9 +6,20 @@ export interface AdminReport {
   summary: { users: number; classes: number; exams: number; submissions: number; auditLogs: number }
 }
 export interface SystemHealth {
-  api: { status: string }
-  database: { status: string; latencyMs?: number }
-  aiEngine: { status: string; mode: string }
+  api: { status: string; uptimeSeconds?: number; formattedUptime?: string }
+  database: { status: string; latencyMs?: number; poolStatus?: string }
+  system?: {
+    cpuUsagePercent: number
+    cpuCores: number
+    cpuModel: string
+    totalMemoryMb: number
+    usedMemoryMb: number
+    freeMemoryMb: number
+    memoryUsagePercent: number
+    platform: string
+    nodeVersion: string
+  }
+  aiEngine: { status: string; mode: string; provider?: string; queueWorkers?: number }
   checkedAt?: string
 }
 

@@ -5,10 +5,9 @@ import Link from 'next/link'
 import { useAuth } from '@/providers/auth-provider'
 import { useTheme } from '@/providers/theme-provider'
 import { useLanguage } from '@/providers/language-provider'
-import { useNotifications } from '@/providers/notification-provider'
-import { LiveClock } from '@/features/notes/components/LiveClock'
 import { LanguageDropdown } from '@/components/i18n/LanguageDropdown'
-import { Bell, Shield, School, GraduationCap, Sun, Moon, Menu, PanelLeftClose } from 'lucide-react'
+import { CampusSelector } from '@/components/layout/CampusSelector'
+import { Shield, School, GraduationCap, Sun, Moon, Menu } from 'lucide-react'
 
 interface NavbarProps {
   title?: string
@@ -18,31 +17,114 @@ interface NavbarProps {
   collapsed?: boolean
 }
 
+function getMajorInfo(role: string | null | undefined, studentCode?: string, isVi: boolean = true) {
+  if (role === 'lecturer') {
+    return {
+      major: isVi ? 'Kỹ thuật phần mềm' : 'Software Engineering',
+      majorCode: 'SE',
+      department: isVi ? 'Khoa CNTT' : 'IT Faculty',
+      subInfo: isVi ? 'Giảng viên chuyên ngành' : 'Lecturer',
+    }
+  }
+  if (role === 'admin') {
+    return {
+      major: isVi ? 'Ban Đào tạo' : 'Academic Affairs',
+      majorCode: 'FPTU',
+      department: isVi ? 'Quản trị hệ thống' : 'System Admin',
+      subInfo: isVi ? 'Quản trị viên' : 'Administrator',
+    }
+  }
+
+  // Student role:
+  const code = (studentCode || '').toUpperCase()
+  let major = isVi ? 'Kỹ thuật phần mềm' : 'Software Engineering'
+  let majorCode = 'SE'
+
+  if (code.startsWith('IA')) {
+    major = isVi ? 'An toàn thông tin' : 'Information Assurance'
+    majorCode = 'IA'
+  } else if (code.startsWith('AI')) {
+    major = isVi ? 'Trí tuệ nhân tạo' : 'Artificial Intelligence'
+    majorCode = 'AI'
+  } else if (code.startsWith('GD')) {
+    major = isVi ? 'Thiết kế mỹ thuật số' : 'Graphic Design'
+    majorCode = 'GD'
+  } else if (code.startsWith('IS')) {
+    major = isVi ? 'Hệ thống thông tin' : 'Information Systems'
+    majorCode = 'IS'
+  }
+
+  return {
+    major: `${major} (${majorCode})`,
+    majorName: major,
+    majorCode,
+    classCode: 'SE1701',
+    cohort: 'K17',
+    semester: 'Spring 2026',
+  }
+}
+
 export function Navbar({ title, subtitle, onMenu, onCollapse, collapsed }: NavbarProps) {
-  const { role } = useAuth()
+  const { user, role } = useAuth()
   const { theme, toggleTheme } = useTheme()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  const isVi = language === 'vi'
+
+  // Format Display Name & ID for User
+  const displayName = user?.fullName || user?.name || (role === 'student' ? 'Nguyễn Văn An' : role === 'lecturer' ? 'TS. Trần Văn Nam' : 'Quản trị viên')
+  const rawId = user?.studentCode || user?.lecturerCode || user?.externalId || user?.id
+  const displayId = rawId ? (rawId.length > 12 ? rawId.slice(0, 10).toUpperCase() : rawId) : (role === 'student' ? 'SE170245' : role === 'lecturer' ? 'GV1042' : 'ADM001')
+  const idPrefix = role === 'student' ? 'MSSV' : role === 'lecturer' ? 'MSGV' : 'ID'
+
+  const majorInfo = getMajorInfo(role, displayId, isVi)
 
   return (
-    <header className="min-h-16 gap-2 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/70 backdrop-blur-xl px-3 md:px-6 flex items-center justify-between sticky top-0 z-20 transition-colors">
-      <button type="button" aria-label={t('ui.open_menu', 'Mở menu điều hướng')} onClick={onMenu} className="p-2 lg:hidden"><Menu size={20} /></button>
-      <button type="button" aria-label={collapsed ? t('ui.expand_nav', 'Mở rộng thanh điều hướng') : t('ui.collapse_nav', 'Thu gọn thanh điều hướng')} onClick={onCollapse} className="hidden p-2 lg:block"><PanelLeftClose size={20} /></button>
-      <div className="min-w-0 flex-1">
-        {title && (
-          <h1 className="truncate text-sm md:text-base font-extrabold text-slate-900 dark:text-white tracking-tight">
-            {title}
-          </h1>
-        )}
-        {subtitle && (
-          <p className="hidden xl:block text-[11px] font-medium text-slate-500 dark:text-slate-400">
-            {subtitle}
-          </p>
-        )}
+    <header className="min-h-16 gap-3 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/70 backdrop-blur-xl px-3 md:px-6 flex items-center justify-between sticky top-0 z-20 transition-colors">
+      <div className="flex items-center gap-3 min-w-0">
+        <button type="button" aria-label={t('ui.open_menu', 'Mở menu điều hướng')} onClick={onMenu} className="p-2 lg:hidden">
+          <Menu size={20} />
+        </button>
+
+        {/* User Identity Display: Tên, Chuyên ngành & Mã số SV (Không avatar) */}
+        <Link
+          href="/profile"
+          title={t('nav.view_profile', 'Xem thông tin tài khoản')}
+          className="group flex flex-col justify-center min-w-0 transition-all select-none text-left py-1"
+        >
+          {/* Line 1: Name + Major Tag */}
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-sm font-black text-slate-900 dark:text-white tracking-tight group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors truncate max-w-[150px] sm:max-w-[220px]">
+              {displayName}
+            </span>
+            <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 tracking-wide">
+              {majorInfo.major}
+            </span>
+          </div>
+
+          {/* Line 2: MSSV, Class & Semester */}
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex-wrap">
+            <span className="font-mono text-[11px] tracking-wider shrink-0">
+              {idPrefix}: <span className="font-bold text-slate-800 dark:text-slate-200">{displayId}</span>
+            </span>
+            {role === 'student' && (
+              <>
+                <span className="text-slate-300 dark:text-slate-700 text-xs font-light">•</span>
+                <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                  {majorInfo.classCode}
+                </span>
+                <span className="text-slate-300 dark:text-slate-700 text-xs font-light hidden sm:inline">•</span>
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 hidden sm:inline">
+                  {isVi ? 'Kỳ' : 'Sem'} {majorInfo.semester}
+                </span>
+              </>
+            )}
+          </div>
+        </Link>
       </div>
 
       <div className="flex items-center gap-2.5">
-        {/* Realtime Clock */}
-        <div className="hidden xl:block"><LiveClock /></div>
+        {/* Campus Display */}
+        <CampusSelector />
 
         {/* Language Switcher */}
         <LanguageDropdown />
@@ -75,56 +157,7 @@ export function Navbar({ title, subtitle, onMenu, onCollapse, collapsed }: Navba
             </span>
           </div>
         )}
-
-        {/* Live Notification Bell */}
-        <NotificationBell role={role} t={t} />
       </div>
     </header>
-  )
-}
-
-// ─── Live notification bell ────────────────────────────────────────────────────────────
-
-function NotificationBell({
-  role,
-  t,
-}: {
-  role: string | null
-  t: (k: string, fallback: string) => string
-}) {
-  const { unreadCount, hasNew, clearNew } = useNotifications()
-
-  React.useEffect(() => {
-    if (hasNew) {
-      const timer = setTimeout(clearNew, 4000)
-      return () => clearTimeout(timer)
-    }
-  }, [hasNew, clearNew])
-
-  return (
-    <Link
-      href={`/${role || 'student'}/notifications`}
-      className="p-2.5 rounded-2xl text-slate-500 dark:text-slate-400 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-500/10 border border-transparent hover:border-orange-200 dark:hover:border-orange-500/30 transition-all relative group"
-      title={t('nav.notifications', 'Thông báo')}
-    >
-      {/* Bell — wiggle animation on new notification */}
-      <Bell
-        className={`w-4 h-4 transition-transform ${hasNew ? 'animate-[wiggle_0.4s_ease-in-out_3]' : ''}`}
-      />
-
-      {/* Unread count badge */}
-      {unreadCount > 0 && (
-        <span
-          className={`absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 flex items-center justify-center rounded-full bg-[#F26F21] text-white text-[9px] font-bold leading-none shadow-sm shadow-orange-500/40 ring-2 ring-white dark:ring-slate-950 transition-all ${hasNew ? 'animate-[pop_0.3s_cubic-bezier(0.36,0.07,0.19,0.97)_both]' : ''}`}
-        >
-          {unreadCount > 99 ? '99+' : unreadCount}
-        </span>
-      )}
-
-      {/* Ping ring when brand-new notification arrived */}
-      {hasNew && (
-        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-orange-400/60 animate-ping pointer-events-none" />
-      )}
-    </Link>
   )
 }

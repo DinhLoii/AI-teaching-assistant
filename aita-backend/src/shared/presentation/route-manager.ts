@@ -18,6 +18,7 @@ import { OptionsRouter } from '../../modules/settings/presentation/options.route
 import { SemestersRouter } from '../../modules/semesters/presentation/semesters.router.js'
 import { StudentPortalRouter } from '../../modules/student-portal/presentation/student-portal.router.js'
 import { PromptsRouter } from '../../modules/prompts/presentation/prompts.router.js'
+import { NotesRouter } from '../../modules/notes/presentation/notes.router.js'
 
 /**
  * ApiRouteManager — centrally manages all API routes.
@@ -64,6 +65,7 @@ export class ApiRouteManager {
     this.router.use('/options', new OptionsRouter().router)
     this.router.use('/student-portal', new StudentPortalRouter().router)
     this.router.use('/prompts', new PromptsRouter().router)
+    this.router.use('/notes', new NotesRouter().router)
 
     // All legacy routes have been removed and migrated to Clean Architecture.
   }

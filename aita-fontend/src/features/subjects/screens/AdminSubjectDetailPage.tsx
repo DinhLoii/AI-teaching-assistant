@@ -380,43 +380,43 @@ export function AdminSubjectDetailPage() {
         </div>
 
         {/* Hero Header */}
-        <div className="relative overflow-hidden rounded-3xl bg-[#121629] text-white p-6 sm:p-8 shadow-xl border border-slate-800">
+        <div className="relative overflow-hidden rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-6 sm:p-8 shadow-2xs border border-slate-200 dark:border-slate-800">
           <div className="relative z-10 space-y-4">
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="px-3 py-1 rounded-md text-xs font-bold bg-brand-500/20 text-brand-300 border border-brand-500/30">
+              <span className="px-3 py-1 rounded-md text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700">
                 Subject Code: {subject?.code || id}
               </span>
-              <span className="px-3 py-1 rounded-md text-xs font-bold bg-white/10 text-slate-200 border border-white/15">
+              <span className="px-3 py-1 rounded-md text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                 Degree Level: Bachelor
               </span>
-              <span className="px-3 py-1 rounded-md text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span className="px-3 py-1 rounded-md text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                 Semester: {subject?.semester ? `Semester ${subject.semester}` : 'Semester 1'}
               </span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
               {subject?.name || 'Course Subject'}
             </h1>
           </div>
         </div>
 
         {/* Empty State Card in English */}
-        <div className="p-12 sm:p-16 rounded-3xl bg-white dark:bg-[#151821] border border-slate-200/80 dark:border-slate-800 shadow-sm text-center space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto border border-amber-500/20">
+        <div className="p-12 sm:p-16 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs text-center space-y-4">
+          <div className="w-16 h-16 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-[#FA7014] flex items-center justify-center mx-auto border border-orange-200/60 dark:border-orange-900/60">
             <AlertCircle size={32} />
           </div>
           <div className="space-y-1.5 max-w-md mx-auto">
             <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">
               Syllabus Not Provided Yet
             </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
-              Detailed syllabus content for <strong className="text-slate-700 dark:text-slate-200 font-semibold">{subject?.code || id} - {subject?.name}</strong> has not been provided yet.
+            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
+              Detailed syllabus content for <strong className="text-slate-900 dark:text-white font-bold">{subject?.code || id} - {subject?.name}</strong> has not been provided yet.
             </p>
           </div>
           <div className="pt-2">
             <button
               onClick={() => router.push('/admin/subjects')}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-md transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 hover:from-orange-600 hover:via-amber-500 hover:to-orange-500 text-white font-bold text-xs shadow-md shadow-orange-500/20 transition-all cursor-pointer"
             >
               <ArrowLeft size={14} /> Back to Subjects Directory
             </button>
@@ -435,7 +435,7 @@ export function AdminSubjectDetailPage() {
       <div className="flex items-center justify-between">
         <button
           onClick={() => router.push('/admin/subjects')}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-[#FA7014] transition-colors cursor-pointer"
         >
           <ArrowLeft size={16} /> Back to Subjects
         </button>
@@ -444,12 +444,12 @@ export function AdminSubjectDetailPage() {
           <ChevronRight size={12} />
           <Link href="/admin/subjects" className="hover:underline">Subjects</Link>
           <ChevronRight size={12} />
-          <span className="text-slate-700 dark:text-slate-200 font-bold">{syllabus.code}</span>
+          <span className="text-slate-900 dark:text-white font-bold">{syllabus.code}</span>
         </div>
       </div>
 
       {/* Hero Banner Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-50 via-slate-50 to-slate-100 dark:from-slate-800 dark:via-slate-800/80 dark:to-slate-900 p-6 sm:p-8 border border-brand-100 dark:border-slate-700/60 shadow-sm">
+      <div className="relative overflow-hidden rounded-xl bg-white dark:bg-slate-900 p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-2xs">
         <div className="relative z-10 space-y-4">
 
           {/* Badges row + edit/save button */}
@@ -460,48 +460,48 @@ export function AdminSubjectDetailPage() {
                   <input
                     value={editHeaderCode}
                     onChange={e => setEditHeaderCode(e.target.value)}
-                    className="px-3 py-1 rounded-md text-xs font-bold bg-white dark:bg-slate-700 border border-brand-200 dark:border-slate-600 text-brand-700 dark:text-brand-300 w-28 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/20 transition-all"
+                    className="px-3 py-1 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white w-28 focus:outline-none focus:border-[#FA7014] transition-all"
                     placeholder="Code"
                   />
                   <input
                     value={editHeaderDegree}
                     onChange={e => setEditHeaderDegree(e.target.value)}
-                    className="px-3 py-1 rounded-md text-xs font-bold bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 w-28 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/20 transition-all"
+                    className="px-3 py-1 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white w-28 focus:outline-none focus:border-[#FA7014] transition-all"
                     placeholder="Degree Level"
                   />
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white dark:bg-slate-700 border border-emerald-200 dark:border-slate-600">
-                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Sem</span>
+                  <div className="flex items-center gap-1 px-2 py-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Sem</span>
                     <input
                       type="number"
                       value={editHeaderSemester}
                       onChange={e => setEditHeaderSemester(Number(e.target.value) || 1)}
-                      className="text-xs font-bold bg-transparent text-emerald-700 dark:text-emerald-300 w-8 focus:outline-none text-center"
+                      className="text-xs font-bold bg-transparent text-slate-900 dark:text-white w-8 focus:outline-none text-center"
                       min={1} max={10}
                     />
                   </div>
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white dark:bg-slate-700 border border-amber-200 dark:border-slate-600">
-                    <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">Credits</span>
+                  <div className="flex items-center gap-1 px-2 py-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Credits</span>
                     <input
                       type="number"
                       value={editHeaderCredits}
                       onChange={e => setEditHeaderCredits(Number(e.target.value) || 3)}
-                      className="text-xs font-bold bg-transparent text-amber-700 dark:text-amber-300 w-8 focus:outline-none text-center"
+                      className="text-xs font-bold bg-transparent text-slate-900 dark:text-white w-8 focus:outline-none text-center"
                       min={1} max={10}
                     />
                   </div>
                 </>
               ) : (
                 <>
-                  <span className="px-3 py-1 rounded-md text-xs font-bold bg-brand-500/10 text-brand-700 dark:text-brand-300 border border-brand-500/20">
+                  <span className="px-3 py-1 rounded-md text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700">
                     {syllabus.code}
                   </span>
-                  <span className="px-3 py-1 rounded-md text-xs font-bold bg-slate-200/80 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300">
+                  <span className="px-3 py-1 rounded-md text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                     {syllabus.degreeLevel}
                   </span>
-                  <span className="px-3 py-1 rounded-md text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
+                  <span className="px-3 py-1 rounded-md text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                     Semester {subject?.semester || 1}
                   </span>
-                  <span className="px-3 py-1 rounded-md text-xs font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                  <span className="px-3 py-1 rounded-md text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                     {syllabus.credits} Credits
                   </span>
                 </>

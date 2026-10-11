@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../../../../database/prisma.js'
 import bcrypt from 'bcryptjs'
 import * as xlsx from 'xlsx'
 import crypto from 'crypto'
@@ -9,8 +9,6 @@ import { IEmailService } from '../../../../shared/application/email.service.inte
 import { AppError } from '../../../../shared/application/app.error.js'
 import { getAvatarFromRow, normalizeExcelHeader, resolveCloudinaryAvatarUrl } from '../../../../shared/utils/avatar-extractor.util.js'
 import { validateRealEmail } from '../../../../shared/utils/email-validator.util.js'
-
-const prisma = new PrismaClient()
 
 type ImportLecturerRow = Record<string, unknown>
 

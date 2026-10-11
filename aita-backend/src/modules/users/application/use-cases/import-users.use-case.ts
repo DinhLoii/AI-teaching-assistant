@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../../../../database/prisma.js'
 import { ImportUsersBatchDto } from '../dtos/user.dto.js'
 import bcrypt from 'bcryptjs'
-
-const prisma = new PrismaClient()
 
 export class ImportUsersUseCase {
     async execute(dto: ImportUsersBatchDto) {

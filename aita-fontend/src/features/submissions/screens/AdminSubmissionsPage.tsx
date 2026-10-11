@@ -118,11 +118,15 @@ export default function AdminSubmissionsPage() {
         </Link>
 
         {/* Header Actions */}
-        <div className="rounded-3xl p-6 bg-gradient-to-r from-orange-50 via-amber-50/60 to-blue-50/70 dark:bg-gradient-to-r dark:from-orange-950/40 dark:via-slate-900/90 dark:to-blue-950/30 border border-orange-200/80 dark:border-orange-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs dark:shadow-xl transition-colors">
+        <div className="rounded-xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-2xs transition-colors">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Badge variant="orange">{assignment?.subjectCode || 'Môn học'}</Badge>
-              <span className="text-xs text-slate-600 dark:text-slate-400">{t('lecturer.submissions.total_count', 'Tổng số:')} {submissions.length} {t('lecturer.submissions.submissions_label', 'bài nộp')}</span>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-50 text-[#FA7014] dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900/60">
+                {assignment?.subjectCode || 'Môn học'}
+              </span>
+              <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                {t('lecturer.submissions.total_count', 'Tổng số:')} {submissions.length} {t('lecturer.submissions.submissions_label', 'bài nộp')}
+              </span>
             </div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">{assignment?.title}</h2>
           </div>
@@ -132,74 +136,125 @@ export default function AdminSubmissionsPage() {
               variant="outline"
               size="sm"
               onClick={loadData}
-              className="text-xs gap-1.5"
+              className="text-xs gap-1.5 rounded-xl border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               {t('ui.refresh', 'Làm mới')}
             </Button>
-
           </div>
         </div>
 
         {/* Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-center">
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">Tổng số bài nộp</span>
-            <div className="flex items-end gap-2">
-              <span className="text-2xl font-bold text-slate-900 dark:text-white">{submissions.length}</span>
-              <Users className="w-4 h-4 text-slate-400 mb-1.5" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Tổng số bài nộp
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+                <Users className="w-5 h-5 text-white" />
+              </div>
             </div>
-          </Card>
-          <Card className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-center">
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">Đã có điểm (AI)</span>
-            <div className="flex items-end gap-2">
-              <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{submissions.length}</span>
+              <span className="text-xs font-semibold text-slate-500">bài</span>
+            </div>
+            <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+              <span>Dữ liệu nộp bài hệ thống</span>
+            </p>
+          </div>
+
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Đã có điểm (AI)
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+                <CheckCircle2 className="w-5 h-5 text-white" />
+              </div>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                 {submissions.filter(s => s.score !== null || s.gradingStatus?.toLowerCase() === 'graded').length}
               </span>
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 mb-1.5" />
+              <span className="text-xs font-semibold text-slate-500">đã chấm</span>
             </div>
-          </Card>
-          <Card className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-center">
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">Điểm trung bình (AI)</span>
-            <div className="flex items-end gap-2">
-              <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+              <span>Hoàn tất chấm tự động</span>
+            </p>
+          </div>
+
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Điểm trung bình (AI)
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+                <Award className="w-5 h-5 text-white" />
+              </div>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-3xl font-black text-orange-600 dark:text-orange-400 tracking-tight font-mono">
                 {submissions.filter(s => s.score !== null || s.gradingStatus?.toLowerCase() === 'graded').length > 0 
                   ? (submissions.reduce((acc, sub) => acc + (sub.score ?? sub.finalScore ?? sub.totalScore ?? sub.aiScore ?? 0), 0) / submissions.filter(s => s.score !== null || s.gradingStatus?.toLowerCase() === 'graded').length).toFixed(1)
                   : '--'}
               </span>
-              <Award className="w-4 h-4 text-blue-500 mb-1.5" />
+              <span className="text-xs font-semibold text-slate-500">/ 10</span>
             </div>
-          </Card>
-          <Card className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-center">
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">Chưa chấm / Đang chấm</span>
-            <div className="flex items-end gap-2">
-              <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+            <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+              <span>Thang điểm 10 quy chuẩn</span>
+            </p>
+          </div>
+
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Chưa chấm / Đang chấm
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+                <Clock className="w-5 h-5 text-white" />
+              </div>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                 {submissions.filter(s => s.score === null && s.gradingStatus?.toLowerCase() !== 'graded').length}
               </span>
-              <Clock className="w-4 h-4 text-amber-500 mb-1.5" />
+              <span className="text-xs font-semibold text-slate-500">hàng đợi</span>
             </div>
-          </Card>
+            <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+              <span>Chờ Docker Sandbox</span>
+            </p>
+          </div>
         </div>
 
         {/* Search Bar */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="w-full max-w-sm">
+        <div className="p-4 sm:p-5 rounded-2xl shadow-xs bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 flex items-center justify-between gap-4">
+          <div className="w-full max-w-md">
             <Input
               type="text"
               placeholder={t('lecturer.submissions.search_placeholder', 'Tìm kiếm theo tên sinh viên, MSSV, file...')}
-              icon={<Search className="w-4 h-4" />}
+              icon={<Search className="w-4 h-4 text-orange-500" />}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              className="rounded-xl border-orange-200/80 focus:ring-2 focus:ring-orange-400/25 focus:border-orange-400 text-slate-900 dark:text-white"
             />
           </div>
         </div>
 
         {/* Submissions Table */}
-        <Card className="overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 border border-orange-100/90 dark:border-orange-900/30 rounded-2xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b border-slate-200/80 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-950/60 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                <tr className="border-b border-orange-100/90 dark:border-slate-800 bg-gradient-to-r from-orange-50/70 via-amber-50/40 to-orange-50/50 dark:bg-slate-800/60 text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
                   <th className="p-4 pl-6">{t('lecturer.submissions.col_student', 'Sinh viên & MSSV')}</th>
                   <th className="p-4">{t('lecturer.submissions.col_submitted_at', 'Thời gian nộp')}</th>
                   <th className="p-4">{t('lecturer.submissions.col_status', 'Trạng thái chấm & Công bố')}</th>
@@ -208,7 +263,7 @@ export default function AdminSubmissionsPage() {
                   <th className="p-4 pr-6 text-right">{t('lecturer.submissions.col_action', 'Thao tác')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+              <tbody className="divide-y divide-orange-100/50 dark:divide-slate-800/60">
                 {loading ? (
                   <tr>
                     <td colSpan={6} className="p-8 text-center text-slate-400 text-xs">
@@ -317,7 +372,7 @@ export default function AdminSubmissionsPage() {
               </tbody>
             </table>
           </div>
-        </Card>
+        </div>
 
 
         {/* Review Rubric Modal for Lecturer */}

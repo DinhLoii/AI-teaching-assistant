@@ -21,38 +21,38 @@ export function PasswordReset() {
   async function send() {
     if (busy) return
     setBusy(true); setError(null); setMessage('')
-    try { await authApi.forgotPassword(email.trim()); setSent(true); setMessage('Đã gửi mã xác thực. Mã hết hạn sau 10 phút; gửi lại sẽ thay thế mã trước.') }
+    try { await authApi.forgotPassword(email.trim()); setSent(true); setMessage('Verification code sent. Code expires in 10 minutes; requesting again replaces previous code.') }
     catch (cause) { setError(errorMessage(cause)) }
     finally { setBusy(false) }
   }
   async function submit(event: React.FormEvent) {
     event.preventDefault()
     if (!sent) return send()
-    if (password !== confirmation) { setError('Mật khẩu xác nhận chưa khớp.'); return }
+    if (password !== confirmation) { setError('Passwords do not match.'); return }
     if (busy) return
     setBusy(true); setError(null)
     try {
       await authApi.resetPassword({ email: email.trim(), otp, newPassword: password })
-      setMessage('Đã đổi mật khẩu. Bạn có thể đóng hộp thoại và đăng nhập.')
+      setMessage('Password updated successfully. You can now close this window and sign in.')
       setPassword(''); setConfirmation(''); setOtp(''); setSent(false)
     } catch (cause) { setError(errorMessage(cause)) }
     finally { setBusy(false) }
   }
   return <>
-    <Button type="button" variant="ghost" onClick={() => setOpen(true)}>Quên mật khẩu?</Button>
-    <Modal isOpen={open} onClose={() => { if (!busy) setOpen(false) }} title="Khôi phục mật khẩu">
+    <Button type="button" variant="ghost" onClick={() => setOpen(true)}>Forgot password?</Button>
+    <Modal isOpen={open} onClose={() => { if (!busy) setOpen(false) }} title="Reset Password">
       <form onSubmit={submit} className="space-y-4">
         <ErrorNotice message={error} />
         {message && <p role="status" className="text-sm">{message}</p>}
-        <label className="block space-y-2"><span>Email tài khoản</span><Input type="email" required disabled={sent || busy} autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} /></label>
+        <label className="block space-y-2"><span>Account Email</span><Input type="email" placeholder="name@fpt.edu.vn" required disabled={sent || busy} autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} /></label>
         {sent && <>
-          <label className="block space-y-2"><span>Mã OTP</span><Input required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6} value={otp} onChange={e => setOtp(e.target.value)} /></label>
-          <label className="block space-y-2"><span>Mật khẩu mới</span><Input type="password" autoComplete="new-password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} /></label>
-          <label className="block space-y-2"><span>Xác nhận mật khẩu</span><Input type="password" autoComplete="new-password" required minLength={6} value={confirmation} onChange={e => setConfirmation(e.target.value)} /></label>
-          <Button type="button" variant="outline" disabled={busy} onClick={() => void send()}>Gửi lại mã</Button>
-          <Button type="button" variant="ghost" disabled={busy} onClick={() => { setSent(false); setOtp(''); setMessage('') }}>Đổi email</Button>
+          <label className="block space-y-2"><span>OTP Code</span><Input required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6} placeholder="6-digit code" value={otp} onChange={e => setOtp(e.target.value)} /></label>
+          <label className="block space-y-2"><span>New Password</span><Input type="password" autoComplete="new-password" required minLength={6} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} /></label>
+          <label className="block space-y-2"><span>Confirm New Password</span><Input type="password" autoComplete="new-password" required minLength={6} placeholder="••••••••" value={confirmation} onChange={e => setConfirmation(e.target.value)} /></label>
+          <Button type="button" variant="outline" disabled={busy} onClick={() => void send()}>Resend Code</Button>
+          <Button type="button" variant="ghost" disabled={busy} onClick={() => { setSent(false); setOtp(''); setMessage('') }}>Change Email</Button>
         </>}
-        <Button type="submit" isLoading={busy}>{sent ? 'Đặt lại mật khẩu' : 'Gửi mã xác thực'}</Button>
+        <Button type="submit" isLoading={busy}>{sent ? 'Reset Password' : 'Send Verification Code'}</Button>
       </form>
     </Modal>
   </>

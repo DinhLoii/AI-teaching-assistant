@@ -395,7 +395,7 @@ export default function LecturerSubjectDetailPage() {
                 </Button>
               </Link>
               <Link href={`/lecturer/grading/assignments?create=true&subjectId=${subject?.id || idOrCode}`}>
-                <Button size="sm" className="text-xs bg-[#F26F21] hover:bg-[#D95C14] text-white gap-1.5 shadow-md shadow-orange-500/20">
+                <Button size="sm" variant="primary" className="text-xs gap-1.5">
                   <Plus className="w-3.5 h-3.5" />
                   <span>{isVi ? 'Tạo bài tập / Đề thi' : 'Create Assignment'}</span>
                 </Button>
@@ -829,7 +829,7 @@ export default function LecturerSubjectDetailPage() {
                 </p>
               </div>
               <Link href={`/lecturer/grading/assignments?create=true&subjectId=${subject?.id || idOrCode}`}>
-                <Button size="sm" className="bg-[#F26F21] hover:bg-[#D95C14] text-white text-xs gap-1.5 shadow-md shadow-orange-500/20">
+                <Button size="sm" variant="primary" className="text-xs gap-1.5">
                   <Plus className="w-3.5 h-3.5" />
                   <span>{isVi ? 'Tạo bài tập mới' : 'New Assignment'}</span>
                 </Button>
@@ -848,7 +848,7 @@ export default function LecturerSubjectDetailPage() {
                     : 'You can create a new assignment, set up AI grading rubrics and assign it to your classes.'}
                 </p>
                 <Link href={`/lecturer/grading/assignments?create=true&subjectId=${subject?.id || idOrCode}`}>
-                  <Button size="sm" className="mt-2 text-xs bg-[#F26F21] hover:bg-[#D95C14] text-white gap-1.5">
+                  <Button size="sm" variant="primary" className="mt-2 text-xs gap-1.5">
                     <Plus className="w-3.5 h-3.5" />
                     <span>{isVi ? 'Tạo bài tập ngay' : 'Create Assignment Now'}</span>
                   </Button>
@@ -908,7 +908,7 @@ export default function LecturerSubjectDetailPage() {
                             </Button>
                           </Link>
                           <Link href={`/lecturer/assignments/${assign.id}`}>
-                            <Button size="sm" className="text-xs h-7 px-2.5 bg-[#F26F21] hover:bg-[#D95C14] text-white">
+                            <Button size="sm" variant="primary" className="text-xs h-7 px-2.5">
                               {isVi ? 'Cấu hình' : 'Workspace'}
                             </Button>
                           </Link>

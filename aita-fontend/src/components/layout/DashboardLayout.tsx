@@ -20,6 +20,15 @@ interface DashboardLayoutProps {
   children: React.ReactNode
 }
 
+function hasPermission(userRole?: UserRole | null, reqRole?: UserRole): boolean {
+  if (!reqRole) return true
+  if (!userRole) return false
+  if (userRole === 'admin') return true
+  if (userRole === 'lecturer') return reqRole === 'lecturer' || reqRole === 'student'
+  if (userRole === 'student') return reqRole === 'student'
+  return false
+}
+
 export function DashboardLayout({
   navItems,
   title,
@@ -42,11 +51,9 @@ export function DashboardLayout({
         router.replace(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)
       } else if (user?.requirePasswordChange && pathname !== '/profile') {
         router.replace('/profile?changePassword=required')
-      } else if (requiredRole && role !== requiredRole) {
-        // Redirect to their own dashboard
-        if (role === 'admin') router.push('/admin')
-        else if (role === 'lecturer') router.push('/lecturer')
-        else router.push('/student')
+      } else if (requiredRole && !hasPermission(role, requiredRole)) {
+        // Redirect unauthorized access to default user portal
+        router.push('/student')
       }
     }
   }, [loading, isAuthenticated, role, requiredRole, router, user?.requirePasswordChange, pathname])
@@ -62,7 +69,7 @@ export function DashboardLayout({
     )
   }
 
-  if (!isAuthenticated || (requiredRole && role !== requiredRole) || (user?.requirePasswordChange && pathname !== '/profile')) {
+  if (!isAuthenticated || (requiredRole && !hasPermission(role, requiredRole)) || (user?.requirePasswordChange && pathname !== '/profile')) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white gap-4">
         <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-600 flex items-center justify-center text-white shadow-xl shadow-orange-500/20 animate-bounce">
@@ -79,7 +86,7 @@ export function DashboardLayout({
       <Modal isOpen={mobileOpen} onClose={() => setMobileOpen(false)} title={t('ui.navigation', 'Điều hướng')} maxWidth="sm"><Sidebar navItems={navItems} title={title} roleLabel={roleLabel} onNavigate={() => setMobileOpen(false)} className="h-auto w-full border-0" /></Modal>
       <div className="flex-1 flex flex-col min-w-0">
         <Navbar title={headerTitle} subtitle={headerSubtitle} onMenu={() => setMobileOpen(true)} onCollapse={() => setCollapsed(value => !value)} collapsed={collapsed} />
-        <main className="flex-1 p-3 sm:p-6 lg:p-8 overflow-y-auto max-w-[1440px] w-full mx-auto">
+        <main className="flex-1 p-3 sm:p-4 lg:p-5 overflow-y-auto w-full">
           {children}
         </main>
       </div>

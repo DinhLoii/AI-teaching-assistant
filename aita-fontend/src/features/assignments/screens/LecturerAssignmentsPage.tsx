@@ -18,7 +18,7 @@ import { errorMessage } from '@/lib/api/errors'
 import {
   FileCheck, Plus, Users, Sparkles, Calendar, ArrowRight, Settings2,
   Clock, CheckCircle2, Search, Trash2, RotateCcw, Archive, Inbox,
-  ChevronRight, BookOpen, Layers, Zap, AlertCircle, X, Send,
+  ChevronRight, BookOpen, Layers, Zap, AlertCircle, X, Send, Eye,
 } from 'lucide-react'
 
 type ViewMode = 'active' | 'trash'
@@ -109,7 +109,9 @@ function CreateWizard({ isOpen, onClose, classes, onSuccess }: WizardProps) {
   const stepIdx = steps.findIndex(s => s.id === step)
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={t('lecturer.wizard.title', 'Tạo bài tập mới')} maxWidth="2xl">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('lecturer.wizard.title', 'Tạo bài tập mới')} maxWidth="5xl">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="lg:col-span-7">
       {/* Step indicator */}
       <div className="flex items-center gap-2 mb-6">
         {steps.map((s, i) => (
@@ -366,6 +368,85 @@ function CreateWizard({ isOpen, onClose, classes, onSuccess }: WizardProps) {
           </div>
         </div>
       </form>
+        </div>
+
+        {/* Right column: Live Assignment Card Preview */}
+        <div className="lg:col-span-5 sticky top-2 space-y-3">
+          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <Eye className="w-3.5 h-3.5 text-orange-500" />
+            Xem trước bài tập (Live Preview)
+          </div>
+
+          <div className="rounded-2xl border-2 border-dashed border-orange-200 dark:border-orange-900/40 p-4 bg-orange-50/20 dark:bg-slate-900/40 flex flex-col justify-between">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-950/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
+                    <BookOpen className="w-4 h-4" />
+                  </span>
+                  <div>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">
+                      {selectedClass ? `${selectedClass.classCode || selectedClass.code} (${selectedClass.subject?.code || ''})` : 'Chưa chọn lớp'}
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      {selectedClass?.subject?.name || 'Môn học liên kết'}
+                    </p>
+                  </div>
+                </div>
+                <Badge variant={form.publishImmediately ? 'success' : 'default'} className="text-[10px]">
+                  {form.publishImmediately ? 'Đã giao' : 'Bản nháp'}
+                </Badge>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-sm text-slate-900 dark:text-white line-clamp-2">
+                  {form.title || 'Tiêu đề bài tập sẽ hiển thị ở đây...'}
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-3">
+                  {form.description || 'Nội dung mô tả yêu cầu bài tập và hướng dẫn nộp bài...'}
+                </p>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-700/60 grid grid-cols-2 gap-2 text-[11px]">
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Hạn nộp bài</span>
+                  <span className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1 mt-0.5">
+                    <Calendar className="w-3 h-3 text-orange-500" />
+                    {form.dueDate ? new Date(form.dueDate).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : 'Không giới hạn'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Điểm tối đa</span>
+                  <span className="font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1 mt-0.5">
+                    <Zap className="w-3 h-3" />
+                    {form.maxScore || 10} điểm
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-lg bg-slate-50 dark:bg-slate-750 p-2 text-[10px] space-y-1 text-slate-500 dark:text-slate-400">
+                <div className="flex justify-between">
+                  <span>Chiến lược chấm:</span>
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                    {form.strategy === 'CONTINUOUS_QUEUE' ? 'Chấm liên tục' : 'Chấm hàng loạt'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Chính sách nộp trễ:</span>
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                    {form.latePolicyOption === 'NONE_LOCKED' ? 'Khóa nộp' : form.latePolicyOption === 'NONE_FREE' ? 'Miễn phạt' : `Phạt ${form.latePenaltyValue} (${form.lateSubmitHours}h)`}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-3 text-[11px] text-center text-slate-400 flex items-center justify-center gap-1">
+              <Sparkles className="w-3.5 h-3.5 text-orange-500" />
+              <span>Xem trước giao diện thẻ bài tập sinh viên nhìn thấy</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </Modal>
   )
 }
@@ -519,61 +600,184 @@ export default function LecturerAssignmentsPage({ defaultCreate = false }: { def
       <div className="space-y-6">
         <ErrorNotice message={loadError} onRetry={() => { void loadAssignments(); void loadTrash(); }} />
 
+        {/* Executive KPI Summary Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {t('lecturer.assignments.stat_total', 'Tổng bài tập')}
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+                <FileCheck className="w-5 h-5 text-white" />
+              </div>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{activeList.length}</span>
+              <span className="text-xs font-semibold text-slate-500">đề</span>
+            </div>
+            <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+              <span>Đang hoạt động</span>
+            </p>
+          </div>
+
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {t('lecturer.assignments.stat_published', 'Đã giao sinh viên')}
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+                <Send className="w-5 h-5 text-white" />
+              </div>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                {activeList.filter(a => a.status === 'published').length}
+              </span>
+              <span className="text-xs font-semibold text-slate-500">bài tập</span>
+            </div>
+            <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+              <span>Sinh viên đã nhận đề</span>
+            </p>
+          </div>
+
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {t('lecturer.assignments.stat_draft', 'Bản nháp')}
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+                <Clock className="w-5 h-5 text-white" />
+              </div>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                {activeList.filter(a => a.status !== 'published').length}
+              </span>
+              <span className="text-xs font-semibold text-slate-500">bản thảo</span>
+            </div>
+            <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+              <span>Chờ hoàn thiện Rubric</span>
+            </p>
+          </div>
+
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+            <div className="flex items-start justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {t('lecturer.assignments.stat_trash', 'Thùng rác')}
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+                <Trash2 className="w-5 h-5 text-white" />
+              </div>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{trashCount}</span>
+              <span className="text-xs font-semibold text-slate-500">mục</span>
+            </div>
+            <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+              <span>Có thể khôi phục lại</span>
+            </p>
+          </div>
+        </div>
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
-              <button onClick={() => { setViewMode('active'); setSelectedIds(new Set()); void loadAssignments(); }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'active' ? 'bg-white dark:bg-slate-800 text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                <Inbox className="w-3.5 h-3.5 inline mr-1" /> {t('lecturer.assignments.tab_active', 'Đang hoạt động')} ({activeList.length})
+            <div className="inline-flex flex-wrap p-1.5 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 rounded-2xl border border-orange-100/90 dark:border-orange-900/30 shadow-xs gap-1">
+              <button
+                type="button"
+                onClick={() => { setViewMode('active'); setSelectedIds(new Set()); void loadAssignments(); }}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  viewMode === 'active'
+                    ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 text-white shadow-md shadow-orange-500/20'
+                    : 'text-slate-600 hover:text-orange-600 dark:text-slate-300 dark:hover:text-white hover:bg-orange-50/60'
+                }`}
+              >
+                <Inbox className="w-3.5 h-3.5 inline" />
+                <span>{t('lecturer.assignments.tab_active', 'Đang hoạt động')}</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${viewMode === 'active' ? 'bg-white/20 text-white' : 'bg-orange-100/80 text-orange-700'}`}>
+                  {activeList.length}
+                </span>
               </button>
-              <button onClick={() => { setViewMode('trash'); setSelectedIds(new Set()); void loadTrash(); }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'trash' ? 'bg-white dark:bg-slate-800 text-rose-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                <Trash2 className="w-3.5 h-3.5 inline mr-1" /> {t('lecturer.assignments.tab_trash', 'Thùng rác')} {trashCount > 0 && `(${trashCount})`}
+              <button
+                type="button"
+                onClick={() => { setViewMode('trash'); setSelectedIds(new Set()); void loadTrash(); }}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  viewMode === 'trash'
+                    ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-md shadow-rose-500/20'
+                    : 'text-slate-600 hover:text-rose-600 dark:text-slate-300 dark:hover:text-white hover:bg-rose-50/60'
+                }`}
+              >
+                <Trash2 className="w-3.5 h-3.5 inline" />
+                <span>{t('lecturer.assignments.tab_trash', 'Thùng rác')}</span>
+                {trashCount > 0 && (
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${viewMode === 'trash' ? 'bg-white/20 text-white' : 'bg-rose-100/80 text-rose-700'}`}>
+                    {trashCount}
+                  </span>
+                )}
               </button>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             {selectedIds.size > 0 && viewMode === 'active' && (
-              <Button variant="danger" size="sm" onClick={bulkDelete} className="gap-1.5 text-xs">
+              <Button variant="danger" size="sm" onClick={bulkDelete} className="gap-1.5 text-xs rounded-2xl h-10 px-4">
                 <Trash2 className="w-3.5 h-3.5" /> {t('ui.delete', 'Xóa')} ({selectedIds.size})
               </Button>
             )}
             {selectedIds.size > 0 && viewMode === 'trash' && (
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={bulkRestore} className="gap-1.5 text-xs text-emerald-600 border-emerald-300 hover:bg-emerald-50">
+                <Button variant="outline" size="sm" onClick={bulkRestore} className="gap-1.5 text-xs text-emerald-600 border-emerald-300 hover:bg-emerald-50 rounded-2xl h-10 px-4">
                   <RotateCcw className="w-3.5 h-3.5" /> {t('lecturer.assignments.restore', 'Khôi phục')} ({selectedIds.size})
                 </Button>
-                <Button variant="danger" size="sm" onClick={bulkHardDelete} className="gap-1.5 text-xs">
+                <Button variant="danger" size="sm" onClick={bulkHardDelete} className="gap-1.5 text-xs rounded-2xl h-10 px-4">
                   <Trash2 className="w-3.5 h-3.5" /> {t('lecturer.assignments.hard_delete', 'Xóa vĩnh viễn')} ({selectedIds.size})
                 </Button>
               </div>
             )}
             {viewMode === 'active' && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <Link href="/lecturer/grading/assignments/upload">
-                  <Button variant="outline" size="sm" className="gap-1.5 text-xs text-orange-600 border-orange-200 hover:bg-orange-50 dark:hover:bg-orange-950/20">
-                    <Sparkles className="w-3.5 h-3.5 text-orange-500" /> {t('lecturer.assignments.ai_generate', 'Tạo đề AI')}
-                  </Button>
+                  <button
+                    type="button"
+                    className="border border-orange-200/80 dark:border-orange-900/40 bg-gradient-to-br from-orange-50/60 via-white to-amber-50/30 dark:from-slate-900 dark:to-slate-800 text-orange-700 dark:text-orange-300 hover:border-orange-300 rounded-2xl h-10 px-4 font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-orange-500" />
+                    <span>{t('lecturer.assignments.ai_generate', 'Tạo đề AI')}</span>
+                  </button>
                 </Link>
-                <Button variant="primary" size="sm" onClick={() => setCreateModal(true)} className="gap-1.5 text-xs">
-                  <Plus className="w-4 h-4" /> {t('lecturer.assignments.create_new', 'Tạo bài tập mới')}
-                </Button>
+                <button
+                  type="button"
+                  onClick={() => setCreateModal(true)}
+                  className="bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 hover:from-orange-600 hover:via-amber-600 hover:to-orange-600 shadow-orange-500/25 rounded-2xl h-10 px-5 text-white font-bold text-xs gap-1.5 shadow-md active:scale-95 transition-all flex items-center cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>{t('lecturer.assignments.create_new', 'Tạo bài tập mới')}</span>
+                </button>
               </div>
             )}
           </div>
         </div>
 
         {/* Search */}
-        <div className="max-w-sm">
-          <Input
-            type="text"
-            placeholder={viewMode === 'trash' ? t('lecturer.assignments.search_trash', 'Tìm bài tập trong thùng rác...') : t('lecturer.assignments.search_placeholder', 'Tìm bài tập...')}
-            icon={<Search className="w-4 h-4" />}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+        <div className="p-4 sm:p-5 rounded-2xl shadow-xs bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30">
+          <div className="max-w-md">
+            <Input
+              type="text"
+              placeholder={viewMode === 'trash' ? t('lecturer.assignments.search_trash', 'Tìm bài tập trong thùng rác...') : t('lecturer.assignments.search_placeholder', 'Tìm theo tên bài tập, mã môn...')}
+              icon={<Search className="w-4 h-4 text-orange-500" />}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="border-orange-200/80 focus:ring-2 focus:ring-orange-400/25 focus:border-orange-400 rounded-xl"
+            />
+          </div>
         </div>
 
         {/* Grid */}

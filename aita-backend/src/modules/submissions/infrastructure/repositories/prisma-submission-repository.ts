@@ -3,13 +3,26 @@ import { Submission } from '../../domain/entities/submission.entity.js'
 import { SubmissionMapper } from '../mappers/submission.mapper.js'
 
 const includeDefault = {
-  User_Submission_StudentIdToUser: true,
-  Exam: {
-    include: {
-      SubmissionOverride: true,
+  User_Submission_StudentIdToUser: {
+    select: {
+      Id: true,
+      FullName: true,
+      StudentCode: true,
     }
   },
-  Class: true,
+  Exam: {
+    select: {
+      Id: true,
+      Title: true,
+      Description: true,
+    }
+  },
+  Class: {
+    select: {
+      Id: true,
+      ClassCode: true,
+    }
+  },
   SubmissionArtifact: true,
 }
 
