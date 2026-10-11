@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../../../../database/prisma.js'
 import { v4 as uuidv4 } from 'uuid'
 import { IEmailService } from '../../../../shared/application/email.service.interface.js'
 import { logger } from '../../../../shared/infrastructure/logger.js'
-
-const prisma = new PrismaClient()
 
 export interface SendAssignmentNotificationParams {
     examId: string

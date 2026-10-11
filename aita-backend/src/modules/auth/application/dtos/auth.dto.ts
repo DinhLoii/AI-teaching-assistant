@@ -6,12 +6,17 @@ export class LoginRequestDto {
   password!: string
 
   static readonly schema = z.object({
-    email: z.string().email('Email không đúng định dạng'),
-    password: z.string().min(6, 'Mật khẩu phải chứa ít nhất 6 ký tự'),
+    email: z.string().min(1, 'Vui lòng nhập tên đăng nhập hoặc email'),
+    password: z.string().min(1, 'Vui lòng nhập mật khẩu'),
   })
 
   static from(data: unknown): LoginRequestDto {
-    const parsed = this.schema.parse(data)
+    const raw = (data ?? {}) as Record<string, any>
+    const identifier = (raw.email ?? raw.username ?? '').toString().trim()
+    const parsed = this.schema.parse({
+      ...raw,
+      email: identifier,
+    })
     const dto = new LoginRequestDto()
     dto.email = parsed.email
     dto.password = parsed.password

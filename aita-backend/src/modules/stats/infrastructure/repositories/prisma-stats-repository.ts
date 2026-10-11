@@ -16,14 +16,26 @@ export class PrismaStatsRepository implements IStatsRepository {
     async getLecturerSummary(lecturerId: string) {
         const myClasses = await this.prisma.class.findMany({
             where: { InstructorClass: { some: { UserId: lecturerId } } },
+            select: { Id: true },
         })
         const classIds = myClasses.map((c: any) => c.Id)
-        const exams = await this.prisma.exam.count()
-        const [pendingGrading, students] = await Promise.all([
-            this.prisma.submission.count({
-                where: { ClassId: { in: classIds }, GradingStatus: 'Pending' },
+        const [exams, pendingGrading, students] = await Promise.all([
+            this.prisma.exam.count({
+                where: {
+                    OR: [
+                        { CreatedBy: lecturerId },
+                        { ExamClass: { some: { ClassId: { in: classIds } } } }
+                    ]
+                }
             }),
-            this.prisma.studentClass.count({ where: { ClassId: { in: classIds } } }),
+            classIds.length > 0
+                ? this.prisma.submission.count({
+                    where: { ClassId: { in: classIds }, GradingStatus: 'Pending' },
+                })
+                : 0,
+            classIds.length > 0
+                ? this.prisma.studentClass.count({ where: { ClassId: { in: classIds } } })
+                : 0,
         ])
         return {
             classes: myClasses.length,
@@ -34,19 +46,20 @@ export class PrismaStatsRepository implements IStatsRepository {
     }
 
     async getStudentSummary(studentId: string) {
-        const enrolled = await this.prisma.studentClass.findMany({ where: { UserId: studentId } })
-        const classIds = enrolled.map((e: any) => e.ClassId)
-        const [exams, subs] = await Promise.all([
+        const [classesCount, examsCount, totalSubs, gradedSubs] = await Promise.all([
+            this.prisma.studentClass.count({ where: { UserId: studentId } }),
             this.prisma.exam.count({ where: { Status: 'Published' } }),
-            this.prisma.submission.findMany({ where: { StudentId: studentId } }),
+            this.prisma.submission.count({ where: { StudentId: studentId } }),
+            this.prisma.submission.count({
+                where: { StudentId: studentId, ReviewStatus: PrismaStatsRepository.PUBLISHED },
+            }),
         ])
 
         return {
-            classes: classIds.length,
-            exams,
-            submissions: subs.length,
-            // Published, not GradingStatus — see getStudentProgress for why that column lies.
-            graded: subs.filter((s: any) => s.ReviewStatus === PrismaStatsRepository.PUBLISHED).length,
+            classes: classesCount,
+            exams: examsCount,
+            submissions: totalSubs,
+            graded: gradedSubs,
         }
     }
 
@@ -56,17 +69,25 @@ export class PrismaStatsRepository implements IStatsRepository {
                 InstructorClass: { some: { UserId: lecturerId } },
                 ...(classId ? { Id: classId } : {}),
             },
+            select: { Id: true },
         })
         const classIds = classes.map((c: any) => c.Id)
 
-        // Same gate as the student side: a score counts once it is PUBLISHED. Filtering on
-        // GradingStatus === 'Graded' returned nothing at all for imported data, where that
-        // column is null, so every lecturer saw an average of 0.
-        const submissions = await this.prisma.submission.findMany({
-            where: { ClassId: { in: classIds }, ReviewStatus: PrismaStatsRepository.PUBLISHED },
-            select: { TotalScore: true, FinalScore: true },
-        })
-        const allInClasses = await this.prisma.submission.count({ where: { ClassId: { in: classIds } } })
+        if (classIds.length === 0) {
+            return {
+                avgScore: 0,
+                submitRate: '—',
+                passRate: '—',
+            }
+        }
+
+        const [submissions, allInClasses] = await Promise.all([
+            this.prisma.submission.findMany({
+                where: { ClassId: { in: classIds }, ReviewStatus: PrismaStatsRepository.PUBLISHED },
+                select: { TotalScore: true, FinalScore: true },
+            }),
+            this.prisma.submission.count({ where: { ClassId: { in: classIds } } }),
+        ])
 
         const scores = submissions
             .map((s: any) => PrismaStatsRepository.scoreOf(s))
@@ -75,7 +96,6 @@ export class PrismaStatsRepository implements IStatsRepository {
 
         return {
             avgScore: Math.round(avg * 100) / 100,
-            // Was the string '78%' regardless of the data — a made-up number on a real report.
             submitRate: allInClasses ? `${Math.round((submissions.length / allInClasses) * 100)}%` : '—',
             passRate: scores.length ? `${Math.round((scores.filter((s: number) => s >= 5).length / scores.length) * 100)}%` : '—',
         }
@@ -101,7 +121,13 @@ export class PrismaStatsRepository implements IStatsRepository {
     async getStudentProgress(studentId: string) {
         const subs = await this.prisma.submission.findMany({
             where: { StudentId: studentId, ReviewStatus: PrismaStatsRepository.PUBLISHED },
-            include: { Exam: true } as any,
+            select: {
+                Id: true,
+                TotalScore: true,
+                FinalScore: true,
+                SubmittedAt: true,
+                Exam: { select: { Title: true } },
+            },
         })
 
         const scores = subs
@@ -125,7 +151,16 @@ export class PrismaStatsRepository implements IStatsRepository {
     async getStudentHistory(studentId: string) {
         const subs = await this.prisma.submission.findMany({
             where: { StudentId: studentId },
-            include: { Exam: true, Class: true } as any,
+            select: {
+                Id: true,
+                TotalScore: true,
+                FinalScore: true,
+                SubmittedAt: true,
+                ReviewStatus: true,
+                GradingStatus: true,
+                Exam: { select: { Title: true } },
+                Class: { select: { ClassCode: true } },
+            },
             orderBy: { SubmittedAt: 'desc' },
         })
 
@@ -136,8 +171,6 @@ export class PrismaStatsRepository implements IStatsRepository {
                 assignment: s.Exam?.Title,
                 className: s.Class?.ClassCode,
                 submittedAt: s.SubmittedAt?.toISOString(),
-                // Hidden until published, so the history list cannot show a number the
-                // detail screen (correctly) refuses to show.
                 totalScore: published ? s.TotalScore : null,
                 finalScore: published ? PrismaStatsRepository.scoreOf(s) : null,
                 reviewStatus: s.ReviewStatus,
@@ -155,7 +188,19 @@ export class PrismaStatsRepository implements IStatsRepository {
             take: params.limit ?? 50,
             where,
             orderBy: { CreatedAt: 'desc' },
-            include: { User: true } as any,
+            select: {
+                Id: true,
+                Action: true,
+                EntityName: true,
+                EntityId: true,
+                CreatedAt: true,
+                User: {
+                    select: {
+                        FullName: true,
+                        Email: true,
+                    },
+                },
+            },
         })
 
         return logs.map((log: any) => ({

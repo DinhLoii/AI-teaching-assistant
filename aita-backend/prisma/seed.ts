@@ -19,12 +19,9 @@ async function main() {
   try {
     await prisma.$connect()
   } catch (error: any) {
-    console.error('\n❌ [LỖI KẾT NỐI CƠ SỞ DỮ LIỆU] Không thể kết nối tới SQL Server tại localhost:1433.')
+    console.error('\n❌ [LỖI KẾT NỐI CƠ SỞ DỮ LIỆU] Không thể kết nối tới cơ sở dữ liệu PostgreSQL.')
     console.error('─────────────────────────────────────────────────────────────────────────────')
-    console.error('👉 Vui lòng kiểm tra các bước sau:')
-    console.error('   1. Dịch vụ SQL Server: Mở Services (services.msc) -> Kiểm tra SQL Server (SQLEXPRESS) hoặc MSSQLSERVER đã ở trạng thái Running chưa.')
-    console.error('   2. Bật TCP/IP: Mở SQL Server Configuration Manager -> Protocols for SQLEXPRESS -> Enable TCP/IP -> Thiết lập IPAll TCP Port = 1433.')
-    console.error('   3. Kiểm tra biến DATABASE_URL trong file aita-backend/.env.')
+    console.error('👉 Vui lòng kiểm tra biến DATABASE_URL trong file aita-backend/.env.')
     console.error('─────────────────────────────────────────────────────────────────────────────\n')
     process.exit(1)
   }
