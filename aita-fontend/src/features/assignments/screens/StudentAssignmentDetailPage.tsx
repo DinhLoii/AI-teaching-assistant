@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { EvaluationReportViewer } from '@/features/submissions/components/EvaluationReportViewer'
+import { VsCodeExplorerViewer } from '@/features/submissions/components/VsCodeExplorerViewer'
 import { assignmentsApi } from '@/lib/api/modules/assignments'
 import { submissionsApi } from '@/lib/api/modules/submissions'
 import { studentPortalApi } from '@/lib/api/modules/student-portal'
@@ -17,6 +18,7 @@ import { formatDate } from '@/lib/utils'
 import {
   UploadCloud,
   FileArchive,
+  Check,
   CheckCircle2,
   Clock,
   AlertTriangle,
@@ -37,15 +39,63 @@ import {
   Calendar,
   Send,
   AlertCircle,
+  BookOpen,
+  User,
+  Code2,
+  Folder,
 } from 'lucide-react'
 import { useLanguage } from '@/providers/language-provider'
 import { ApiError } from '@/lib/api/client'
 import { ErrorNotice } from '@/components/ui/feedback'
+function RealisticFolderIcon({ className = 'w-8 h-8' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 48" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="aita_folder_back" x1="6" y1="9" x2="38" y2="39" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#F59E0B" />
+          <stop offset="1" stopColor="#D97706" />
+        </linearGradient>
+        <linearGradient id="aita_folder_front" x1="5" y1="16" x2="43" y2="40" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#FDE68A" />
+          <stop offset="0.25" stopColor="#FBBF24" />
+          <stop offset="1" stopColor="#F59E0B" />
+        </linearGradient>
+        <filter id="aita_folder_shadow" x="2" y="14" width="44" height="28" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+          <feDropShadow dx="0" dy="2" stdDeviation="1.5" floodColor="#78350F" floodOpacity="0.28" />
+        </filter>
+      </defs>
+      {/* Thân sau thư mục có tai tab nhô lên */}
+      <path
+        d="M6 13C6 10.7909 7.79086 9 10 9H18.5858C19.6466 9 20.6639 9.42143 21.4142 10.1716L24.2426 13H38C40.2091 13 42 14.7909 42 17V35C42 37.2091 40.2091 39 38 39H10C7.79086 39 6 37.2091 6 35V13Z"
+        fill="url(#aita_folder_back)"
+      />
+      {/* Tờ giấy tài liệu trắng nhô nhẹ bên trong */}
+      <rect x="10" y="12" width="28" height="11" rx="2" fill="#FFFFFF" fillOpacity="0.95" />
+      <line x1="14" y1="15.5" x2="26" y2="15.5" stroke="#CBD5E1" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="14" y1="18.5" x2="30" y2="18.5" stroke="#E2E8F0" strokeWidth="1.5" strokeLinecap="round" />
+      {/* Nắp trước dạng nổi 3D với viền sáng highlight */}
+      <g filter="url(#aita_folder_shadow)">
+        <path
+          d="M5 19C5 17.3431 6.34315 16 8 16H40C41.6569 16 43 17.3431 43 19V36C43 38.2091 41.2091 40 39 40H9C6.79086 40 5 38.2091 5 36V19Z"
+          fill="url(#aita_folder_front)"
+        />
+        <path
+          d="M7 17.5H41"
+          stroke="#FFFBEB"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeOpacity="0.9"
+        />
+      </g>
+    </svg>
+  )
+}
 
 export default function StudentAssignmentDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { t, language } = useLanguage()
+  const isVi = language === 'vi'
   const assignmentId = String(params?.id ?? '')
 
   const [assignment, setAssignment] = React.useState<any>(null)
@@ -64,8 +114,8 @@ export default function StudentAssignmentDetailPage() {
   const [showUploadForm, setShowUploadForm] = React.useState(false)
   const pollingRef = React.useRef<NodeJS.Timeout | null>(null)
 
-  // Active view tab when graded: 'report' | 'spec'
-  const [viewTab, setViewTab] = React.useState<'report' | 'spec'>('report')
+  // Active view tab: 'spec' (Đề bài & Folder) | 'report' (Báo cáo AI)
+  const [viewTab, setViewTab] = React.useState<'report' | 'spec'>('spec')
 
   // Real-time Countdown State
   const [countdownText, setCountdownText] = React.useState<string>('')
@@ -464,6 +514,49 @@ export default function StudentAssignmentDetailPage() {
     : (typeof (assignment?.description as any)?.description === 'string' ? (assignment.description as any).description : '')
   const rubricRules = assignment?.rubricRules || []
 
+  // Download Assignment Brief / Specs
+  const handleDownloadBrief = () => {
+    // 1. If lecturer uploaded attachment files, download the primary attachment
+    if (assignment?.attachments && assignment.attachments.length > 0) {
+      const firstAtt = assignment.attachments[0]
+      if (firstAtt.fileUrl) {
+        window.open(firstAtt.fileUrl, '_blank')
+        return
+      }
+    }
+
+    // 2. Generate and download a structured Markdown brief of assignment & rubric
+    const briefContent = `# ${assignment?.title || 'Assignment'}\n\n` +
+      `Môn học: ${assignment?.subjectCode || ''}\n` +
+      `Loại bài tập: ${assignment?.type || ''}\n` +
+      `Hạn chót: ${assignment?.due ? formatDate(assignment.due) : 'N/A'}\n` +
+      `Giảng viên: ${assignment?.lecturer || 'N/A'}\n\n` +
+      `========================================\n` +
+      `YÊU CẦU ĐỀ BÀI\n` +
+      `========================================\n\n` +
+      `${detailedContent || 'Vui lòng hoàn thành theo hướng dẫn của giảng viên.'}\n\n` +
+      (rubricRules && rubricRules.length > 0
+        ? `========================================\n` +
+          `TIÊU CHÍ CHẤM ĐIỂM (BAREM RUBRIC)\n` +
+          `========================================\n\n` +
+          rubricRules.map((r: any, idx: number) => {
+            const score = Number(r.weight ?? r.maxPoints ?? 0).toFixed(1)
+            const title = r.title || r.name || r.description || `Tiêu chí ${idx + 1}`
+            const desc = r.description && r.description !== title ? `\n   ${r.description}` : ''
+            return `${idx + 1}. ${title} (${score} điểm)${desc}`
+          }).join('\n')
+        : '')
+
+    const blob = new Blob([briefContent], { type: 'text/markdown;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    const safeTitle = (assignment?.title || 'De_bai').replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1E00-\u1EFF]/g, '_')
+    a.download = `${safeTitle}_DeBai.md`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   if (!assignment) {
     return (
       <DashboardLayout navItems={STUDENT_NAV} title="AITA Student" roleLabel={t('profile.role_student', 'Sinh viên')} requiredRole="student">
@@ -482,385 +575,76 @@ export default function StudentAssignmentDetailPage() {
       headerSubtitle={assignment?.title || 'Assignment'}
     >
       <div className="space-y-8" translate="no" spellCheck={false}>
-        {/* Back Link & Quick Actions */}
-        <div className="flex items-center justify-between">
+        {/* Navigation Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <Link
-            href="/student"
+            href="/student/results"
             className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            {t('student.assignment.back_btn', 'Quay lại Bàn học tập')}
+            <span>{isVi ? 'Quay lại Bảng kết quả' : 'Back to Results'}</span>
           </Link>
 
           {isPublished && !isGradingWait && (
-            <div className="flex items-center gap-2">
-              <Button
-                variant={viewTab === 'report' ? 'primary' : 'outline'}
-                size="sm"
+            <div className="inline-flex items-center p-1 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 rounded-2xl border border-orange-100/90 dark:border-orange-900/30 text-xs gap-1 shadow-xs">
+              <button
+                type="button"
+                onClick={() => setViewTab('spec')}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                  viewTab === 'spec'
+                    ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 text-white shadow-md shadow-orange-500/20'
+                    : 'text-slate-600 hover:text-orange-600 dark:text-slate-300 dark:hover:text-white hover:bg-orange-50/60'
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>{isVi ? 'Chi tiết bài & Folder' : 'Brief & Folder'}</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setViewTab('report')}
-                className="text-xs gap-1.5"
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                  viewTab === 'report'
+                    ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 text-white shadow-md shadow-orange-500/20'
+                    : 'text-slate-600 hover:text-orange-600 dark:text-slate-300 dark:hover:text-white hover:bg-orange-50/60'
+                }`}
               >
                 <Award className="w-3.5 h-3.5" />
-                <span>{t('student.assignment.ai_result', 'Kết quả chấm bài AI')}</span>
-              </Button>
-              <Button
-                variant={viewTab === 'spec' ? 'primary' : 'outline'}
-                size="sm"
-                onClick={() => setViewTab('spec')}
-                className="text-xs gap-1.5"
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>{t('student.assignment.spec_rubric', 'Đề bài & Barem Rubric')}</span>
-              </Button>
+                <span>{isVi ? 'Báo cáo điểm AI' : 'AI Evaluation'}</span>
+              </button>
             </div>
           )}
         </div>
 
-        {/* Header Banner */}
-        <div className="rounded-3xl p-6 md:p-8 bg-gradient-to-r from-orange-50 via-amber-50/60 to-blue-50/70 dark:bg-gradient-to-r dark:from-orange-950/40 dark:via-slate-900/90 dark:to-blue-950/30 border border-orange-200/80 dark:border-orange-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xs dark:shadow-xl transition-colors">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="orange">{assignment?.subjectCode || 'CNTT'}</Badge>
-              <Badge variant="default">{assignment?.type || 'Workshop'}</Badge>
-
-              {/* Status Badge (G6.5) */}
-              {submission ? (
-                <Badge
-                  variant={
-                    isPublished
-                      ? 'success'
-                      : isGradingWait
-                      ? 'warning'
-                      : 'blue'
-                  }
-                >
-                  {isGradingWait
-                    ? t('student.assignment.grading', 'AI đang phân tích...')
-                    : isPublished
-                    ? t('student.assignment.published', 'Đã công bố điểm')
-                    : t('student.assignment.waiting_approval', 'Đã nộp bài • Chờ duyệt')}
-                </Badge>
-              ) : (
-                <Badge variant={deadlineStatus === 'EXPIRED' ? 'danger' : 'outline'}>
-                  {deadlineStatus === 'EXPIRED' ? t('student.assignment.status_overdue', 'Đã hết hạn nộp') : t('student.assignment.status_pending', 'Chưa nộp bài')}
-                </Badge>
-              )}
-
-              {/* Individual Extension Badge (G6.4) */}
-              {(submission?.isReopened || submission?.extendedDueDate) && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                  <Calendar className="w-3 h-3 text-purple-500" />
-                  {t('student.assignment.extended_until', 'Được gia hạn riêng đến')} {formatDate(submission.extendedDueDate)}
-                </span>
-              )}
-            </div>
-
-            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              {assignment?.title}
-            </h2>
-
-            {/* Countdown & Deadline Info Banner */}
-            <div className="flex flex-wrap items-center gap-4 text-xs pt-1">
-              <span className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
-                <Clock className="w-4 h-4 text-orange-500" />
-                {t('student.assignment.deadline', 'Hạn chót')}: <strong>{formatDate(assignment?.due)}</strong>
-              </span>
-
-              {/* Live countdown pill */}
-              <span className={`px-2.5 py-0.5 rounded-full font-mono font-bold text-xs ${
-                deadlineStatus === 'ON_TIME'
-                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                  : deadlineStatus === 'LATE_ALLOWED'
-                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                  : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-              }`}>
-                {deadlineStatus === 'ON_TIME' && `⏳ ${t('ui.remaining', 'Còn lại')}: ${countdownText}`}
-                {deadlineStatus === 'LATE_ALLOWED' && `⚠️ ${t('student.assignment.late_window', 'Khung giờ nộp trễ hạn')} (${t('ui.remaining_short', 'còn')} ${countdownText})`}
-                {deadlineStatus === 'EXPIRED' && `🛑 ${t('student.assignment.submission_closed', 'Đã hết thời gian nộp')}`}
-              </span>
-
-              {assignment?.lecturer && (
-                <span className="text-slate-500 dark:text-slate-400">
-                  • {t('student.assignment.lecturer', 'Giảng viên')}: <strong className="text-slate-700 dark:text-slate-200">{assignment.lecturer}</strong>
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Quick status pill on banner */}
-          {submission && (
-            <div className="flex items-center gap-3 bg-white/80 dark:bg-slate-900/80 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm shrink-0">
-              {isPublished ? (
-                <div className="text-center pr-3 border-r border-slate-200 dark:border-slate-800">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block">{t('student.assignment.score', 'Điểm số')}</span>
-                  <span className="text-3xl font-black text-orange-600 dark:text-orange-400 font-mono">
-                    {Number(submission.score ?? submission.finalScore ?? 0).toFixed(1)}
-                    <span className="text-xs font-normal text-slate-400">/10</span>
-                  </span>
-                </div>
-              ) : (
-                <div className="text-left pr-3 border-r border-slate-200 dark:border-slate-800">
-                  <span className="text-[10px] uppercase font-bold text-amber-500 block">{t('student.assignment.status', 'Trạng thái')}</span>
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1 mt-0.5">
-                    <Clock className="w-3.5 h-3.5 text-amber-500" />
-                    {t('student.assignment.waiting_approval', 'Chờ duyệt điểm')}
-                  </span>
-                </div>
-              )}
-              <div className="space-y-1">
-                {deadlineStatus !== 'EXPIRED' && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowUploadForm(!showUploadForm)}
-                    className="text-xs gap-1.5 border-orange-500/30 text-orange-600 dark:text-orange-400"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>{showUploadForm ? t('student.assignment.close_form', 'Đóng form') : t('student.assignment.resubmit', 'Nộp lại bài')}</span>
-                  </Button>
-                )}
-
-                {isPublished && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setAppealModal(true)}
-                    className="text-xs gap-1 text-slate-500 hover:text-orange-500"
-                  >
-                    <MessageSquare className="w-3 h-3" />
-                    <span>{t('student.assignment.appeal_btn', 'Phúc khảo')}</span>
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Late Penalty Warning Notice */}
-        {deadlineStatus === 'LATE_ALLOWED' && (
-          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-3 text-xs md:text-sm text-amber-800 dark:text-amber-300">
-            <AlertTriangle className="w-5 h-5 shrink-0 text-amber-500" />
-            <div>
-              <strong>{t('student.assignment.late_policy_active', 'Chính sách nộp muộn đang áp dụng:')}</strong>{' '}
-              {assignment?.latePenaltyType === 'FIXED_POINTS'
-                ? t('student.assignment.late_deduct_points', 'Bài nộp trong khung giờ này sẽ bị trừ cố định {{points}} điểm.').replace('{{points}}', String(assignment.latePenaltyValue))
-                : assignment?.latePenaltyType === 'PERCENT'
-                ? t('student.assignment.late_deduct_percent', 'Bài nộp trong khung giờ này sẽ bị trừ {{percent}}% tổng điểm đạt được.').replace('{{percent}}', String(assignment.latePenaltyValue))
-                : t('student.assignment.late_grace_period', 'Bài nộp đang trong khung giờ ân hạn nộp muộn.')}{' '}
-              {t('student.assignment.late_cutoff_warning', 'Hệ thống sẽ khoá nộp bài hoàn toàn khi hết hạn cutoff ({{time}}).').replace('{{time}}', countdownText)}
-            </div>
-          </div>
-        )}
-
-        {/* Hard cutoff expired notice */}
-        {deadlineStatus === 'EXPIRED' && !submission?.isReopened && (
-          <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 flex items-center gap-3 text-xs md:text-sm text-rose-700 dark:text-rose-300">
-            <AlertCircle className="w-5 h-5 shrink-0 text-rose-500" />
-            <div>
-              <strong>{t('student.assignment.cutoff_expired_title', 'Đã hết hạn nộp bài:')}</strong> {t('student.assignment.cutoff_expired_desc', 'Thời hạn nộp chính thức và thời gian nộp muộn cho phép đã kết thúc. Bạn không thể tải lên tệp bài làm mới trừ khi được Giảng viên cấp quyền gia hạn riêng.')}
-            </div>
-          </div>
-        )}
-
-        {/* Notification alerts */}
+        {/* Notice alerts */}
         {errorMsg && (
-          <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-600 dark:text-rose-300 text-xs md:text-sm flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 shrink-0 text-rose-500" />
+          <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-300 text-xs md:text-sm flex items-center gap-3 animate-in fade-in-50 duration-300">
-            <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-500" />
+          <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
             <span>{successMsg}</span>
           </div>
         )}
 
-        {/* Student Appeal Status Banner if submitted */}
         {submission?.studentFeedback && (
-          <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-between gap-4 text-xs">
-            <div className="flex items-center gap-2.5">
-              <MessageSquare className="w-4 h-4 text-blue-500 shrink-0" />
+          <div className="p-3.5 rounded-xl bg-orange-50/60 dark:bg-orange-950/20 border border-orange-200/80 dark:border-orange-900/40 flex items-center justify-between gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-orange-500 shrink-0" />
               <div>
-                <span className="font-bold text-blue-700 dark:text-blue-300">
-                  {t('student.assignment.appeal_submitted_banner', 'Đơn phúc khảo của bạn đã được gửi tới Giảng viên:')}
-                </span>{' '}
+                <span className="font-semibold text-orange-800 dark:text-orange-300">{isVi ? 'Đơn phúc khảo đã gửi:' : 'Appeal submitted:'}</span>{' '}
                 <span className="text-slate-600 dark:text-slate-300 italic">&ldquo;{submission.studentFeedback}&rdquo;</span>
               </div>
             </div>
-            <Badge variant="blue" className="shrink-0 text-[10px]">{t('student.assignment.appeal_pending_badge', 'Đang chờ giảng viên xử lý')}</Badge>
+            <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 shrink-0">
+              {isVi ? 'Chờ xử lý' : 'Pending'}
+            </span>
           </div>
         )}
 
-        {/* 1. LIVE AI GRADING PULSE CARD (G6.5) */}
-        {isGradingWait && (
-          <Card className="p-6 md:p-8 border-orange-500/40 bg-gradient-to-br from-orange-50/70 via-slate-50 to-amber-50/50 dark:from-orange-950/30 dark:via-slate-900/90 dark:to-slate-950 shadow-xl overflow-hidden relative">
-            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 bg-orange-500/10 rounded-full blur-2xl pointer-events-none" />
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-400 flex items-center justify-center text-white shadow-lg shadow-orange-500/30 animate-pulse">
-                    <Sparkles className="w-7 h-7" />
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white ring-2 ring-white dark:ring-slate-900">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">
-                      {t('student.assignment.ai_analyzing', 'AI Rubric Engine đang phân tích bài nộp của bạn...')}
-                    </h3>
-                    <span className="px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 font-mono text-xs font-bold">
-                      {gradingSeconds}s
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 max-w-xl leading-relaxed">
-                    {gradingSeconds > 30
-                      ? t('student.assignment.grading_wait_queue', 'Hệ thống đang kiểm thử chi tiết mã nguồn trong hàng đợi. Bạn có thể yên tâm rời trang, điểm số và kết quả sẽ được lưu trữ tự động.')
-                      : t('student.assignment.ai_desc', 'Hệ thống đang quét cấu trúc thư mục, kiểm tra các tầng kiến trúc (Controller, Service, DAO), phân tích mã nguồn và chạy các test suite tự động.')}
-                  </p>
-                </div>
-              </div>
-
-              {/* Step indicator badges */}
-              <div className="flex flex-col gap-2 shrink-0 text-xs w-full md:w-auto">
-                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-medium">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>{t('student.assignment.step1', '1. Nhận tệp mã nguồn .zip thành công')}</span>
-                </div>
-                <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 font-bold animate-pulse">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>{t('student.assignment.step2', '2. Đang phân tích Barem Rubric & Code vi phạm...')}</span>
-                </div>
-                <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
-                  <span className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center text-[10px]">3</span>
-                  <span>{t('student.assignment.step3', '3. Tổng hợp điểm số & sinh báo cáo chi tiết')}</span>
-                </div>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* 2. RE-SUBMIT FORM (G6.4) */}
-        {(showUploadForm || (!isSubmissionGraded && !isGradingWait) || Boolean(submission?.isReopened) || Boolean((assignment as any)?.isReopened)) && (deadlineStatus !== 'EXPIRED' || Boolean(submission?.isReopened) || Boolean((assignment as any)?.isReopened)) && (
-          <Card className="p-6 md:p-8 border-orange-500/30 bg-white dark:bg-slate-900 shadow-md">
-            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-200 dark:border-slate-800">
-              <div>
-                <h3 className="text-base md:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <UploadCloud className="w-5 h-5 text-orange-500 dark:text-orange-400" />
-                  {isSubmissionGraded
-                    ? `${t('student.assignment.resubmit', 'Nộp lại bài làm')} (Attempt #${(submission?.attemptNumber || 1) + 1})`
-                    : t('student.assignment.submit_zip', 'Nộp bài làm (.zip)')}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 pt-0.5">
-                  {t('student.assignment.submit_note', 'Đóng gói toàn bộ source code của bạn thành 1 file nén duy nhất định dạng .zip (tối đa 100MB). Khi nộp lại, lần nộp mới sẽ thay thế kết quả trước.')}
-                </p>
-              </div>
-
-              {isSubmissionGraded && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowUploadForm(false)}
-                  className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400"
-                >
-                  {t('student.assignment.close_form', 'Đóng form')}
-                </Button>
-              )}
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Dropzone */}
-              <div
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-2xl p-6 md:p-8 text-center transition-all cursor-pointer relative ${
-                  dragActive
-                    ? 'border-orange-500 bg-orange-500/10 scale-[1.01]'
-                    : selectedFile
-                    ? 'border-emerald-500/50 bg-emerald-500/5'
-                    : 'border-slate-300 dark:border-slate-800 hover:border-orange-500/50 bg-slate-50/50 dark:bg-slate-950/40'
-                }`}
-                onClick={() => document.getElementById('zipFileInput')?.click()}
-              >
-                <input
-                  id="zipFileInput"
-                  type="file"
-                  accept=".zip"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-
-                {selectedFile ? (
-                  <div className="space-y-2">
-                    <FileArchive className="w-12 h-12 text-emerald-500 dark:text-emerald-400 mx-auto" />
-                    <p className="text-sm font-bold text-slate-900 dark:text-white truncate max-w-sm mx-auto">
-                      {selectedFile.name}
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • {t('student.assignment.ready_submit', 'Sẵn sàng nộp')}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setSelectedFile(null)
-                      }}
-                      className="text-xs text-rose-500 hover:underline pt-1 font-medium"
-                    >
-                      {t('student.assignment.choose_other', 'Chọn file khác')}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <UploadCloud className="w-12 h-12 text-orange-500 dark:text-orange-400 mx-auto" />
-                    <p className="text-sm font-semibold text-slate-800 dark:text-white">
-                      {t('student.assignment.drag_drop', 'Kéo thả file .zip vào đây')}
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {t('student.assignment.or_click', 'hoặc click để duyệt file trên máy tính của bạn')}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Optional Note */}
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  {t('student.assignment.extra_note', 'Ghi chú thêm (Tài khoản test, database credentials...)')}
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder={t('student.assignment.note_placeholder', 'Ghi chú về tài khoản test, database...')}
-                  value={noteContent}
-                  onChange={(e) => setNoteContent(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/80 px-3 py-2 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-orange-500"
-                />
-              </div>
-
-              <div className="flex justify-end pt-2">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="md"
-                  className="w-full md:w-auto px-8 shadow-lg shadow-orange-500/20 bg-orange-500 hover:bg-orange-600 text-white"
-                  isLoading={uploading}
-                  disabled={!selectedFile}
-                >
-                  <UploadCloud className="w-4 h-4 shrink-0" />
-                  <span>{t('student.assignment.confirm_submit', 'Xác nhận nộp bài')}</span>
-                </Button>
-              </div>
-            </form>
-          </Card>
-        )}
-
-        {/* 3. MAIN CONTENT: IF PUBLISHED, SHOW EVALUATION REPORT DIRECTLY (G6.6) */}
         {isPublished && viewTab === 'report' ? (
           <div className="space-y-6">
             <EvaluationReportViewer
@@ -870,288 +654,317 @@ export default function StudentAssignmentDetailPage() {
             />
           </div>
         ) : (
-          /* 4. SPECIFICATION & RUBRIC RULES */
-          <div>
-            {/* If submission exists but not published yet, show reassuring pending review banner */}
-            {submission && !isPublished && !isGradingWait && (
-              <Card className="p-6 md:p-8 bg-gradient-to-br from-amber-500/5 via-orange-500/5 to-slate-900/10 border border-amber-500/30 rounded-3xl mb-6">
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                  <div className="flex items-start md:items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
-                      <Clock className="w-6 h-6" />
+          /* THIẾT KẾ TRONG KHUNG BO TRÒN THEO CHUẨN DESIGN SYSTEM */
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-orange-100/90 dark:border-orange-900/30 shadow-xs divide-y divide-orange-100/60 dark:divide-slate-800/80 overflow-hidden">
+            {/* PHẦN 1: THÔNG TIN CHUNG BÀI TẬP & TRẠNG THÁI NỘP */}
+            <div className="p-5 md:p-6 space-y-4">
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                <div className="space-y-2.5">
+                  {/* Dòng thẻ thông tin & trạng thái */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-2.5 py-1 rounded-md text-xs font-bold font-mono bg-orange-50 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300 border border-orange-200/80 dark:border-orange-800">
+                      {assignment?.subjectCode || 'CNTT'}
+                    </span>
+                    <span className="px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700">
+                      {assignment?.type || (isVi ? 'Bài tập' : 'Assignment')}
+                    </span>
+
+                    {/* Status badge */}
+                    {isGradingWait ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>{isVi ? 'Đang chấm AI...' : 'AI Grading...'}</span>
+                      </span>
+                    ) : isPublished ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>{isVi ? 'Đã công bố điểm' : 'Published'}: <strong>{Number(submission?.score ?? submission?.finalScore ?? 0).toFixed(1)}/10</strong></span>
+                      </span>
+                    ) : submission ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80">
+                        <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+                        <span>{isVi ? 'Đã nộp bài' : 'Submitted'}</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                        <span className="w-2 h-2 rounded-full bg-amber-500" />
+                        <span>{deadlineStatus === 'EXPIRED' ? (isVi ? 'Đã hết hạn nộp' : 'Overdue') : (isVi ? 'Chưa nộp bài' : 'Pending')}</span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Tiêu đề bài tập */}
+                  <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white tracking-tight leading-snug">
+                    {assignment?.title}
+                  </h1>
+
+                  {/* Thẻ chi tiết hạn chót & giảng viên */}
+                  <div className="flex flex-wrap items-center gap-2.5 pt-0.5">
+                    {/* Hạn chót & Thời gian đếm ngược */}
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 text-xs">
+                      <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="text-slate-500 dark:text-slate-400">{isVi ? 'Hạn chót:' : 'Due:'}</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{formatDate(assignment?.due)}</span>
+                      {countdownText && (
+                        <span className={`px-2 py-0.5 rounded text-[11px] font-mono font-medium ${
+                          deadlineStatus === 'EXPIRED'
+                            ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
+                            : 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60'
+                        }`}>
+                          {deadlineStatus === 'EXPIRED' ? (isVi ? 'Đã hết hạn' : 'Expired') : `${isVi ? 'Còn' : 'Left'} ${countdownText}`}
+                        </span>
+                      )}
                     </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-base md:text-lg font-bold text-slate-900 dark:text-white">
-                          {t('student.assignment.received_success', 'Bài nộp của bạn đã được tiếp nhận thành công')}
-                        </h3>
-                        <Badge variant="orange" className="text-[10px]">{t('student.assignment.waiting_score', 'Chờ công bố điểm')}</Badge>
+
+                    {/* Giảng viên phụ trách */}
+                    {assignment?.lecturer && (
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 text-xs">
+                        <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="text-slate-500 dark:text-slate-400">{isVi ? 'Giảng viên:' : 'Lecturer:'}</span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">{assignment.lecturer}</span>
                       </div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
-                        {t('student.assignment.received_desc', 'Hệ thống đã nhận tệp bài làm và chuyển cho Giảng viên. Giảng viên đang xem xét, đánh giá bài làm và sẽ công bố điểm số cùng kết quả phân tích chi tiết sau.')}
+                    )}
+                  </div>
+                </div>
+
+                {/* Right actions */}
+                <div className="flex items-center gap-2 shrink-0 flex-wrap md:self-start">
+                  <button
+                    type="button"
+                    onClick={handleDownloadBrief}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl transition-all cursor-pointer shadow-2xs"
+                  >
+                    <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                    <span>{isVi ? 'Tải đề bài về' : 'Download Brief'}</span>
+                  </button>
+
+                  {deadlineStatus !== 'EXPIRED' && (
+                    <button
+                      type="button"
+                      onClick={() => setShowUploadForm(!showUploadForm)}
+                      className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer shadow-xs ${
+                        submission
+                          ? 'text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
+                          : 'text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500'
+                      }`}
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>{showUploadForm ? (isVi ? 'Đóng form' : 'Close') : (submission ? (isVi ? 'Nộp lại bài' : 'Resubmit') : (isVi ? 'Nộp bài' : 'Submit'))}</span>
+                    </button>
+                  )}
+                  {isPublished && (
+                    <button
+                      type="button"
+                      onClick={() => setAppealModal(true)}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>{isVi ? 'Phúc khảo' : 'Appeal'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Form nộp lại bài nếu toggle */}
+              {showUploadForm && (
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      {isVi ? 'Tải lên file bài làm mới (.zip)' : 'Upload new zip submission'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowUploadForm(false)}
+                      className="text-[11px] text-slate-400 hover:text-slate-600"
+                    >
+                      {isVi ? 'Hủy' : 'Cancel'}
+                    </button>
+                  </div>
+                  <div
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={handleDrop}
+                    onClick={() => document.getElementById('resubmitInput')?.click()}
+                    className={`border-2 border-dashed rounded-lg p-5 text-center cursor-pointer transition-all ${
+                      selectedFile ? 'border-emerald-500/50 bg-emerald-50/20' : 'border-slate-300 dark:border-slate-700 hover:border-blue-400'
+                    }`}
+                  >
+                    <input id="resubmitInput" type="file" accept=".zip" onChange={handleFileChange} className="hidden" />
+                    {selectedFile ? (
+                      <div className="space-y-1">
+                        <FileArchive className="w-8 h-8 text-emerald-500 mx-auto" />
+                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-sm mx-auto">{selectedFile.name}</p>
+                        <p className="text-[11px] text-slate-500">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <UploadCloud className="w-8 h-8 text-slate-400 mx-auto" />
+                        <p className="text-xs text-slate-600 dark:text-slate-300">{isVi ? 'Kéo thả file .zip hoặc click chọn tệp' : 'Drop .zip file or click to select'}</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      disabled={!selectedFile || uploading}
+                      onClick={handleSubmit}
+                      className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 cursor-pointer"
+                    >
+                      {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UploadCloud className="w-3.5 h-3.5" />}
+                      <span>{isVi ? 'Xác nhận nộp tệp này' : 'Confirm Upload'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* PHẦN 2: THƯ MỤC DỰ ÁN ĐÃ NỘP */}
+            <div className="p-5 md:p-6 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <RealisticFolderIcon className="w-5 h-5 shrink-0" />
+                  <h2 className="font-bold text-sm text-slate-900 dark:text-white">
+                    {isVi ? 'Thư mục dự án đã nộp' : 'Submitted Project Folder'}
+                  </h2>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs">
+                  {isGradingWait ? (
+                    <span className="inline-flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-semibold">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>{isVi ? `Đang chấm AI (${gradingSeconds}s)...` : `AI Grading (${gradingSeconds}s)...`}</span>
+                    </span>
+                  ) : submission ? (
+                    <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <span>{formatDate(submission.submittedAt)}</span>
+                    </span>
+                  ) : (
+                    <span className="text-amber-500 font-medium">
+                      {isVi ? 'Chưa có bài nộp' : 'No submission yet'}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {submission ? (
+                <div className="p-4 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <RealisticFolderIcon className="w-9 h-9 shrink-0 drop-shadow-xs" />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-sm text-slate-900 dark:text-white font-mono">
+                          {submission.filename ? submission.filename.replace(/\.zip$/i, '') : 'source'}
+                        </span>
+                        <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                          {submission.filename || 'source.zip'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
+                        <span>{isVi ? 'Lần nộp' : 'Attempt'} #{submission.attemptNumber || 1}</span>
+                        <span>•</span>
+                        <span>
+                          {isGradingWait ? (
+                            <span className="text-blue-600 dark:text-blue-400 font-medium inline-flex items-center gap-1">
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              {isVi ? 'Đang chấm AI...' : 'AI Grading...'}
+                            </span>
+                          ) : isPublished ? (
+                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                              {isVi ? `Đã hoàn tất đánh giá (${Number(submission.score ?? submission.finalScore ?? 0).toFixed(1)}/10)` : `Graded (${submission.score}/10)`}
+                            </span>
+                          ) : (
+                            <span className="text-slate-600 dark:text-slate-300 inline-flex items-center gap-1">
+                              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+                              <span>{isVi ? 'Đã tiếp nhận bài nộp' : 'Submitted successfully'}</span>
+                            </span>
+                          )}
+                        </span>
                       </p>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 pt-1 font-mono">
-                        {t('student.assignment.file_label', 'Tệp')}: <strong className="text-slate-700 dark:text-slate-300">{submission.filename || 'source.zip'}</strong> • {t('student.assignment.submit_time', 'Nộp lúc')}: {formatDate(submission.submittedAt)} • {t('student.assignment.attempt_num', 'Lần nộp')} #{submission.attemptNumber || 1}
-                      </div>
                     </div>
                   </div>
 
-                  {deadlineStatus !== 'EXPIRED' && (
-                    <div className="shrink-0 flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setShowUploadForm(!showUploadForm)}
-                        className="text-xs gap-1.5"
+                  <div className="text-xs text-slate-400 font-mono sm:text-right shrink-0">
+                    {formatDate(submission.submittedAt)}
+                  </div>
+                </div>
+              ) : (
+                /* VÙNG UPLOAD TRỰC TIẾP KHI CHƯA NỘP */
+                <div className="space-y-3">
+                  <div
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={handleDrop}
+                    onClick={() => document.getElementById('projectFolderInputDirect')?.click()}
+                    className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                      selectedFile
+                        ? 'border-emerald-500/60 bg-emerald-50/30 dark:bg-emerald-950/20'
+                        : 'border-slate-300 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 bg-slate-50/50 dark:bg-slate-950/40'
+                    }`}
+                  >
+                    <input id="projectFolderInputDirect" type="file" accept=".zip" onChange={handleFileChange} className="hidden" />
+                    {selectedFile ? (
+                      <div className="space-y-2">
+                        <RealisticFolderIcon className="w-10 h-10 mx-auto drop-shadow-xs" />
+                        <div>
+                          <p className="text-sm font-bold text-slate-900 dark:text-white font-mono">{selectedFile.name}</p>
+                          <p className="text-xs text-slate-500">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                        </div>
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                          {isVi ? 'Đã chọn tệp. Nhấn "Xác nhận nộp bài" bên dưới.' : 'File chosen. Click below to confirm submission.'}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <RealisticFolderIcon className="w-10 h-10 mx-auto drop-shadow-xs opacity-80" />
+                        <div>
+                          <p className="text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300">
+                            {isVi ? 'Kéo thả thư mục dự án (.zip) vào đây hoặc nhấp để tải lên' : 'Drag & drop project folder (.zip) here or click to browse'}
+                          </p>
+                          <p className="text-xs text-slate-400 mt-1">
+                            {isVi ? 'Định dạng bắt buộc: 1 tệp nén duy nhất (.ZIP, tối đa 100MB)' : 'Accepted format: Single .ZIP archive (max 100MB)'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedFile && (
+                    <div className="flex justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedFile(null)
+                        }}
+                        className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer"
                       >
-                        <RotateCcw className="w-3.5 h-3.5 text-orange-500" />
-                        <span>{showUploadForm ? t('student.assignment.close_form', 'Đóng form') : t('student.assignment.resubmit_another', 'Nộp lại bài khác')}</span>
-                      </Button>
+                        {isVi ? 'Hủy chọn' : 'Cancel'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={uploading}
+                        onClick={handleSubmit}
+                        className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 cursor-pointer shadow-xs"
+                      >
+                        {uploading ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>{isVi ? 'Đang nộp bài...' : 'Submitting...'}</span>
+                          </>
+                        ) : (
+                          <>
+                            <UploadCloud className="w-3.5 h-3.5" />
+                            <span>{isVi ? 'Xác nhận nộp bài' : 'Confirm Submission'}</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                   )}
                 </div>
-              </Card>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Left Column: Requirements & Assignment Info */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Detailed Assignment Specification */}
-                <Card className="p-6 md:p-8">
-                  <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-200 dark:border-slate-800">
-                    <h3 className="text-base md:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      <FileText className="w-5 h-5 text-orange-500 dark:text-orange-400" />
-                      {t('student.assignment.spec_req', 'Mô tả đề bài & Yêu cầu kỹ thuật')}
-                    </h3>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                      {t('student.assignment.spec_note', 'Nội dung chi tiết từ Giảng viên')}
-                    </span>
-                  </div>
-
-                  {/* Render Full Assignment Content as Rich HTML or Markdown */}
-                  {isHtmlContent(detailedContent) ? (
-                    <div
-                      className="prose prose-slate dark:prose-invert max-w-none text-sm text-slate-700 dark:text-slate-300 leading-relaxed assignment-specification [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-slate-900 dark:[&_h2]:text-white [&_h3]:text-base [&_h3]:font-bold [&_h3]:text-slate-900 dark:[&_h3]:text-white [&_h4]:text-sm [&_h4]:font-bold [&_h4]:text-orange-600 dark:[&_h4]:text-orange-400 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:mt-1.5 [&_p]:my-2.5 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded-md [&_code]:bg-orange-500/10 [&_code]:text-orange-600 dark:[&_code]:text-orange-400"
-                      dangerouslySetInnerHTML={{ __html: detailedContent }}
-                    />
-                  ) : (
-                    <div className="prose max-w-none text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-                      {typeof detailedContent === 'string' && detailedContent.trim()
-                        ? detailedContent
-                        : t('student.assignment.spec_empty', 'Vui lòng hoàn thành toàn bộ yêu cầu theo đề bài đính kèm và đóng gói file .zip trước khi nộp.')}
-                    </div>
-                  )}
-
-                  {/* Attachment Download Area if available (G6.4) */}
-                  {(assignment?.attachments?.length > 0 || assignment?.sqlSetupScript) && (
-                    <div className="mt-6 pt-5 border-t border-slate-200 dark:border-slate-800 space-y-3">
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                        <Download className="w-4 h-4 text-orange-500" />
-                        {t('student.assignment.attachments', 'Tài liệu & Tệp đính kèm bài tập')}
-                      </h4>
-                      <div className="flex flex-wrap gap-3">
-                        {assignment.attachments?.map((att: any, idx: number) => (
-                          <a
-                            key={att.id || idx}
-                            href={att.fileUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-medium text-slate-800 dark:text-slate-200 transition-colors border border-slate-200 dark:border-slate-700"
-                          >
-                            <FileCode className="w-4 h-4 text-orange-500" />
-                            <span>{att.fileName || t('student.assignment.doc_default', 'Tài liệu đề bài')}</span>
-                            <Download className="w-3.5 h-3.5 opacity-60 ml-1" />
-                          </a>
-                        ))}
-
-                        {assignment.sqlSetupScript && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const blob = new Blob([assignment.sqlSetupScript], { type: 'text/plain;charset=utf-8' })
-                              const url = URL.createObjectURL(blob)
-                              const a = document.createElement('a')
-                              a.href = url
-                              a.download = `${assignment.title.replace(/[^a-zA-Z0-9]/g, '_')}_Setup.sql`
-                              a.click()
-                              URL.revokeObjectURL(url)
-                            }}
-                            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-orange-50 hover:bg-orange-100 dark:bg-orange-500/10 dark:hover:bg-orange-500/20 text-xs font-medium text-orange-700 dark:text-orange-300 transition-colors border border-orange-200 dark:border-orange-500/30"
-                          >
-                            <Database className="w-4 h-4 text-orange-500" />
-                            <span>{t('student.assignment.download_sql', 'Tải SQL Setup Script (.sql)')}</span>
-                            <Download className="w-3.5 h-3.5 opacity-60 ml-1" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </Card>
-
-                {/* Rubric Preview */}
-                <Card className="p-6 md:p-8">
-                  <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-slate-800">
-                    <h3 className="text-base md:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      <Sparkles className="w-5 h-5 text-orange-500 dark:text-orange-400" />
-                      {t('student.assignment.rubric_title', 'Tiêu chí chấm điểm (Barem Rubric AI)')}
-                    </h3>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">
-                      {t('student.assignment.total_score', 'Tổng điểm')}: <strong className="text-orange-600 dark:text-orange-400 font-bold">10.0 {t('student.assignment.points', 'điểm')}</strong>
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
-                    {t('student.assignment.rubric_desc', 'Hệ thống AI sẽ tự động phân tích mã nguồn, kiểm tra kiến trúc và chạy bộ kiểm thử tự động theo các tiêu chí dưới đây:')}
-                  </p>
-
-                  {rubricRules && rubricRules.length > 0 ? (
-                    <div className="space-y-3">
-                      {rubricRules.map((rule: any, idx: number) => {
-                        const ruleScore = Number(rule.weight ?? rule.maxPoints ?? 0)
-
-                        let ruleTitle = `${t('student.assignment.criterion', 'Tiêu chí')} ${idx + 1}`
-                        if (typeof rule.title === 'string' && rule.title.trim()) ruleTitle = rule.title.trim()
-                        else if (typeof rule.name === 'string' && rule.name.trim()) ruleTitle = rule.name.trim()
-                        else if (typeof rule.description === 'string' && rule.description.trim()) ruleTitle = rule.description.trim()
-                        else if (typeof rule.description?.description === 'string' && rule.description.description.trim()) ruleTitle = rule.description.description.trim()
-                        else if (typeof rule.criteria === 'string' && rule.criteria.trim()) ruleTitle = rule.criteria.trim()
-
-                        let ruleDesc = ''
-                        if (typeof rule.description === 'string' && rule.description.trim()) ruleDesc = rule.description.trim()
-                        else if (typeof rule.description?.description === 'string' && rule.description.description.trim()) ruleDesc = rule.description.description.trim()
-                        else if (typeof rule.criteria === 'string' && rule.criteria.trim()) ruleDesc = rule.criteria.trim()
-
-                        const contextHint = rule.contextHint || `PART ${String.fromCharCode(65 + idx)}`
-
-                        return (
-                          <div
-                            key={rule.id || idx}
-                            className="p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs transition-colors hover:border-orange-500/30"
-                          >
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="px-2 py-0.5 rounded-md bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300 font-bold text-[11px] font-mono">
-                                  {contextHint}
-                                </span>
-                                <span className="font-bold text-slate-900 dark:text-white text-sm">
-                                  {ruleTitle}
-                                </span>
-                              </div>
-                              {ruleDesc && ruleDesc !== ruleTitle && (
-                                <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed pt-0.5">
-                                  {ruleDesc}
-                                </p>
-                              )}
-                              {Array.isArray(rule.criteria) && rule.criteria.length > 0 && (
-                                <ul className="mt-2 space-y-1 pl-3 border-l-2 border-orange-200 dark:border-orange-900/50">
-                                  {rule.criteria.map((c: any, cIdx: number) => {
-                                    const cDesc = typeof c === 'string'
-                                      ? c
-                                      : (typeof c?.description === 'string'
-                                        ? c.description
-                                        : (typeof c?.name === 'string'
-                                          ? c.name
-                                          : (typeof c?.title === 'string'
-                                            ? c.title
-                                            : '')));
-                                    const cScore = typeof c === 'object' && c?.maxPoints !== undefined ? Number(c.maxPoints) : null;
-                                    if (!cDesc) return null;
-                                    return (
-                                      <li key={c?.id || cIdx} className="text-[11px] text-slate-600 dark:text-slate-400">
-                                        • {cDesc} {cScore !== null ? `(${cScore}đ)` : ''}
-                                      </li>
-                                    );
-                                  })}
-                                </ul>
-                              )}
-                            </div>
-
-                            <div className="text-right shrink-0">
-                              <span className="font-bold font-mono text-sm text-orange-600 dark:text-orange-400">
-                                {ruleScore.toFixed(1)} {t('student.assignment.pts_short', 'đ')}
-                              </span>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-400 italic">
-                      {t('student.assignment.rubric_empty', 'Tiêu chí chấm điểm chi tiết đang được đồng bộ từ giảng viên.')}
-                    </p>
-                  )}
-                </Card>
-              </div>
-
-              {/* Right Column: Policies & Quick Summary */}
-              <div className="space-y-6">
-                {/* Assignment Rules & Policies Card */}
-                <Card className="p-6 space-y-4">
-                  <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5 text-emerald-500" />
-                    {t('student.assignment.rules_title', 'Quy định làm bài & Nộp bài')}
-                  </h3>
-
-                  <div className="space-y-3 text-xs text-slate-600 dark:text-slate-300">
-                    <div className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
-                      <span>{t('student.assignment.rule_zip_only', 'Chỉ chấp nhận tệp nén duy nhất có định dạng .ZIP (tối đa 100MB).')}</span>
-                    </div>
-
-                    <div className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
-                      <span>
-                        {t('student.assignment.rule_late_policy', 'Chính sách nộp muộn:')}{' '}
-                        {assignment?.latePenaltyType === 'FIXED_POINTS'
-                          ? t('student.assignment.late_policy_fixed', 'Cho phép nộp trễ tối đa {{hours}}h (trừ {{points}}đ).').replace('{{hours}}', String(assignment.lateSubmitHours || 24)).replace('{{points}}', String(assignment.latePenaltyValue))
-                          : assignment?.latePenaltyType === 'PERCENT'
-                          ? t('student.assignment.late_policy_percent', 'Cho phép nộp trễ tối đa {{hours}}h (trừ {{percent}}% điểm).').replace('{{hours}}', String(assignment.lateSubmitHours || 24)).replace('{{percent}}', String(assignment.latePenaltyValue))
-                          : t('student.assignment.late_policy_none', 'Không áp dụng phạt nộp muộn.')}
-                      </span>
-                    </div>
-
-                    <div className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
-                      <span>{t('student.assignment.rule_plagiarism', 'Hệ thống áp dụng thuật toán kiểm tra đạo văn (Plagiarism Detection) giữa các bài nộp.')}</span>
-                    </div>
-
-                    <div className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
-                      <span>{t('student.assignment.rule_resubmit', 'Bạn có thể nộp lại nhiều lần trước khi hết hạn; phiên bản nộp sau sẽ được chấm và cập nhật điểm.')}</span>
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Submission status quick recap */}
-                {submission && (
-                  <Card className="p-6 space-y-3">
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                      <Award className="w-4 h-4 text-orange-500" />
-                      {t('student.assignment.current_sub_info', 'Thông tin bài nộp hiện tại')}
-                    </h3>
-
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
-                        <span className="text-slate-400">{t('student.assignment.attempt_num', 'Lần nộp')}:</span>
-                        <span className="font-bold font-mono">Attempt #{submission.attemptNumber || 1}</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
-                        <span className="text-slate-400">{t('student.assignment.submit_time', 'Thời gian nộp')}:</span>
-                        <span className="font-mono">{formatDate(submission.submittedAt)}</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
-                        <span className="text-slate-400">{t('student.assignment.file_label', 'Tệp bài làm')}:</span>
-                        <span className="font-mono truncate max-w-[150px]">{submission.filename || 'source.zip'}</span>
-                      </div>
-                      <div className="flex justify-between py-1">
-                        <span className="text-slate-400">{t('student.assignment.publish_status', 'Trạng thái công bố')}:</span>
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                          {isPublished ? t('student.assignment.published', 'Đã công bố điểm') : t('student.assignment.waiting_approval', 'Chờ giảng viên duyệt')}
-                        </span>
-                      </div>
-                    </div>
-                  </Card>
-                )}
-              </div>
+              )}
             </div>
           </div>
         )}

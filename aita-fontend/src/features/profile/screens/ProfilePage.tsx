@@ -118,24 +118,35 @@ export default function ProfilePage() {
     >
       <div className="space-y-8 max-w-4xl">
         {/* User Card */}
-        <div className="rounded-3xl p-8 bg-gradient-to-r from-orange-50 via-amber-50/60 to-blue-50/70 dark:bg-gradient-to-r dark:from-slate-900 dark:to-slate-950 border border-orange-200/80 dark:border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xs dark:shadow-xl transition-colors">
-          <div className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-600 flex items-center justify-center text-white font-extrabold text-2xl shadow-xl shadow-orange-500/20 shrink-0">
+        <div className="relative overflow-hidden rounded-2xl p-6 sm:p-8 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xs group transition-all">
+          <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 pointer-events-none" />
+          <div className="flex items-center gap-5 relative z-10">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 flex items-center justify-center text-white font-black text-2xl shadow-md shadow-orange-500/25 shrink-0 font-mono">
               {user?.fullName?.charAt(0) || user?.email?.charAt(0) || 'U'}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{user?.fullName || t('admin.users.default_name', 'Người dùng')}</h2>
-                <Badge variant="orange" className="text-[10px] uppercase">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">{user?.fullName || t('admin.users.default_name', 'Người dùng')}</h2>
+                <Badge variant="orange" className="text-[10px] uppercase font-bold tracking-wider">
                   {role || 'student'}
                 </Badge>
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{user?.email}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-1">{t('profile.user_code', 'Mã định danh:')} {(user as any)?.code || (user as any)?.studentCode || 'HE170001'}</p>
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                  {t('profile.user_code', 'Mã định danh:')} <span className="font-bold text-orange-700 dark:text-orange-300">{(user as any)?.code || (user as any)?.studentCode || 'HE170001'}</span>
+                </p>
+              </div>
             </div>
           </div>
-          <div className="shrink-0 mt-4 md:mt-0">
-            <Button variant="outline" size="sm" onClick={() => setIsEditingProfile(!isEditingProfile)}>
+          <div className="shrink-0 mt-4 md:mt-0 relative z-10">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditingProfile(!isEditingProfile)}
+              className="border-orange-200/80 dark:border-orange-900/40 bg-white/80 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:border-orange-300 rounded-xl"
+            >
               {isEditingProfile ? t('profile.cancel_edit', 'Hủy cập nhật') : t('profile.edit_profile', 'Sửa hồ sơ')}
             </Button>
           </div>
@@ -143,7 +154,7 @@ export default function ProfilePage() {
 
         {/* Edit Profile Form */}
         {isEditingProfile && (
-          <Card className="p-6 space-y-4">
+          <Card className="p-6 space-y-4 rounded-2xl border-orange-100/90 dark:border-orange-900/30 shadow-xs">
             <div className="flex items-center gap-2">
               <User className="w-4 h-4 text-orange-500 dark:text-orange-400" />
               <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">{t('profile.edit_title', 'Chỉnh sửa hồ sơ')}</h3>
@@ -185,7 +196,7 @@ export default function ProfilePage() {
         )}
 
         {/* Change Password Card */}
-        <Card className="p-6 space-y-4">
+        <Card className="p-6 space-y-4 rounded-2xl border-orange-100/90 dark:border-orange-900/30 shadow-xs">
           <div className="flex items-center gap-2">
             <Lock className="w-4 h-4 text-orange-500 dark:text-orange-400" />
             <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">{t('profile.change_pwd_title', 'Đổi mật khẩu tài khoản')}</h3>

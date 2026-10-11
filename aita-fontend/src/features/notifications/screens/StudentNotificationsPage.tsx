@@ -287,23 +287,23 @@ export default function StudentNotificationsPage() {
 
           <div className="flex items-center gap-2">
             {/* Filter buttons */}
-            <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+            <div className="inline-flex p-1.5 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 rounded-2xl border border-orange-100/90 dark:border-orange-900/30 shadow-xs">
               <button
                 onClick={() => setFilter('all')}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   filter === 'all'
-                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
-                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 text-white shadow-md shadow-orange-500/20'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400'
                 }`}
               >
                 {t('notifications.filter_all', 'Tất cả')}
               </button>
               <button
                 onClick={() => setFilter('unread')}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   filter === 'unread'
-                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
-                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 text-white shadow-md shadow-orange-500/20'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400'
                 }`}
               >
                 {t('notifications.filter_unread', 'Chưa đọc')} {unreadCount > 0 ? `(${unreadCount})` : ''}
@@ -366,10 +366,10 @@ export default function StudentNotificationsPage() {
                       handleItemClick(n)
                     }
                   }}
-                  className={`p-4 md:p-5 transition-all cursor-pointer group hover:border-orange-500/70 hover:shadow-md relative overflow-hidden ${
+                  className={`p-4 md:p-5 transition-all cursor-pointer group rounded-2xl relative overflow-hidden ${
                     n.read
-                      ? 'bg-white dark:bg-slate-900/50 hover:bg-slate-50/80 dark:hover:bg-slate-900/80'
-                      : 'bg-orange-50/40 dark:bg-slate-900/90 border-l-4 border-l-orange-500 hover:bg-orange-50/70 dark:hover:bg-slate-900 shadow-xs'
+                      ? 'bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-orange-200 hover:shadow-xs'
+                      : 'bg-gradient-to-br from-orange-50/70 via-white to-amber-50/30 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-200/90 dark:border-orange-900/40 border-l-4 border-l-orange-500 hover:border-orange-300 hover:shadow-md'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">

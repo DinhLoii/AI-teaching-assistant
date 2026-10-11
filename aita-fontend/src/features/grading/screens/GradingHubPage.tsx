@@ -9,8 +9,11 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
+import { Input } from '@/components/ui/input'
 import { assignmentsApi } from '@/lib/api/modules/assignments'
 import { gradingApi } from '@/lib/api/modules/grading'
+import { submissionsApi } from '@/lib/api/modules/submissions'
+import { formatDate } from '@/lib/utils'
 import { errorMessage } from '@/lib/api/errors'
 import {
   Sparkles,
@@ -26,6 +29,11 @@ import {
   FileArchive,
   CheckCircle2,
   AlertCircle,
+  MessageSquare,
+  Award,
+  Send,
+  Eye,
+  Check,
 } from 'lucide-react'
 import { useLanguage } from '@/providers/language-provider'
 
@@ -36,6 +44,7 @@ function GradingHubContent() {
   const queryAssignmentId = searchParams.get('assignmentId')
 
   const [assignments, setAssignments] = React.useState<any[]>([])
+  const [submissions, setSubmissions] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
   const [strategy, setStrategy] = React.useState<'CONTINUOUS_QUEUE' | 'BATCH_POST_DEADLINE'>('CONTINUOUS_QUEUE')
   const [updatingStrategy, setUpdatingStrategy] = React.useState(false)
@@ -47,13 +56,24 @@ function GradingHubContent() {
   const [uploadingSingle, setUploadingSingle] = React.useState(false)
   const [uploadError, setUploadError] = React.useState<string | null>(null)
 
+  // Appeal Review Modal state
+  const [reviewAppealModal, setReviewAppealModal] = React.useState<any | null>(null)
+  const [appealScore, setAppealScore] = React.useState<number | string>('')
+  const [appealFeedback, setAppealFeedback] = React.useState('')
+  const [submittingAppealReview, setSubmittingAppealReview] = React.useState(false)
+  const [appealSuccess, setAppealSuccess] = React.useState<string | null>(null)
+
   React.useEffect(() => {
-    assignmentsApi.getAssignments()
-      .then(res => {
-        setAssignments(res || [])
-        if (res && res.length > 0) {
-          const matched = queryAssignmentId ? res.find((a: any) => a.id === queryAssignmentId) : null
-          const target = matched || res[0]
+    Promise.all([
+      assignmentsApi.getAssignments().catch(() => []),
+      submissionsApi.getSubmissions().catch(() => []),
+    ])
+      .then(([assignRes, subsRes]) => {
+        setAssignments(assignRes || [])
+        setSubmissions(subsRes || [])
+        if (assignRes && assignRes.length > 0) {
+          const matched = queryAssignmentId ? assignRes.find((a: any) => a.id === queryAssignmentId) : null
+          const target = matched || assignRes[0]
           setSelectedAssignmentId(target.id)
           if ((target as any).strategy) {
             setStrategy((target as any).strategy)
@@ -113,6 +133,54 @@ function GradingHubContent() {
     }
   }
 
+  // Filter submissions that have an active student appeal/feedback
+  const appealSubmissions = submissions.filter(
+    (s: any) => Boolean(s.studentFeedback && s.studentFeedback.trim() !== '')
+  )
+
+  const handleOpenAppealReview = (sub: any) => {
+    setReviewAppealModal(sub)
+    setAppealScore(sub.score ?? sub.finalScore ?? 10)
+    setAppealFeedback(sub.instructorFeedback || '')
+    setAppealSuccess(null)
+  }
+
+  const handleSaveAppealReview = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!reviewAppealModal?.id) return
+
+    setSubmittingAppealReview(true)
+    setAppealSuccess(null)
+    try {
+      const newScoreNum = Number(appealScore)
+      await submissionsApi.gradeSubmission(reviewAppealModal.id, {
+        finalScore: newScoreNum,
+        score: newScoreNum,
+        feedback: appealFeedback,
+        isPublished: true,
+      })
+
+      setAppealSuccess('Đã cập nhật điểm và phản hồi phúc khảo cho sinh viên thành công!')
+      // Update local submissions list
+      setSubmissions((prev) =>
+        prev.map((s: any) =>
+          s.id === reviewAppealModal.id
+            ? { ...s, finalScore: newScoreNum, score: newScoreNum, instructorFeedback: appealFeedback }
+            : s
+        )
+      )
+
+      setTimeout(() => {
+        setReviewAppealModal(null)
+        setAppealSuccess(null)
+      }, 1500)
+    } catch (err) {
+      alert(errorMessage(err))
+    } finally {
+      setSubmittingAppealReview(false)
+    }
+  }
+
   return (
     <DashboardLayout
       navItems={LECTURER_NAV}
@@ -120,23 +188,23 @@ function GradingHubContent() {
       requiredRole="lecturer"
       title="Trung tâm chấm bài (Grading Hub)"
     >
-      <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-6 max-w-7xl mx-auto pb-12">
         {/* Hero Banner */}
-        <div className="rounded-3xl p-6 md:p-8 bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-blue-500/10 border border-orange-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm">
+        <div className="rounded-3xl p-6 md:p-8 bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-blue-500/10 border border-orange-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xs">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 rounded-full text-xs font-extrabold uppercase bg-orange-500 text-white tracking-wider">
+              <span className="px-2.5 py-1 rounded-full text-xs font-extrabold uppercase bg-[#FA7014] text-white tracking-wider">
                 Grading Center
               </span>
               <span className="text-xs text-slate-500 dark:text-slate-400">
-                AI Rubric Engine v3.2
+                AI Rubric Engine v3.5
               </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
               Trung tâm Quản trị & Thực thi Chấm điểm AI
             </h1>
             <p className="text-xs md:text-sm text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
-              Khởi tạo phiên chấm tự động, kiểm tra hàng loạt tệp ZIP mã nguồn, giám sát tiến trình kiểm thử trực tiếp và theo dõi lịch sử kết quả.
+              Khởi tạo phiên chấm tự động, kiểm tra hàng loạt tệp ZIP mã nguồn, giám sát hàng đợi chấm song song và xử lý khiếu nại phúc khảo điểm của sinh viên.
             </p>
           </div>
 
@@ -145,7 +213,7 @@ function GradingHubContent() {
               variant="primary"
               size="sm"
               onClick={() => setQuickUploadModal(true)}
-              className="text-xs gap-1.5 bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-500/20"
+              className="text-xs gap-1.5 cursor-pointer font-bold"
             >
               <Zap className="w-4 h-4" />
               <span>Chấm nhanh 1 bài</span>
@@ -155,7 +223,7 @@ function GradingHubContent() {
               <Button
                 variant="outline"
                 size="sm"
-                className="text-xs gap-1.5"
+                className="text-xs gap-1.5 cursor-pointer font-medium"
               >
                 <History className="w-4 h-4 text-slate-500" />
                 <span>Lịch sử chấm</span>
@@ -167,40 +235,44 @@ function GradingHubContent() {
         {/* Quick Action Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* Card 1: Batch Upload */}
-          <Card className="p-6 space-y-4 hover:border-orange-500/40 transition-all group">
-            <div className="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold">
-              <UploadCloud className="w-6 h-6" />
-            </div>
-            <div className="space-y-1.5">
-              <h3 className="font-bold text-base text-slate-900 dark:text-white">
-                Chấm bài hàng loạt (Batch ZIP)
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Tải lên nhiều tệp ZIP nộp bài của sinh viên cùng lúc để hệ thống xếp vào hàng đợi xử lý song song.
-              </p>
+          <div className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group flex flex-col justify-between space-y-4">
+            <div className="space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center font-bold shadow-md shadow-orange-500/25">
+                <UploadCloud className="w-6 h-6 text-white" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                  Chấm bài hàng loạt (Batch ZIP)
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Tải lên nhiều tệp ZIP nộp bài của sinh viên cùng lúc để hệ thống xếp vào hàng đợi xử lý song song trong Docker Sandbox.
+                </p>
+              </div>
             </div>
             <div className="pt-2">
               <Link href={selectedAssignmentId ? `/lecturer/grading/assignments/${selectedAssignmentId}/submit` : '/lecturer/assignments'}>
-                <Button variant="outline" size="sm" className="w-full text-xs gap-1.5 font-semibold">
+                <Button variant="outline" size="sm" className="w-full text-xs gap-1.5 font-bold cursor-pointer rounded-xl border-orange-200/80 text-orange-700 dark:text-orange-300 hover:bg-orange-50/70">
                   <span>Mở bảng chấm hàng loạt</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
               </Link>
             </div>
-          </Card>
+          </div>
 
           {/* Card 2: Strategy Control */}
-          <Card className="p-6 space-y-4 hover:border-blue-500/40 transition-all">
-            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
-              <Settings className="w-6 h-6" />
-            </div>
-            <div className="space-y-1.5">
-              <h3 className="font-bold text-base text-slate-900 dark:text-white">
-                Chiến lược chấm điểm
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Thiết lập quy trình chấm: Chấm ngay khi nộp hoặc gom bài chấm toàn bộ sau deadline.
-              </p>
+          <div className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group flex flex-col justify-between space-y-4">
+            <div className="space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center font-bold shadow-md shadow-orange-500/25">
+                <Settings className="w-6 h-6 text-white" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                  Chiến lược chấm điểm
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Thiết lập quy trình chấm: Chấm ngay khi sinh viên nộp (Queue) hoặc gom bài chấm toàn bộ sau deadline (Batch).
+                </p>
+              </div>
             </div>
             <div className="space-y-2 pt-1">
               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -208,10 +280,10 @@ function GradingHubContent() {
                   type="button"
                   onClick={() => handleUpdateStrategy('CONTINUOUS_QUEUE')}
                   disabled={updatingStrategy}
-                  className={`p-2.5 rounded-xl border text-center font-bold transition-all ${
+                  className={`p-2.5 rounded-xl border text-center font-bold transition-all cursor-pointer ${
                     strategy === 'CONTINUOUS_QUEUE'
-                      ? 'border-orange-500 bg-orange-500/10 text-orange-600 dark:text-orange-400'
-                      : 'border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      ? 'border-transparent bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 text-white shadow-md shadow-orange-500/20'
+                      : 'border-orange-200/60 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-orange-50/60 dark:hover:bg-slate-800'
                   }`}
                 >
                   Liên tục (Queue)
@@ -220,44 +292,148 @@ function GradingHubContent() {
                   type="button"
                   onClick={() => handleUpdateStrategy('BATCH_POST_DEADLINE')}
                   disabled={updatingStrategy}
-                  className={`p-2.5 rounded-xl border text-center font-bold transition-all ${
+                  className={`p-2.5 rounded-xl border text-center font-bold transition-all cursor-pointer ${
                     strategy === 'BATCH_POST_DEADLINE'
-                      ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                      : 'border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      ? 'border-transparent bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 text-white shadow-md shadow-orange-500/20'
+                      : 'border-orange-200/60 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-orange-50/60 dark:hover:bg-slate-800'
                   }`}
                 >
                   Sau hạn nộp (Batch)
                 </button>
               </div>
             </div>
-          </Card>
+          </div>
 
           {/* Card 3: Plagiarism & Audit */}
-          <Card className="p-6 space-y-4 hover:border-emerald-500/40 transition-all">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
-              <ShieldAlert className="w-6 h-6" />
-            </div>
-            <div className="space-y-1.5">
-              <h3 className="font-bold text-base text-slate-900 dark:text-white">
-                Phát hiện mã nguồn trùng lặp
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Quét thuật toán phát hiện gian lận (Plagiarism Detection) giữa các bài làm của sinh viên theo ngưỡng tương đồng.
-              </p>
+          <div className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group flex flex-col justify-between space-y-4">
+            <div className="space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center font-bold shadow-md shadow-orange-500/25">
+                <ShieldAlert className="w-6 h-6 text-white" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                  Phát hiện mã nguồn trùng lặp
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Quét thuật toán phát hiện gian lận (Plagiarism Detection) giữa các bài làm của sinh viên theo ngưỡng tương đồng.
+                </p>
+              </div>
             </div>
             <div className="pt-2">
               <Link href={selectedAssignmentId ? `/lecturer/assignments/${selectedAssignmentId}?tab=plagiarism` : '/lecturer/assignments'}>
-                <Button variant="outline" size="sm" className="w-full text-xs gap-1.5 font-semibold">
+                <Button variant="outline" size="sm" className="w-full text-xs gap-1.5 font-bold cursor-pointer rounded-xl border-orange-200/80 text-orange-700 dark:text-orange-300 hover:bg-orange-50/70">
                   <span>Kiểm tra đạo văn</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
               </Link>
             </div>
-          </Card>
+          </div>
+        </div>
+
+        {/* ── STUDENT APPEALS & INQUIRIES MANAGEMENT TABLE ── */}
+        <div className="rounded-2xl overflow-hidden bg-white dark:bg-slate-900 border border-orange-100/90 dark:border-orange-900/30 shadow-xs">
+          <div className="p-5 border-b border-orange-100/90 dark:border-orange-900/30 bg-gradient-to-r from-orange-50/70 via-amber-50/40 to-orange-50/50 dark:from-slate-900 dark:to-slate-800/80 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-orange-100/80 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold">
+                <MessageSquare className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                  Đơn Phúc khảo & Khiếu nại Điểm từ Sinh viên ({appealSubmissions.length})
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Xem lý do giải trình của sinh viên, xem xét lại barem Rubric và điều chỉnh điểm số
+                </p>
+              </div>
+            </div>
+
+            {appealSubmissions.length > 0 && (
+              <Badge variant="outline" className="text-xs text-orange-700 border-orange-300 bg-orange-50 dark:bg-orange-950/40 font-bold">
+                {appealSubmissions.length} đơn cần phản hồi
+              </Badge>
+            )}
+          </div>
+
+          <div className="overflow-x-auto">
+            {appealSubmissions.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-xs">
+                Không có đơn phúc khảo nào cần xử lý. Tất cả sinh viên đã đồng thuận với kết quả chấm.
+              </div>
+            ) : (
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-orange-100/90 dark:border-slate-800 bg-orange-50/40 dark:bg-slate-800/40 text-slate-600 dark:text-slate-300 font-bold">
+                    <th className="p-4 pl-6">Sinh viên</th>
+                    <th className="p-4">Bài tập</th>
+                    <th className="p-4">Điểm hiện tại</th>
+                    <th className="p-4 max-w-xs">Lý do phúc khảo</th>
+                    <th className="p-4">Trạng thái phản hồi</th>
+                    <th className="p-4 pr-6 text-right">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-orange-100/50 dark:divide-slate-800">
+                  {appealSubmissions.map((sub: any) => (
+                    <tr key={sub.id} className="hover:bg-orange-50/30 dark:hover:bg-orange-950/15 transition-colors">
+                      <td className="p-4 pl-6">
+                        <div className="font-bold text-slate-900 dark:text-white">
+                          {sub.studentName || sub.studentId}
+                        </div>
+                        <div className="font-mono text-[11px] text-orange-600 dark:text-orange-400 font-bold">
+                          {sub.studentCode || ''}
+                        </div>
+                      </td>
+
+                      <td className="p-4 font-medium text-slate-800 dark:text-slate-200">
+                        {sub.assignmentTitle || sub.assignment || 'Assignment'}
+                      </td>
+
+                      <td className="p-4">
+                        <span className="font-mono font-bold text-sm text-orange-600 dark:text-orange-400">
+                          {sub.score ?? sub.finalScore ?? 0}/10
+                        </span>
+                      </td>
+
+                      <td className="p-4 max-w-xs">
+                        <div className="line-clamp-2 text-slate-700 dark:text-slate-300 italic bg-amber-50/60 dark:bg-amber-950/20 p-2 rounded-xl border border-amber-200/50">
+                          "{sub.studentFeedback}"
+                        </div>
+                      </td>
+
+                      <td className="p-4">
+                        {sub.instructorFeedback ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Đã phản hồi
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                            <Clock className="w-3.5 h-3.5" />
+                            Chờ xem xét
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="p-4 pr-6 text-right">
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleOpenAppealReview(sub)}
+                          className="text-xs py-1 px-3 gap-1 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 hover:from-orange-600 hover:via-amber-600 hover:to-orange-600 text-white cursor-pointer font-bold rounded-xl shadow-xs"
+                        >
+                          <Award className="w-3.5 h-3.5" />
+                          <span>Xử lý phúc khảo</span>
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
 
         {/* Assignments Quick Table */}
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
           <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
             <div>
               <h3 className="font-bold text-base text-slate-900 dark:text-white">
@@ -268,7 +444,7 @@ function GradingHubContent() {
               </p>
             </div>
             <Link href="/lecturer/assignments">
-              <Button variant="ghost" size="sm" className="text-xs text-orange-600 dark:text-orange-400 font-semibold gap-1">
+              <Button variant="ghost" size="sm" className="text-xs text-orange-600 dark:text-orange-400 font-semibold gap-1 cursor-pointer">
                 <span>Xem tất cả bài</span>
                 <ArrowRight className="w-3 h-3" />
               </Button>
@@ -276,9 +452,9 @@ function GradingHubContent() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-sm">
+            <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                   <th className="p-4 pl-6">Môn & Tiêu đề bài tập</th>
                   <th className="p-4">Hạn nộp</th>
                   <th className="p-4">Chính sách trễ hạn</th>
@@ -303,14 +479,14 @@ function GradingHubContent() {
                   assignments.slice(0, 8).map((assign) => (
                     <tr key={assign.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors">
                       <td className="p-4 pl-6">
-                        <div className="font-bold text-slate-900 dark:text-white">
+                        <div className="font-bold text-slate-900 dark:text-white text-sm">
                           {assign.title}
                         </div>
                         <div className="text-xs text-slate-400">
                           {assign.subjectCode || 'Môn học'}
                         </div>
                       </td>
-                      <td className="p-4 text-xs text-slate-500 dark:text-slate-400">
+                      <td className="p-4 text-xs text-slate-500 dark:text-slate-400 font-mono">
                         {assign.dueAt ? new Date(assign.dueAt).toLocaleDateString('vi-VN') : 'Không giới hạn'}
                       </td>
                       <td className="p-4 text-xs font-mono">
@@ -328,12 +504,12 @@ function GradingHubContent() {
                       <td className="p-4 pr-6 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Link href={`/lecturer/assignments/${assign.id}`}>
-                            <Button variant="outline" size="sm" className="text-xs py-1 px-2.5 gap-1">
+                            <Button variant="outline" size="sm" className="text-xs py-1 px-2.5 gap-1 cursor-pointer">
                               <span>Workspace</span>
                             </Button>
                           </Link>
                           <Link href={`/lecturer/grading/assignments/${assign.id}/submit`}>
-                            <Button variant="primary" size="sm" className="text-xs py-1 px-2.5 gap-1 bg-orange-500 hover:bg-orange-600 text-white">
+                            <Button variant="primary" size="sm" className="text-xs py-1 px-2.5 gap-1 cursor-pointer font-bold">
                               <UploadCloud className="w-3 h-3" />
                               <span>Chấm ZIP</span>
                             </Button>
@@ -347,6 +523,91 @@ function GradingHubContent() {
             </table>
           </div>
         </Card>
+
+        {/* ── REVIEW APPEAL MODAL ── */}
+        <Modal
+          isOpen={Boolean(reviewAppealModal)}
+          onClose={() => setReviewAppealModal(null)}
+          title="Xử lý Đơn Phúc khảo Điểm"
+          description={`Sinh viên: ${reviewAppealModal?.studentName || reviewAppealModal?.studentId || ''} • Bài tập: ${reviewAppealModal?.assignmentTitle || 'Assignment'}`}
+        >
+          {reviewAppealModal && (
+            <form onSubmit={handleSaveAppealReview} className="space-y-4 text-xs">
+              {appealSuccess && (
+                <div className="p-3 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 rounded-xl font-medium border border-emerald-200">
+                  {appealSuccess}
+                </div>
+              )}
+
+              {/* Student Appeal Note */}
+              <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 space-y-1">
+                <span className="font-bold text-amber-800 dark:text-amber-300">
+                  Lý do phúc khảo của sinh viên:
+                </span>
+                <p className="text-slate-800 dark:text-slate-200 italic leading-relaxed">
+                  "{reviewAppealModal.studentFeedback}"
+                </p>
+              </div>
+
+              {/* New Score Input */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                  <span>Điểm số sau khi phúc khảo (Thang điểm 10)</span>
+                  <span className="text-slate-400 font-normal">
+                    Điểm gốc: <strong className="text-orange-600">{reviewAppealModal.score ?? reviewAppealModal.finalScore ?? 0}</strong>
+                  </span>
+                </label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  max={10}
+                  required
+                  value={appealScore}
+                  onChange={(e) => setAppealScore(e.target.value)}
+                  className="font-mono text-sm font-bold"
+                />
+              </div>
+
+              {/* Teacher Feedback / Resolution */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700 dark:text-slate-300">
+                  Phản hồi giải trình từ Giảng viên (Hiển thị tới sinh viên)
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="Ghi rõ lý do điều chỉnh hoặc giữ nguyên điểm để sinh viên nắm rõ..."
+                  value={appealFeedback}
+                  onChange={(e) => setAppealFeedback(e.target.value)}
+                  className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#FA7014]"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  onClick={() => setReviewAppealModal(null)}
+                  className="text-xs"
+                >
+                  Hủy bỏ
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  type="submit"
+                  isLoading={submittingAppealReview}
+                  className="text-xs font-bold gap-1.5 cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Xác nhận & Cập nhật điểm</span>
+                </Button>
+              </div>
+            </form>
+          )}
+        </Modal>
 
         {/* Quick Upload Modal */}
         <Modal
@@ -371,7 +632,7 @@ function GradingHubContent() {
                 onChange={(e) => setSelectedAssignmentId(e.target.value)}
                 className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-orange-500"
               >
-                {assignments.map(a => (
+                {assignments.map((a) => (
                   <option key={a.id} value={a.id}>
                     [{a.subjectCode || 'Môn'}] {a.title}
                   </option>
@@ -405,7 +666,6 @@ function GradingHubContent() {
                 size="sm"
                 type="submit"
                 isLoading={uploadingSingle}
-                className="bg-orange-500 hover:bg-orange-600 text-white"
               >
                 Bắt đầu chấm ngay
               </Button>

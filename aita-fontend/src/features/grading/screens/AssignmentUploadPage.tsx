@@ -337,23 +337,23 @@ export function AssignmentUploadPage() {
     >
       <div className="max-w-5xl mx-auto space-y-6 pb-12">
         {/* Progress Stepper */}
-        <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="relative overflow-hidden flex items-center justify-between bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 p-4 rounded-2xl border border-orange-100/90 dark:border-orange-900/30 shadow-xs">
           <div className={`flex items-center gap-3 ${step >= 1 ? 'text-orange-600 font-bold' : 'text-slate-400'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${step >= 1 ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${step >= 1 ? 'bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white shadow-md shadow-orange-500/25' : 'bg-slate-100 text-slate-400'}`}>
               1
             </div>
             <span>{t('lecturer.upload.step1', 'Nhập nguồn đề bài')}</span>
           </div>
-          <div className="h-0.5 flex-1 mx-4 bg-slate-200 dark:bg-slate-800" />
+          <div className="h-0.5 flex-1 mx-4 bg-orange-100/80 dark:bg-slate-800" />
           <div className={`flex items-center gap-3 ${step >= 2 ? 'text-orange-600 font-bold' : 'text-slate-400'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${step >= 2 ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${step >= 2 ? 'bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white shadow-md shadow-orange-500/25' : 'bg-slate-100 text-slate-400'}`}>
               2
             </div>
             <span>{t('lecturer.upload.step2', 'Nội dung & Yêu cầu')}</span>
           </div>
-          <div className="h-0.5 flex-1 mx-4 bg-slate-200 dark:bg-slate-800" />
+          <div className="h-0.5 flex-1 mx-4 bg-orange-100/80 dark:bg-slate-800" />
           <div className={`flex items-center gap-3 ${step >= 3 ? 'text-orange-600 font-bold' : 'text-slate-400'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${step >= 3 ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${step >= 3 ? 'bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white shadow-md shadow-orange-500/25' : 'bg-slate-100 text-slate-400'}`}>
               3
             </div>
             <span>{t('lecturer.upload.step3', 'Barem Rubric & Xuất bản')}</span>
@@ -390,7 +390,7 @@ export function AssignmentUploadPage() {
         {/* STEP 1: INPUT SOURCE */}
         {step === 1 && (
           <div className="space-y-6">
-            <Card className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs">
+            <div className="relative overflow-hidden p-6 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 rounded-2xl shadow-xs">
               <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-orange-500" />
                 Thông tin bài tập & môn học
@@ -400,7 +400,7 @@ export function AssignmentUploadPage() {
                 <div>
                   <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 block">Học kỳ</label>
                   <select
-                    className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-sm dark:bg-slate-900 dark:border-slate-800"
+                    className="w-full rounded-xl border border-orange-100/90 bg-white p-2.5 text-sm dark:bg-slate-900 dark:border-slate-800 focus:outline-none focus:border-orange-400"
                     value={selectedSemester}
                     onChange={(e) => setSelectedSemester(e.target.value)}
                   >
@@ -416,7 +416,7 @@ export function AssignmentUploadPage() {
                 <div>
                   <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 block">Môn học</label>
                   <select
-                    className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-sm dark:bg-slate-900 dark:border-slate-800"
+                    className="w-full rounded-xl border border-orange-100/90 bg-white p-2.5 text-sm dark:bg-slate-900 dark:border-slate-800 focus:outline-none focus:border-orange-400"
                     value={subjectCode}
                     onChange={(e) => setSubjectCode(e.target.value)}
                   >
@@ -432,7 +432,7 @@ export function AssignmentUploadPage() {
                 <div>
                   <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 block">Loại bài tập</label>
                   <select
-                    className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-sm dark:bg-slate-900 dark:border-slate-800"
+                    className="w-full rounded-xl border border-orange-100/90 bg-white p-2.5 text-sm dark:bg-slate-900 dark:border-slate-800 focus:outline-none focus:border-orange-400"
                     value={selectedAssignmentType}
                     onChange={(e) => setSelectedAssignmentType(e.target.value)}
                   >
@@ -449,14 +449,14 @@ export function AssignmentUploadPage() {
               </div>
 
               {/* Mode switch */}
-              <div className="flex border-b border-slate-200 dark:border-slate-800 mb-6">
+              <div className="inline-flex p-1.5 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 rounded-2xl border border-orange-100/90 dark:border-orange-900/30 shadow-xs mb-6">
                 <button
                   type="button"
                   onClick={() => setInputMode('text')}
-                  className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
                     inputMode === 'text'
-                      ? 'border-orange-500 text-orange-600'
-                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                      ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 text-white shadow-md shadow-orange-500/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400'
                   }`}
                 >
                   <Sparkles className="w-4 h-4" />
@@ -465,10 +465,10 @@ export function AssignmentUploadPage() {
                 <button
                   type="button"
                   onClick={() => setInputMode('file')}
-                  className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
                     inputMode === 'file'
-                      ? 'border-orange-500 text-orange-600'
-                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                      ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 text-white shadow-md shadow-orange-500/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400'
                   }`}
                 >
                   <Upload className="w-4 h-4" />
@@ -540,7 +540,7 @@ export function AssignmentUploadPage() {
                   <FileUpload onUpload={handleUploadFile} isUploading={isLoading} />
                 </div>
               )}
-            </Card>
+            </div>
           </div>
         )}
 

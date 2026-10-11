@@ -22,6 +22,7 @@ import {
   Code,
   ArrowRight,
   GraduationCap,
+  Check,
   CheckCircle2,
   AlertCircle,
   FileText,
@@ -160,9 +161,9 @@ export default function StudentSubjectsPage() {
     >
       <div className="space-y-6 max-w-7xl mx-auto pb-16">
         {/* Controls Bar: Semester Selector & Tabs */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0 border border-orange-200/50 dark:border-orange-800/50">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25 shrink-0">
               <GraduationCap className="w-5 h-5" />
             </div>
             <div>
@@ -175,7 +176,7 @@ export default function StudentSubjectsPage() {
             <select
               value={selectedSemester}
               onChange={(e) => setSelectedSemester(e.target.value)}
-              className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="px-4 py-2 rounded-xl border border-orange-200/80 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-400/25"
             >
               <option value="">{t('student.results.all_semesters', 'Tất cả học kỳ')}</option>
               {semesters.map((sem: any) => (
@@ -192,41 +193,96 @@ export default function StudentSubjectsPage() {
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
-          <Card className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs">
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block">{t('student.results.total_tasks', 'Tổng bài tập')}</span>
-            <span className="text-xl font-bold text-slate-900 dark:text-white mt-1 block">{stats.total}</span>
-          </Card>
-          <Card className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs">
-            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 block">{t('student.results.submitted', 'Đã nộp')}</span>
-            <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 block">{stats.submitted}</span>
-          </Card>
-          <Card className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs">
-            <span className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 block">{t('student.results.graded', 'Đã có điểm')}</span>
-            <span className="text-xl font-bold text-blue-600 dark:text-blue-400 mt-1 block">{stats.graded}</span>
-          </Card>
-          <Card className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs">
-            <span className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 block">{t('student.results.missing', 'Chưa nộp')}</span>
-            <span className="text-xl font-bold text-rose-600 dark:text-rose-400 mt-1 block">{stats.missing}</span>
-          </Card>
-          <Card className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs col-span-2 sm:col-span-1">
-            <span className="text-[11px] font-semibold text-orange-600 dark:text-orange-400 block">{t('student.results.avg_score', 'Điểm trung bình')}</span>
-            <span className="text-xl font-bold text-orange-600 dark:text-orange-400 mt-1 block">{stats.avgScore}</span>
-          </Card>
+        {/* Executive KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Tổng môn học
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+                <BookOpen className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
+              {loading ? '…' : subjects.length}
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+              <span>Chương trình Spring 2026</span>
+            </div>
+          </div>
+
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Tổng bài tập
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+                <FileText className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
+              {loading ? '…' : stats.total}
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span>Đã nộp: {stats.submitted} bài</span>
+            </div>
+          </div>
+
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Đã có điểm
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
+              {loading ? '…' : stats.graded}
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+              <span>Chờ chấm: {Math.max(0, stats.submitted - stats.graded)}</span>
+            </div>
+          </div>
+
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Điểm TB GPA
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+                <GraduationCap className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
+              {loading ? '…' : stats.avgScore}
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+              <span>Thang điểm 10</span>
+            </div>
+          </div>
         </div>
 
         {/* Subject Chips */}
         {subjectTabs.length > 2 && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <div className="inline-flex flex-wrap p-1.5 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 rounded-2xl border border-orange-100/90 dark:border-orange-900/30 shadow-xs gap-1">
             {subjectTabs.map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveSubjectTab(tab)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   activeSubjectTab === tab
-                    ? 'bg-orange-500 text-white shadow-xs'
-                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-orange-300'
+                    ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 text-white shadow-md shadow-orange-500/20'
+                    : 'text-slate-600 hover:text-orange-600 dark:text-slate-300 dark:hover:text-white hover:bg-orange-50/60'
                 }`}
               >
                 {tab === 'All' ? t('student.results.all_subjects', 'Tất cả môn học') : tab}
@@ -277,15 +333,15 @@ export default function StudentSubjectsPage() {
               return (
                 <Card
                   key={subId}
-                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-xs"
+                  className="bg-white dark:bg-slate-900 border border-orange-100/90 dark:border-orange-900/30 rounded-2xl overflow-hidden shadow-xs hover:border-orange-200/90 transition-all"
                 >
                   {/* Subject Header */}
                   <div
                     onClick={() => setExpandedSubjectId(isExpanded ? null : subId)}
-                    className="p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors"
+                    className="p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer hover:bg-orange-50/20 dark:hover:bg-slate-800/40 transition-colors"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0 border border-orange-200/50 dark:border-orange-800/50">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-orange-400 text-white flex items-center justify-center shrink-0 shadow-md shadow-orange-500/25">
                         {subCode.startsWith('DB') ? <Database className="w-6 h-6" /> : subCode.startsWith('SE') || subCode.startsWith('CS') ? <Code className="w-6 h-6" /> : <BookOpen className="w-6 h-6" />}
                       </div>
                       <div>
@@ -376,13 +432,15 @@ export default function StudentSubjectsPage() {
                                 <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                                   <div>
                                     {isGraded ? (
-                                      <Badge variant="success" className="text-xs">
-                                        {t('student.results.score_label', 'Điểm')}: {a.score} / {a.maxScore || 10}
-                                      </Badge>
+                                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                        <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+                                        <span>{t('student.results.score_label', 'Điểm')}: {a.score} / {a.maxScore || 10}</span>
+                                      </span>
                                     ) : isSubmitted ? (
-                                      <Badge variant="blue" className="text-xs">
-                                        {t('student.results.status_submitted', 'Đã nộp bài')}
-                                      </Badge>
+                                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                        <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+                                        <span>{t('student.results.status_submitted', 'Đã nộp bài')}</span>
+                                      </span>
                                     ) : isOverdue ? (
                                       <Badge variant="danger" className="text-xs">
                                         {t('student.results.status_overdue', 'Quá hạn nộp')}
