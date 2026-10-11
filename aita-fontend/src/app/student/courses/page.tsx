@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation'
+import StudentCoursesPage from '@/features/subjects/screens/StudentCoursesPage'
 
 export default function Page() {
-  redirect('/student/classes')
+  return <StudentCoursesPage />
 }
