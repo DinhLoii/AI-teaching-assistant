@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api/modules/auth'
 import type { AuthUser } from '@/lib/api/contracts'
 import { AUTH_STORAGE_KEYS, getStoredItem, setStoredItem, removeStoredItem, SESSION_CHANGED_EVENT } from '@/lib/api/storage'
+import { clearClientApiCache } from '@/lib/api/client'
 import type { UserRole } from '@/types'
 
 export interface AuthContextValue {
@@ -86,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
         .catch((err) => {
           console.warn('Initial session check failed:', err)
+          clearClientApiCache()
           removeStoredItem(AUTH_STORAGE_KEYS.token)
           removeStoredItem(AUTH_STORAGE_KEYS.refreshToken)
           removeStoredItem(AUTH_STORAGE_KEYS.user)
@@ -142,6 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const logout = useCallback(() => {
+    clearClientApiCache()
     removeStoredItem(AUTH_STORAGE_KEYS.token)
     removeStoredItem(AUTH_STORAGE_KEYS.refreshToken)
     removeStoredItem(AUTH_STORAGE_KEYS.user)

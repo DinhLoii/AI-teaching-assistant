@@ -144,6 +144,7 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
           res = await fetch(`${BASE}${path}`, { ...options, headers });
         } catch (err) {
           processQueue(err as Error, null);
+          clientGetCache.clear();
           removeStoredItem(AUTH_STORAGE_KEYS.token);
           removeStoredItem(AUTH_STORAGE_KEYS.refreshToken);
           removeStoredItem(AUTH_STORAGE_KEYS.user);
