@@ -15,6 +15,7 @@ type PrismaUserWithRoles = {
   Phone: string | null
   Avatar: string | null
   Status: string | null
+  Campus?: string | null
   LastLoginAt: Date | null
   ResetPasswordOtp: string | null
   ResetPasswordOtpExpiry: Date | null
@@ -44,6 +45,7 @@ export class UserMapper {
       raw.ResetPasswordOtp,
       raw.ResetPasswordOtpExpiry,
       roles,
+      raw.Campus ?? 'quynhon',
     )
     // Cờ ép đổi mật khẩu lần đầu — gắn ngoài entity (pattern như subjectName ở ExamMapper)
     ;(user as any).requirePasswordChange = (raw as any).RequirePasswordChange ?? false
@@ -64,6 +66,7 @@ export class UserMapper {
       Phone: user.phone,
       Avatar: user.avatar,
       Status: user.status,
+      Campus: user.campus ?? 'quynhon',
       LastLoginAt: user.lastLoginAt,
       ResetPasswordOtp: user.resetPasswordOtp,
       ResetPasswordOtpExpiry: user.resetPasswordOtpExpiry,
@@ -83,6 +86,7 @@ export class UserMapper {
       Phone: user.phone,
       Avatar: user.avatar,
       Status: user.status,
+      Campus: user.campus,
       LastLoginAt: user.lastLoginAt,
       ResetPasswordOtp: user.resetPasswordOtp,
       ResetPasswordOtpExpiry: user.resetPasswordOtpExpiry,

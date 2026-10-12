@@ -19,6 +19,7 @@ model User {
   Phone                                  String?
   Avatar                                 String?
   Status                                 String?
+  Campus                                 String?                 @default("quynhon")
   LastLoginAt                            DateTime?
   RequirePasswordChange                  Boolean?                @default(false)
   ResetPasswordOtp                       String?

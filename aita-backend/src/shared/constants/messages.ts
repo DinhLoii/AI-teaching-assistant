@@ -48,6 +48,7 @@ export const MESSAGES = {
 
   // Auth
   AUTH_INVALID_CREDENTIALS: 'Email hoặc mật khẩu không đúng',
+  AUTH_CAMPUS_MISMATCH: 'Tài khoản không thuộc cơ sở đã chọn. Vui lòng chọn đúng cơ sở (Campus) của bạn.',
   AUTH_EMAIL_IN_USE: 'Email đã được sử dụng',
   AUTH_LOGIN_SUCCESS: 'Đăng nhập thành công',
   AUTH_REGISTER_SUCCESS: 'Đăng ký thành công',
