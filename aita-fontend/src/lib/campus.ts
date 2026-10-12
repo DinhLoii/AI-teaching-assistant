@@ -50,7 +50,7 @@ export const CAMPUSES: CampusInfo[] = [
   },
 ]
 
-export const DEFAULT_CAMPUS = CAMPUSES[0]
+export const DEFAULT_CAMPUS = CAMPUSES.find((c) => c.id === 'quynhon') || CAMPUSES[0]
 
 export const CAMPUS_STORAGE_KEY = 'fptu_campus'
 export const CAMPUS_NAME_KEY = 'fptu_campus_name'

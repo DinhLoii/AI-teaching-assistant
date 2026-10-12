@@ -61,7 +61,7 @@ function LoginForm() {
   const redirect = searchParams?.get('redirect') ?? null
   const { login, isAuthenticated, role } = useAuth()
 
-  const [campus, setCampus] = React.useState('hanoi')
+  const [campus, setCampus] = React.useState('quynhon')
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [showPassword, setShowPassword] = React.useState(false)
@@ -78,6 +78,8 @@ function LoginForm() {
       const savedCampus = localStorage.getItem('fptu_campus')
       if (savedCampus && CAMPUSES.some((c) => c.id === savedCampus)) {
         setCampus(savedCampus)
+      } else {
+        setCampus('quynhon')
       }
     } catch {}
   }, [])
@@ -106,7 +108,15 @@ function LoginForm() {
     setErrorMessage(null)
     setIsLoading(true)
     try {
-      const userRole = await login(loginEmail, loginPass, rememberMe)
+      const userRole = await login(loginEmail, loginPass, rememberMe, campus)
+      try {
+        localStorage.setItem('fptu_campus', campus)
+        const found = CAMPUSES.find((c) => c.id === campus)
+        if (found) {
+          localStorage.setItem('fptu_campus_name', found.name)
+          localStorage.setItem('fptu_campus_code', found.code)
+        }
+      } catch {}
       router.replace(loginDestination(redirect, userRole))
     } catch (err: any) {
       setErrorMessage(

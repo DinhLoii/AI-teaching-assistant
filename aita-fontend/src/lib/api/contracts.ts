@@ -7,6 +7,7 @@ export interface AuthUser {
   name: string
   role: 'admin' | 'lecturer' | 'student'
   status: string
+  campus?: string
   externalId?: string | null
   avatar?: string | null
   phone?: string

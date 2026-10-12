@@ -21,7 +21,7 @@ export interface AuthContextValue {
   role: UserRole | null
   loading: boolean
   isAuthenticated: boolean
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<UserRole>
+  login: (email: string, password: string, rememberMe?: boolean, campus?: string) => Promise<UserRole>
   fastLogin: (targetRole: UserRole) => Promise<void>
   logout: () => void
   refreshProfile: () => Promise<void>
@@ -101,11 +101,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = useCallback(
-    async (email: string, password: string, rememberMe = true) => {
+    async (email: string, password: string, rememberMe = true, campus?: string) => {
       setError(null)
       setLoading(true)
       try {
-        const response = await authApi.login(email, password)
+        const response = await authApi.login(email, password, campus)
         const userRole = (response.user.role || 'student').toLowerCase() as UserRole
         response.user.role = userRole as any
 
@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         student: { email: 'student@fpt.edu.vn', pass: 'student123' },
       }
       const cred = credentials[targetRole]
-      const role = await login(cred.email, cred.pass, true)
+      const role = await login(cred.email, cred.pass, true, 'quynhon')
       if (role === 'admin') router.push('/admin')
       else if (role === 'lecturer') router.push('/lecturer')
       else router.push('/student')
