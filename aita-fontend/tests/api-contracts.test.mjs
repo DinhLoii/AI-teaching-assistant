@@ -88,3 +88,29 @@ test('concurrent domain requests share one refresh queue and retry with the new 
   assert.equal(refreshCalls, 1);
   assert.equal(localStorage.getItem('aita_token'), 'new-access');
 });
+
+test('loginDestination routes each role to correct portal and rejects cross-role redirect param', () => {
+  const { load } = setup(() => {});
+  const { loginDestination } = load('lib/auth/redirect.ts');
+
+  // Lecturer landing tests
+  assert.equal(loginDestination('/student', 'lecturer'), '/lecturer');
+  assert.equal(loginDestination('/admin', 'lecturer'), '/lecturer');
+  assert.equal(loginDestination('/lecturer/grading', 'lecturer'), '/lecturer/grading');
+  assert.equal(loginDestination(null, 'lecturer'), '/lecturer');
+
+  // Admin landing tests
+  assert.equal(loginDestination('/student', 'admin'), '/admin');
+  assert.equal(loginDestination('/admin/users', 'admin'), '/admin/users');
+  assert.equal(loginDestination(null, 'admin'), '/admin');
+
+  // Student landing tests
+  assert.equal(loginDestination('/lecturer', 'student'), '/student');
+  assert.equal(loginDestination('/student/assignments', 'student'), '/student/assignments');
+  assert.equal(loginDestination(null, 'student'), '/student');
+
+  // Profile page is allowed for all roles
+  assert.equal(loginDestination('/profile', 'lecturer'), '/profile');
+  assert.equal(loginDestination('/profile', 'student'), '/profile');
+  assert.equal(loginDestination('/profile', 'admin'), '/profile');
+});
