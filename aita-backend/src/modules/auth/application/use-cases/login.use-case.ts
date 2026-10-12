@@ -15,6 +15,17 @@ export interface LoginInput {
   dto: LoginRequestDto
 }
 
+function normalizeCampus(c?: string | null): string {
+  if (!c) return ''
+  const lower = c.trim().toLowerCase().replace(/[-_\s]/g, '')
+  if (lower.includes('quynhon') || lower.includes('fuqn') || lower.includes('qn')) return 'quynhon'
+  if (lower.includes('hanoi') || lower.includes('fuhn') || lower.includes('hn') || lower.includes('hoalac')) return 'hanoi'
+  if (lower.includes('hcm') || lower.includes('fuhcm') || lower.includes('tphcm') || lower.includes('hochiminh')) return 'hcm'
+  if (lower.includes('danang') || lower.includes('fudn') || lower.includes('dn')) return 'danang'
+  if (lower.includes('cantho') || lower.includes('fuct') || lower.includes('ct')) return 'cantho'
+  return lower
+}
+
 export class LoginUseCase implements IUseCase<LoginInput, AuthResponseDto> {
   constructor(
     private readonly userRepo: IUserRepository,
@@ -25,7 +36,7 @@ export class LoginUseCase implements IUseCase<LoginInput, AuthResponseDto> {
   ) {}
 
   async execute({ dto }: LoginInput): Promise<AuthResponseDto> {
-    this.logger.info(`Login attempt for email: ${dto.email}`)
+    this.logger.info(`Login attempt for email: ${dto.email}, campus: ${dto.campus ?? 'not-specified'}`)
 
     const user = await this.userRepo.findByEmail(dto.email)
     if (!user || !user.isActive()) {
@@ -36,6 +47,18 @@ export class LoginUseCase implements IUseCase<LoginInput, AuthResponseDto> {
     if (!user.passwordHash || !(await this.hashService.compare(dto.password, user.passwordHash))) {
       this.logger.warn(`Login failed: Invalid password for user: ${user.id}`)
       throw new UnauthorizedError(MESSAGES.AUTH_INVALID_CREDENTIALS)
+    }
+
+    // Verify campus if specified
+    if (dto.campus) {
+      const selectedCampus = normalizeCampus(dto.campus)
+      const userCampus = normalizeCampus(user.campus || 'quynhon')
+      if (userCampus && userCampus !== 'all' && selectedCampus !== userCampus) {
+        this.logger.warn(
+          `Login rejected: Campus mismatch for user ${user.id} (${dto.email}). Expected: ${userCampus}, Selected: ${selectedCampus}`
+        )
+        throw new UnauthorizedError(MESSAGES.AUTH_CAMPUS_MISMATCH)
+      }
     }
 
     // Record login via domain logic

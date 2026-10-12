@@ -71,6 +71,7 @@ export class UserResponseDto {
             lecturerCode: user.lecturerCode || user.LecturerCode,
             phone: user.phone || user.Phone,
             avatar: user.avatarUrl || user.AvatarUrl || user.avatar || user.Avatar,
+            campus: user.campus || user.Campus || 'quynhon',
             lastLoginAt: user.lastLoginAt ? user.lastLoginAt.toISOString() : (user.LastLoginAt ? user.LastLoginAt.toISOString() : null),
             requirePasswordChange: user.requirePasswordChange ?? user.RequirePasswordChange ?? false,
             roles: roles

@@ -24,7 +24,7 @@ function hasPermission(userRole?: UserRole | null, reqRole?: UserRole): boolean 
   if (!reqRole) return true
   if (!userRole) return false
   if (userRole === 'admin') return true
-  if (userRole === 'lecturer') return reqRole === 'lecturer' || reqRole === 'student'
+  if (userRole === 'lecturer') return reqRole === 'lecturer'
   if (userRole === 'student') return reqRole === 'student'
   return false
 }
@@ -52,8 +52,9 @@ export function DashboardLayout({
       } else if (user?.requirePasswordChange && pathname !== '/profile') {
         router.replace('/profile?changePassword=required')
       } else if (requiredRole && !hasPermission(role, requiredRole)) {
-        // Redirect unauthorized access to default user portal
-        router.push('/student')
+        // Redirect unauthorized access to the user's role-specific home portal
+        const roleHome = role === 'admin' ? '/admin' : role === 'lecturer' ? '/lecturer' : '/student'
+        router.replace(roleHome)
       }
     }
   }, [loading, isAuthenticated, role, requiredRole, router, user?.requirePasswordChange, pathname])

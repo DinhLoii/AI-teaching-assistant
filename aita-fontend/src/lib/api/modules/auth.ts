@@ -2,10 +2,10 @@ import { request } from '../client'
 import type { AuthUser } from '../contracts'
 
 export const authApi = {
-  login: (email: string, password: string) =>
+  login: (email: string, password: string, campus?: string) =>
     request<{ token: string; refreshToken: string; user: AuthUser }>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, campus }),
     }).then(res => {
       if (res.user?.role) res.user.role = res.user.role.toLowerCase() as any
       return res

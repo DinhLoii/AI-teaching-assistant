@@ -97,6 +97,7 @@ export class User extends AggregateRoot {
   resetPasswordOtp: string | null
   resetPasswordOtpExpiry: Date | null
   roles: UserRoleType[]
+  campus: string | null
 
   private constructor(
     id: string,
@@ -111,7 +112,8 @@ export class User extends AggregateRoot {
     lastLoginAt: Date | null,
     resetPasswordOtp: string | null,
     resetPasswordOtpExpiry: Date | null,
-    roles: UserRoleType[]
+    roles: UserRoleType[],
+    campus: string | null = 'quynhon'
   ) {
     super()
     this.id = id
@@ -127,6 +129,7 @@ export class User extends AggregateRoot {
     this.resetPasswordOtp = resetPasswordOtp
     this.resetPasswordOtpExpiry = resetPasswordOtpExpiry
     this.roles = roles
+    this.campus = campus
   }
 
   // ── Factory Methods ──
@@ -136,11 +139,12 @@ export class User extends AggregateRoot {
     email: string,
     fullName: string,
     passwordHash: string,
-    role: UserRoleType = 'STUDENT'
+    role: UserRoleType = 'STUDENT',
+    campus: string | null = 'quynhon'
   ): User {
     const user = new User(
       id, email, passwordHash, fullName,
-      null, null, null, null, 'Active', null, null, null, [role]
+      null, null, null, null, 'Active', null, null, null, [role], campus
     )
     user.addDomainEvent(new UserCreatedEvent(user.id, user.email))
     return user
@@ -159,9 +163,10 @@ export class User extends AggregateRoot {
     lastLoginAt: Date | null,
     resetPasswordOtp: string | null,
     resetPasswordOtpExpiry: Date | null,
-    roles: UserRoleType[]
+    roles: UserRoleType[],
+    campus: string | null = 'quynhon'
   ): User {
-    return new User(id, email, passwordHash, fullName, studentCode, lecturerCode, phone, avatar, status, lastLoginAt, resetPasswordOtp, resetPasswordOtpExpiry, roles)
+    return new User(id, email, passwordHash, fullName, studentCode, lecturerCode, phone, avatar, status, lastLoginAt, resetPasswordOtp, resetPasswordOtpExpiry, roles, campus)
   }
 
   // ── Business Logic ──

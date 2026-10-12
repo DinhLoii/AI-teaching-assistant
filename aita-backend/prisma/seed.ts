@@ -57,37 +57,40 @@ async function main() {
   // Create users
   const admin = await prisma.user.upsert({
     where: { Email: 'admin@fpt.edu.vn' },
-    update: {},
+    update: { Campus: 'quynhon' },
     create: {
       Email: 'admin@fpt.edu.vn',
       PasswordHash: await hash('admin123'),
       FullName: 'Quản trị AITA',
       StudentCode: 'ADM001',
       Status: 'Active',
+      Campus: 'quynhon',
     },
   })
 
   const lecturer = await prisma.user.upsert({
     where: { Email: 'lecturer@fpt.edu.vn' },
-    update: {},
+    update: { Campus: 'quynhon' },
     create: {
       Email: 'lecturer@fpt.edu.vn',
       PasswordHash: await hash('lecturer123'),
       FullName: 'Nguyễn Văn Giảng',
       StudentCode: 'GV001',
       Status: 'Active',
+      Campus: 'quynhon',
     },
   })
 
   const student = await prisma.user.upsert({
     where: { Email: 'student@fpt.edu.vn' },
-    update: {},
+    update: { Campus: 'quynhon' },
     create: {
       Email: 'student@fpt.edu.vn',
       PasswordHash: await hash('student123'),
       FullName: 'Trần Thị Sinh',
       StudentCode: 'HE170000',
       Status: 'Active',
+      Campus: 'quynhon',
     },
   })
 
@@ -105,6 +108,7 @@ async function main() {
       update: {
         FullName: st.name,
         StudentCode: st.code,
+        Campus: 'quynhon',
       },
       create: {
         Email: st.email,
@@ -112,6 +116,7 @@ async function main() {
         FullName: st.name,
         StudentCode: st.code,
         Status: 'Active',
+        Campus: 'quynhon',
       },
     })
     seededStudents.push(sUser)

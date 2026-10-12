@@ -1,6 +1,32 @@
-export function loginDestination(redirect: string | null, _role: string): string {
-  const home = '/student'
-  if (!redirect || !redirect.startsWith('/') || redirect.startsWith('//') || /[\\\u0000-\u001f]/.test(redirect)) return home
+export function loginDestination(redirect: string | null, role?: string | null): string {
+  const normalizedRole = role?.toLowerCase()
+  const home = normalizedRole === 'admin'
+    ? '/admin'
+    : normalizedRole === 'lecturer'
+    ? '/lecturer'
+    : '/student'
+
+  if (!redirect || !redirect.startsWith('/') || redirect.startsWith('//') || /[\\\u0000-\u001f]/.test(redirect)) {
+    return home
+  }
+
   const pathname = redirect.split(/[?#]/)[0]
-  return pathname === '/profile' || pathname === home || pathname.startsWith(`${home}/`) || pathname.startsWith('/admin') || pathname.startsWith('/lecturer') ? redirect : home
+
+  // Allow profile page for any authenticated user
+  if (pathname === '/profile') {
+    return redirect
+  }
+
+  // Ensure redirect target matches the user's role prefix
+  if (normalizedRole === 'admin') {
+    return pathname === '/admin' || pathname.startsWith('/admin/') ? redirect : home
+  }
+  if (normalizedRole === 'lecturer') {
+    return pathname === '/lecturer' || pathname.startsWith('/lecturer/') ? redirect : home
+  }
+  if (normalizedRole === 'student') {
+    return pathname === '/student' || pathname.startsWith('/student/') ? redirect : home
+  }
+
+  return home
 }

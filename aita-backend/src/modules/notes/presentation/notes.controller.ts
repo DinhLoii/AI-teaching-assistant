@@ -7,8 +7,13 @@ export class NotesController extends BaseController {
   async getNotes(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.id
+      if (!userId) {
+        res.status(401).json(ApiResponse.error('Unauthorized: User ID required', 401))
+        return
+      }
+
       const notes = await prisma.note.findMany({
-        where: userId ? { UserId: userId } : {},
+        where: { UserId: userId },
         orderBy: [{ DateStr: 'asc' }, { TimeStr: 'asc' }],
       })
 
@@ -29,7 +34,12 @@ export class NotesController extends BaseController {
 
   async createNote(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.id || null
+      const userId = req.user?.id
+      if (!userId) {
+        res.status(401).json(ApiResponse.error('Unauthorized: User ID required', 401))
+        return
+      }
+
       const { dateStr, timeStr, content, status } = req.body
 
       if (!dateStr || !timeStr || !content) {
@@ -65,12 +75,24 @@ export class NotesController extends BaseController {
 
   async updateNote(req: Request, res: Response): Promise<void> {
     try {
+      const userId = req.user?.id
+      if (!userId) {
+        res.status(401).json(ApiResponse.error('Unauthorized: User ID required', 401))
+        return
+      }
+
       const id = String(req.params.id)
       const { dateStr, timeStr, content, status } = req.body
 
       const existing = await prisma.note.findUnique({ where: { Id: id } })
       if (!existing) {
         res.status(404).json(ApiResponse.error('Note not found', 404))
+        return
+      }
+
+      // Check ownership
+      if (existing.UserId && existing.UserId !== userId) {
+        res.status(403).json(ApiResponse.error('Forbidden: Cannot modify note belonging to another user', 403))
         return
       }
 
@@ -102,7 +124,25 @@ export class NotesController extends BaseController {
 
   async deleteNote(req: Request, res: Response): Promise<void> {
     try {
+      const userId = req.user?.id
+      if (!userId) {
+        res.status(401).json(ApiResponse.error('Unauthorized: User ID required', 401))
+        return
+      }
+
       const id = String(req.params.id)
+      const existing = await prisma.note.findUnique({ where: { Id: id } })
+      if (!existing) {
+        res.status(404).json(ApiResponse.error('Note not found', 404))
+        return
+      }
+
+      // Check ownership
+      if (existing.UserId && existing.UserId !== userId) {
+        res.status(403).json(ApiResponse.error('Forbidden: Cannot delete note belonging to another user', 403))
+        return
+      }
+
       await prisma.note.delete({ where: { Id: id } })
       this.ok(res, { id }, 'Note deleted successfully')
     } catch (error: any) {
@@ -112,12 +152,25 @@ export class NotesController extends BaseController {
 
   async syncNotes(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.id || null
+      const userId = req.user?.id
+      if (!userId) {
+        res.status(401).json(ApiResponse.error('Unauthorized: User ID required', 401))
+        return
+      }
+
       const { notes } = req.body
 
       if (Array.isArray(notes)) {
         for (const item of notes) {
           if (!item.dateStr || !item.timeStr || !item.content) continue
+
+          if (item.id) {
+            const existing = await prisma.note.findUnique({ where: { Id: item.id } })
+            if (existing && existing.UserId && existing.UserId !== userId) {
+              continue // Skip notes belonging to other users
+            }
+          }
+
           await prisma.note.upsert({
             where: { Id: item.id || 'non-existent-id' },
             create: {
@@ -138,14 +191,14 @@ export class NotesController extends BaseController {
         }
       }
 
-      const allNotes = await prisma.note.findMany({
-        where: userId ? { UserId: userId } : {},
+      const userNotes = await prisma.note.findMany({
+        where: { UserId: userId },
         orderBy: [{ DateStr: 'asc' }, { TimeStr: 'asc' }],
       })
 
       this.ok(
         res,
-        allNotes.map((n) => ({
+        userNotes.map((n) => ({
           id: n.Id,
           dateStr: n.DateStr,
           timeStr: n.TimeStr,
@@ -159,3 +212,4 @@ export class NotesController extends BaseController {
     }
   }
 }
+

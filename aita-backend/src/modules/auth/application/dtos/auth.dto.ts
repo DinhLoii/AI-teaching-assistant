@@ -4,10 +4,12 @@ import { User } from '../../domain/entities/user.entity.js'
 export class LoginRequestDto {
   email!: string
   password!: string
+  campus?: string
 
   static readonly schema = z.object({
     email: z.string().min(1, 'Vui lòng nhập tên đăng nhập hoặc email'),
     password: z.string().min(1, 'Vui lòng nhập mật khẩu'),
+    campus: z.string().optional(),
   })
 
   static from(data: unknown): LoginRequestDto {
@@ -20,6 +22,7 @@ export class LoginRequestDto {
     const dto = new LoginRequestDto()
     dto.email = parsed.email
     dto.password = parsed.password
+    dto.campus = parsed.campus ? parsed.campus.toString().trim() : undefined
     return dto
   }
 }
@@ -167,6 +170,7 @@ export class AuthResponseDto {
     lecturerCode: string | null
     phone: string | null
     avatar: string | null
+    campus: string | null
     role: string
     status: string | null
     requirePasswordChange: boolean
@@ -188,6 +192,7 @@ export class AuthResponseDto {
       lecturerCode: user.lecturerCode,
       phone: user.phone,
       avatar: user.avatar,
+      campus: user.campus ?? 'quynhon',
       role: role.toLowerCase(),
       status: (user.status || 'active').toLowerCase(),
       requirePasswordChange: (user as any).requirePasswordChange ?? false

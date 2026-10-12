@@ -61,7 +61,7 @@ function LoginForm() {
   const redirect = searchParams?.get('redirect') ?? null
   const { login, isAuthenticated, role } = useAuth()
 
-  const [campus, setCampus] = React.useState('hanoi')
+  const [campus, setCampus] = React.useState('quynhon')
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [showPassword, setShowPassword] = React.useState(false)
@@ -78,6 +78,8 @@ function LoginForm() {
       const savedCampus = localStorage.getItem('fptu_campus')
       if (savedCampus && CAMPUSES.some((c) => c.id === savedCampus)) {
         setCampus(savedCampus)
+      } else {
+        setCampus('quynhon')
       }
     } catch {}
   }, [])
@@ -106,7 +108,15 @@ function LoginForm() {
     setErrorMessage(null)
     setIsLoading(true)
     try {
-      const userRole = await login(loginEmail, loginPass, rememberMe)
+      const userRole = await login(loginEmail, loginPass, rememberMe, campus)
+      try {
+        localStorage.setItem('fptu_campus', campus)
+        const found = CAMPUSES.find((c) => c.id === campus)
+        if (found) {
+          localStorage.setItem('fptu_campus_name', found.name)
+          localStorage.setItem('fptu_campus_code', found.code)
+        }
+      } catch {}
       router.replace(loginDestination(redirect, userRole))
     } catch (err: any) {
       setErrorMessage(
@@ -327,7 +337,8 @@ function LoginForm() {
           <div className="flex items-center gap-3 p-3.5 rounded-xl bg-orange-50/70 dark:bg-orange-950/20 border border-orange-200/60 dark:border-orange-900/40">
             <GoogleIcon className="w-6 h-6 shrink-0" />
             <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              Enter your Gmail address to authenticate and proceed.
+              <span className="font-semibold text-orange-600 dark:text-orange-400">[Demo Simulation] </span>
+              Enter your FPT or Gmail address to authenticate. Matches seed demo accounts (Admin, Lecturer, Student).
             </div>
           </div>
 
