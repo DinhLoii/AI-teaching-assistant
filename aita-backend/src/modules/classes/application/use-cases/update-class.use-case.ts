@@ -48,43 +48,60 @@ export class UpdateClassUseCase implements IUseCase<{ classId: string; dto: Upda
       if (!lecturer) throw new NotFoundError(MESSAGES.INSTRUCTOR_NOT_FOUND || 'Không tìm thấy giảng viên')
     }
 
-    return this.uow.runInTransaction(async (txn) => {
-      const txClassRepo = txn.resolve<IClassRepository>(TOKENS.ClassRepository)
-      
-      const classToUpdate = await txClassRepo.findById(classId)
-      if (!classToUpdate) throw new NotFoundError('Lớp học không tồn tại')
+    if (data.code !== undefined) (existingClass as any).classCode = data.code
+    if (data.subjectId !== undefined) (existingClass as any).subjectId = data.subjectId
+    if (data.semesterId !== undefined) (existingClass as any).semesterId = data.semesterId
 
-      if (data.code !== undefined) (classToUpdate as any).classCode = data.code
-      if (data.subjectId !== undefined) (classToUpdate as any).subjectId = data.subjectId
-      if (data.semesterId !== undefined) (classToUpdate as any).semesterId = data.semesterId
+    await classRepo.update(existingClass)
 
-      await txClassRepo.update(classToUpdate)
-
-      if (data.lecturerId !== undefined) {
-        if ((data as any).keepExistingInstructors === false) {
-          await txClassRepo.clearInstructors(classId)
-          if (data.lecturerId) {
-            await txClassRepo.assignInstructor(classId, data.lecturerId)
-          }
-        } else {
-          // Default: keep existing instructors, avoid wiping out other lecturers
-          if (data.lecturerId) {
-            if (typeof (txClassRepo as any).isInstructor === 'function') {
-              const alreadyAssigned = await (txClassRepo as any).isInstructor(classId, data.lecturerId)
-              if (!alreadyAssigned) {
-                await txClassRepo.assignInstructor(classId, data.lecturerId)
-              }
-            } else {
-              await txClassRepo.assignInstructor(classId, data.lecturerId)
+    if (data.lecturerId !== undefined) {
+      if ((data as any).keepExistingInstructors === false) {
+        await classRepo.clearInstructors(classId)
+        if (data.lecturerId) {
+          await classRepo.assignInstructor(classId, data.lecturerId)
+        }
+      } else {
+        // Default: keep existing instructors, avoid wiping out other lecturers
+        if (data.lecturerId) {
+          if (typeof (classRepo as any).isInstructor === 'function') {
+            const alreadyAssigned = await (classRepo as any).isInstructor(classId, data.lecturerId)
+            if (!alreadyAssigned) {
+              await classRepo.assignInstructor(classId, data.lecturerId)
             }
           } else {
-            await txClassRepo.clearInstructors(classId)
+            await classRepo.assignInstructor(classId, data.lecturerId)
           }
+        } else {
+          await classRepo.clearInstructors(classId)
         }
       }
+    }
 
-      const finalClass = await txClassRepo.findById(classId)
-      return ClassResponseDto.from(finalClass as any)
-    })
+    // Batch enroll selected students if provided
+    if (data.studentIds && Array.isArray(data.studentIds) && data.studentIds.length > 0) {
+      try {
+        const { prisma } = await import('../../../../database/prisma.js')
+        for (const sId of data.studentIds) {
+          try {
+            await (prisma as any).studentClass.upsert({
+              where: { UserId_ClassId: { UserId: sId, ClassId: classId } },
+              update: {},
+              create: {
+                UserId: sId,
+                ClassId: classId,
+                EnrolledAt: new Date(),
+              },
+            })
+          } catch {
+            // ignore duplicate
+          }
+        }
+      } catch (err) {
+        console.error('Failed to batch enroll students in update class:', err)
+      }
+    }
+
+    const finalClass = await classRepo.findById(classId)
+    return ClassResponseDto.from(finalClass as any)
   }
 }

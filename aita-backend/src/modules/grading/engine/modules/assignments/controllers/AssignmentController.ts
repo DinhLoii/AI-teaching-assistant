@@ -374,13 +374,24 @@ export class AssignmentController extends BaseController {
 
             // 1. Resolve subject code or ID to SubjectId safely
             let subjectRecord: any = null;
-            if (subject && typeof subject === 'string') {
-                const isSubjectUuid = uuidRegex.test(subject);
+            const subjectVal = typeof subject === 'string' ? subject : (subject?.id || subject?.Id || subject?.code || subject?.SubjectCode);
+            if (subjectVal && typeof subjectVal === 'string') {
+                const isSubjectUuid = uuidRegex.test(subjectVal);
                 subjectRecord = await prisma.subject.findFirst({
                     where: isSubjectUuid
-                        ? { OR: [{ Id: subject }, { SubjectCode: subject }] }
-                        : { SubjectCode: subject }
+                        ? { OR: [{ Id: subjectVal }, { SubjectCode: subjectVal }] }
+                        : { SubjectCode: subjectVal }
                 });
+            }
+            if (!subjectRecord && Array.isArray(classIds) && classIds.length > 0) {
+                const firstClsId = classIds.find((c: any) => typeof c === 'string' && uuidRegex.test(c));
+                if (firstClsId) {
+                    const cls = await prisma.class.findUnique({ where: { Id: firstClsId }, include: { Subject: true } }).catch(() => null);
+                    if (cls?.Subject) subjectRecord = cls.Subject;
+                }
+            }
+            if (!subjectRecord) {
+                subjectRecord = await prisma.subject.findFirst().catch(() => null);
             }
 
             // Weight validation

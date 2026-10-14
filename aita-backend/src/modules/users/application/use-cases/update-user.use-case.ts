@@ -42,6 +42,7 @@ export class UpdateUserUseCase implements IUseCase<UpdateUserInput, UserResponse
         })
         
         if (dto.email) user.email = dto.email.toLowerCase()
+        if (dto.campus !== undefined) user.campus = dto.campus || null
 
         if (dto.status === 'Locked') user.suspend()
         else if (dto.status === 'Inactive') user.deactivate()

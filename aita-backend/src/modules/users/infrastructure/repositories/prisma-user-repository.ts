@@ -87,16 +87,41 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   async save(user: User): Promise<void> {
-    await this.client.user.update({
-      where: { Id: user.id },
-      data: UserMapper.toUpdateData(user),
-    })
+    const data = UserMapper.toUpdateData(user)
+    try {
+      await this.client.user.update({
+        where: { Id: user.id },
+        data,
+      })
+    } catch (err: any) {
+      if (err?.message?.includes('Unknown argument `Campus`')) {
+        delete (data as any).Campus
+        await this.client.user.update({
+          where: { Id: user.id },
+          data,
+        })
+        return
+      }
+      throw err
+    }
   }
 
   async create(user: User): Promise<void> {
-    await this.client.user.create({
-      data: UserMapper.toCreateData(user),
-    })
+    const data = UserMapper.toCreateData(user)
+    try {
+      await this.client.user.create({
+        data,
+      })
+    } catch (err: any) {
+      if (err?.message?.includes('Unknown argument `Campus`')) {
+        delete (data as any).Campus
+        await this.client.user.create({
+          data,
+        })
+        return
+      }
+      throw err
+    }
   }
 
   /**

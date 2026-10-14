@@ -118,9 +118,34 @@ export class DocumentExtractor {
 
     private async extractPdfAsync(fileBuffer: Buffer): Promise<ExtractedDocument> {
         try {
-            const data = await pdfParse(fileBuffer);
-            const rawText = data.text || '';
+            let rawText = '';
+            const pdfModule: any = await import('pdf-parse');
+            if (pdfModule.PDFParse) {
+                const parser = new pdfModule.PDFParse({ data: fileBuffer });
+                await parser.load();
+                const res = await parser.getText();
+                await parser.destroy();
+                if (res && res.text) rawText = res.text;
+            } else {
+                const fn = pdfModule.default || pdfModule;
+                if (typeof fn === 'function') {
+                    const data = await fn(fileBuffer);
+                    if (data && data.text) rawText = data.text;
+                }
+            }
             
+            // Clean up PDF raw text formatting
+            rawText = rawText
+                .replace(/\r\n/g, '\n')
+                .replace(/\r/g, '\n')
+                .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ' ')
+                .replace(/(?:Trang|Page)\s+\d+\s*(?:\/|of)\s*\d+/gi, '')
+                .replace(/Trang\s+\d+/gi, '')
+                .replace(/(\p{L}+)-\n\s*(\p{L}+)/gu, '$1$2')
+                .replace(/[ \t]+/g, ' ')
+                .replace(/\n{3,}/g, '\n\n')
+                .trim();
+
             return {
                 rawText,
                 sections: this.parseTextIntoSections(rawText, new Set<string>()),

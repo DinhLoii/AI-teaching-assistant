@@ -4,6 +4,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { config } from '../../config/index.js'; // Adjust if needed
 import { prisma } from '../../../../../database/prisma.js';
 import { StubAiGenerator } from './StubAiGenerator.js';
+import { AppError } from '../../../../../shared/application/app.error.js';
 
 export class AiCache {
     private static cache: Record<string, any> = {};
@@ -105,7 +106,7 @@ export class AiClientManager {
             }
         }
 
-        const hasConfiguredKeys = (config.ai.geminiKeys && config.ai.geminiKeys.length > 0) || Boolean(config.ai.githubToken);
+        const hasConfiguredKeys = (config.ai.geminiKeys && config.ai.geminiKeys.length > 0) || Boolean(config.ai.githubToken) || Boolean((config.ai as any).groqKey || process.env.GROQ_API_KEY);
         const isStubMode = (config.ai as any)?.stubMode ?? (process.env.AI_STUB_MODE !== 'false' && process.env.AI_STUB_MODE !== '0');
 
         if (isStubMode || !hasConfiguredKeys) {
@@ -117,6 +118,79 @@ export class AiClientManager {
         const maxGlobalAttempts = 2;
 
         for (let globalAttempt = 1; globalAttempt <= maxGlobalAttempts; globalAttempt++) {
+            // 0. Try Groq (LPU Ultra-fast inference with 120B / 20B / Qwen parameter models)
+            const groqKey = (config.ai as any).groqKey || process.env.GROQ_API_KEY;
+            if (groqKey) {
+                const primaryGroqModel = (config.ai as any).groqModel || process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+                const candidateGroqModels = [primaryGroqModel, 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b'].filter((v, i, a) => a.indexOf(v) === i);
+                const groqBaseUrl = (config.ai as any).groqBaseUrl || 'https://api.groq.com/openai/v1';
+
+                for (const groqModel of candidateGroqModels) {
+                    console.log(`[AiClientManager] Attempting Groq Cloud AI (${groqModel})...`);
+                    try {
+                        const rawGroqClient = new OpenAI({
+                            apiKey: groqKey,
+                            baseURL: groqBaseUrl,
+                            timeout: config.ai.timeoutMs || 30000,
+                            maxRetries: 1,
+                        });
+
+                        const groqClient = {
+                            chat: {
+                                completions: {
+                                    create: async (params: any, options?: any) => {
+                                        const sanitizedParams = { ...params, model: groqModel };
+                                        if (Array.isArray(sanitizedParams.messages)) {
+                                            sanitizedParams.messages = sanitizedParams.messages.map((msg: any) => {
+                                                if (Array.isArray(msg.content)) {
+                                                    const textParts = msg.content
+                                                        .map((p: any) => (p.type === 'text' ? p.text : ''))
+                                                        .filter(Boolean)
+                                                        .join('\n');
+                                                    return { ...msg, content: textParts || '[Image diagram omitted for text model]' };
+                                                }
+                                                return msg;
+                                            });
+                                        }
+                                        return await rawGroqClient.chat.completions.create(sanitizedParams, options);
+                                    }
+                                }
+                            }
+                        };
+
+                        await globalAiSemaphore.acquire();
+                        try {
+                            const startTime = Date.now();
+                            const result = await apiCall(groqClient as any, groqModel);
+                            const duration = Date.now() - startTime;
+                            console.log(`[AiClientManager] Groq succeeded in ${duration}ms using model: ${groqModel}`);
+
+                            try {
+                                await prisma.aiUsageLog.create({
+                                    data: {
+                                        Provider: 'Groq',
+                                        ModelUsed: groqModel,
+                                        IsSuccess: true,
+                                        DurationMs: duration
+                                    }
+                                });
+                            } catch (e) { }
+
+                            if (cacheKey) AiCache.set(cacheKey, result);
+                            return result;
+                        } finally {
+                            globalAiSemaphore.release();
+                        }
+                    } catch (groqErr: any) {
+                        console.error(`[AiClientManager] Groq attempt with ${groqModel} failed:`, groqErr?.message || groqErr);
+                        lastError = groqErr;
+                        if (groqErr?.status === 401 || (groqErr?.message && /invalid_api_key|expired_api_key|api_key_invalid|invalid api key|unauthorized/i.test(groqErr.message))) {
+                            console.warn('[AiClientManager] Groq API Key is invalid or expired. Aborting candidate model loop.');
+                            break;
+                        }
+                    }
+                }
+            }
             // 1. Try Gemini keys first
             if (config.ai.geminiKeys && config.ai.geminiKeys.length > 0) {
                 const displayModel = config.ai.geminiModel || 'gemini-3.5-flash-lite';
@@ -392,6 +466,21 @@ export class AiClientManager {
                 503
             );
         }
+
+        const isAuthOrExpired =
+            lastError?.status === 401 ||
+            lastError?.statusCode === 401 ||
+            /invalid_api_key|expired_api_key|api_key_invalid|invalid api key|incorrect api key|api key has expired|key expired|unauthorized|authentication_error|insufficient_quota|credit_expired|account_deactivated/i.test(errMsg);
+
+        if (isAuthOrExpired) {
+            console.error(`[AiClientManager] AI API Key expired or invalid: ${errMsg}`);
+            throw new AppError(
+                'AI_API_KEY_EXPIRED',
+                'Khóa API (API Key) của hệ thống AI đã hết hạn hoặc không hợp lệ. Vui lòng kiểm tra và cập nhật lại API Key mới trong file cấu hình .env (GROQ_API_KEY).',
+                401
+            );
+        }
+
         console.warn(`[AiClientManager] All external AI providers failed (${lastError?.message || 'unknown'}). Falling back to AI Stub Mode.`);
         return await AiClientManager.executeStub(apiCall, cacheKey);
     }

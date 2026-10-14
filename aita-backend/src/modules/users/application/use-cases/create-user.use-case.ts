@@ -54,6 +54,9 @@ export class CreateUserUseCase implements IUseCase<CreateUserDto, UserResponseDt
             if (dto.phone) {
                 user.phone = dto.phone.trim()
             }
+            if (dto.campus) {
+                user.campus = dto.campus.trim()
+            }
 
             await txUserRepo.create(user)
 

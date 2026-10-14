@@ -44,6 +44,40 @@ export class SaveAiAssignmentUseCase {
                 }).catch(() => {});
             }
 
+            // ── Link or create Rubric record in Neon ──
+            const rubricCriteria = dto.rubricCriteria || dto.content?.rubricCriteria;
+            if (Array.isArray(rubricCriteria) && rubricCriteria.length > 0) {
+                const rubricStatus = dto.publish !== false ? 'APPROVED' : 'PENDING_REVIEW';
+                await client.rubric.create({
+                    data: {
+                        Id: randomUUID(),
+                        Title: `Rubric: ${dto.title}`,
+                        Description: dto.description || '',
+                        ExamId: examId,
+                        SubjectCode: subjectId || null,
+                        Status: rubricStatus,
+                        SourceType: 'TEACHER_APPROVED',
+                        TotalPoints: dto.maxScore ? Number(dto.maxScore) : 10,
+                        CreatedBy: creatorId,
+                        ApprovedBy: rubricStatus === 'APPROVED' ? creatorId : null,
+                        ApprovedAt: rubricStatus === 'APPROVED' ? new Date() : null,
+                        Criteria: {
+                            create: rubricCriteria.map((c: any, idx: number) => ({
+                                Id: randomUUID(),
+                                Name: c.name || `Tiêu chí ${idx + 1}`,
+                                Description: c.description || c.name || '',
+                                MaxPoints: c.maxPoints !== undefined ? Number(c.maxPoints) : 2,
+                                Weight: c.weight !== undefined ? Number(c.weight) : 1,
+                                Method: c.method || 'ai_assessment',
+                                PassCondition: c.passCondition || null,
+                                FailCondition: c.failCondition || null,
+                                SortOrder: idx + 1,
+                            }))
+                        }
+                    }
+                }).catch((e: any) => console.warn('[SaveAiAssignment] Non-blocking rubric sync note:', e));
+            }
+
             return createdExam;
         })
     }
