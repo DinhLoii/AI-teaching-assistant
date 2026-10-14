@@ -194,7 +194,7 @@ export default function LecturerClassDetailPage() {
       headerTitle={`${classData.classCode || 'Lớp học'} · ${classData.subject?.code || ''}`}
       headerSubtitle={classData.subject?.name || 'Chi tiết lớp học'}
     >
-      <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-6 w-full pb-12">
         {/* Top nav */}
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={() => router.push('/lecturer/classes')} className="gap-2 text-slate-500 hover:text-slate-900 dark:hover:text-white -ml-3">

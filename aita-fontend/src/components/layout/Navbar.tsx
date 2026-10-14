@@ -7,7 +7,8 @@ import { useTheme } from '@/providers/theme-provider'
 import { useLanguage } from '@/providers/language-provider'
 import { LanguageDropdown } from '@/components/i18n/LanguageDropdown'
 import { CampusSelector } from '@/components/layout/CampusSelector'
-import { Shield, School, GraduationCap, Sun, Moon, Menu } from 'lucide-react'
+import { Shield, School, GraduationCap, Sun, Moon, Menu, Bell } from 'lucide-react'
+import { useNotifications } from '@/providers/notification-provider'
 
 interface NavbarProps {
   title?: string
@@ -68,6 +69,7 @@ export function Navbar({ title, subtitle, onMenu, onCollapse, collapsed }: Navba
   const { user, role } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const { t, language } = useLanguage()
+  const { unreadCount, hasNew, isConnected } = useNotifications()
   const isVi = language === 'vi'
 
   // Format Display Name & ID for User
@@ -128,6 +130,36 @@ export function Navbar({ title, subtitle, onMenu, onCollapse, collapsed }: Navba
 
         {/* Language Switcher */}
         <LanguageDropdown />
+
+        {/* Notification Bell with Real-time WebSocket Counter */}
+        <Link
+          href={role ? `/${role}/notifications` : '/student/notifications'}
+          title={
+            unreadCount > 0
+              ? `${unreadCount} ${t('nav.unread_notifs', 'thông báo chưa đọc')}`
+              : t('nav.notifications', 'Thông báo')
+          }
+          className="relative h-10 w-10 flex items-center justify-center rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 text-slate-600 hover:text-orange-600 dark:text-slate-400 dark:hover:text-orange-400 transition-all shadow-xs group"
+        >
+          <Bell
+            size={17}
+            className={`transition-transform duration-200 group-hover:scale-110 ${
+              hasNew ? 'animate-bounce text-orange-600 dark:text-orange-400' : ''
+            }`}
+          />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[19px] h-[19px] px-1 bg-gradient-to-r from-orange-500 to-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-sm shadow-orange-500/40 ring-2 ring-white dark:ring-slate-950 animate-in zoom-in-50">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+          {/* Subtle live WebSocket connection dot */}
+          {isConnected && (
+            <span
+              title="Real-time WebSocket connected"
+              className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 ring-1 ring-white dark:ring-slate-900"
+            />
+          )}
+        </Link>
 
         {/* Theme Toggle */}
         <button

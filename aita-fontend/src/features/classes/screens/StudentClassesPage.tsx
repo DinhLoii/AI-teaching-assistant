@@ -127,7 +127,7 @@ export default function StudentClassesPage() {
       headerTitle={t('student.classes.title', 'Lớp học & Môn học')}
       headerSubtitle={t('student.classes.subtitle', 'Danh sách các lớp học phần sinh viên đang tham gia')}
     >
-      <div className="space-y-6 max-w-7xl mx-auto pb-10">
+      <div className="space-y-6 w-full pb-12">
         {/* Executive KPI Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">

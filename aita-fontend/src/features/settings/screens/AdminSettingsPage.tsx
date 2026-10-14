@@ -76,7 +76,7 @@ export default function AdminSettingsPage() {
       headerTitle={t('admin.settings.title', 'Cài đặt hệ thống')}
       headerSubtitle={t('admin.settings.subtitle', 'Thông tin tổ chức và cấu hình lưu trữ')}
     >
-      <div className="max-w-4xl mx-auto space-y-6 pb-12">
+      <div className="w-full space-y-6 pb-12">
         {/* Info notice banner */}
         <div className="rounded-xl p-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 shadow-2xs flex items-start gap-3">
           <div className="w-8 h-8 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-[#FA7014] border border-orange-200/60 dark:border-orange-900/60 flex items-center justify-center shrink-0 mt-0.5">

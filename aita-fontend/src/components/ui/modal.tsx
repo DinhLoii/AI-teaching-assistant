@@ -59,17 +59,17 @@ export function Modal({
   if (!isOpen) return null
 
   const widths = {
-    sm: "max-w-sm",
-    md: "max-w-md",
-    lg: "max-w-lg",
-    xl: "max-w-xl",
-    "2xl": "max-w-2xl",
-    "3xl": "max-w-3xl",
-    "4xl": "max-w-4xl",
-    "5xl": "max-w-5xl",
-    "6xl": "max-w-6xl",
-    "7xl": "max-w-6xl",
-    full: "max-w-5xl",
+    sm: "max-w-md",
+    md: "max-w-lg",
+    lg: "max-w-2xl",
+    xl: "max-w-3xl",
+    "2xl": "max-w-4xl",
+    "3xl": "max-w-5xl",
+    "4xl": "max-w-6xl",
+    "5xl": "max-w-7xl",
+    "6xl": "max-w-[90vw] 2xl:max-w-7xl",
+    "7xl": "max-w-[92vw]",
+    full: "max-w-[96vw]",
   }
 
   return (
@@ -83,8 +83,8 @@ export function Modal({
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
         className={cn(
-          "w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] text-slate-800 dark:text-slate-100",
-          widths[maxWidth] || "max-w-lg",
+          "w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] text-slate-800 dark:text-slate-100",
+          widths[maxWidth] || "max-w-2xl",
           className
         )}
       >

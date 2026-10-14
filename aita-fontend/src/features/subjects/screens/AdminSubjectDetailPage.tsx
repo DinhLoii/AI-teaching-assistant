@@ -362,7 +362,7 @@ export function AdminSubjectDetailPage() {
   if (!hasSyllabusData || !syllabus) {
     return (
       <DashboardLayout navItems={ADMIN_NAV} title="AITA Admin" roleLabel="Quản trị viên" requiredRole="admin">
-      <div className="space-y-6 max-w-7xl mx-auto p-4 sm:p-6 animate-in fade-in duration-300">
+      <div className="space-y-6 w-full p-4 sm:p-6 animate-in fade-in duration-300">
         <div className="flex items-center justify-between">
           <button
             onClick={() => router.push('/admin/subjects')}

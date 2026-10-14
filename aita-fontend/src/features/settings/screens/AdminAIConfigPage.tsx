@@ -146,7 +146,7 @@ export default function AdminAIConfigPage() {
       headerTitle={t('admin.ai.title', 'Cấu hình Mô hình Trí tuệ Nhân tạo')}
       headerSubtitle={t('admin.ai.subtitle', 'Quản trị Engine AI chấm bài tự động, mô hình đánh giá và hạn mức tham số')}
     >
-      <div className="space-y-6 max-w-6xl mx-auto pb-12">
+      <div className="space-y-6 w-full pb-12">
         {/* ── TOP BANNER ── */}
         <div className="rounded-xl p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
           <div className="space-y-1.5 max-w-2xl">

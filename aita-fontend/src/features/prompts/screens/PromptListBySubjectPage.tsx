@@ -112,7 +112,7 @@ export function PromptListBySubjectPage() {
       headerTitle={`Thư viện Prompt - ${subject?.code || subjectId}`}
       headerSubtitle={`Quản lý và tinh chỉnh các mẫu chỉ dẫn AI cho môn học ${subject?.name || ''}`}
     >
-      <div className="space-y-6 max-w-6xl mx-auto pb-12">
+      <div className="space-y-6 w-full pb-12">
         {toastMessage && (
           <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-lg text-sm flex items-center gap-2">
             <Check className="w-4 h-4 text-emerald-400" />

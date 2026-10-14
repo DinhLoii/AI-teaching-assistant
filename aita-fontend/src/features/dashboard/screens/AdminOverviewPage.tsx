@@ -764,13 +764,6 @@ export default function AdminOverviewPage() {
                     <Activity className="w-4 h-4 text-slate-700 dark:text-slate-300" />
                     <span>Nhật ký Kiểm toán Gần nhất</span>
                   </h4>
-                  <Link
-                    href="/admin/audit-logs"
-                    className="text-[11px] font-semibold text-orange-600 hover:text-orange-700 dark:text-orange-400 flex items-center gap-0.5 transition-colors"
-                  >
-                    <span>Xem nhật ký</span>
-                    <ChevronRight className="w-3 h-3" />
-                  </Link>
                 </div>
 
                 <div className="space-y-1.5">
