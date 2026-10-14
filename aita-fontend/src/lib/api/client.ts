@@ -162,10 +162,36 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
       // Extract error message: handle both `{ error: "string" }` and `{ error: { message: "..." } }` formats
       const errorField = json.error;
       const errorMsg = typeof errorField === 'string' ? errorField : errorField?.message;
-      const errorCode = typeof errorField === 'object' ? errorField?.code : undefined;
+      const errorCode = typeof errorField === 'object' ? errorField?.code : json.Data?.code || json.code || undefined;
       let msg = json.Message || json.message || errorMsg || res.statusText || 'API error';
-      if (res.status === 429 || json.statusCode === 429 || String(msg).includes('429') || String(msg).includes('no body')) {
+      if (json.Data?.fieldErrors && typeof json.Data.fieldErrors === 'object') {
+        const errorList: string[] = []
+        for (const [field, fieldErrList] of Object.entries(json.Data.fieldErrors)) {
+          const fieldLabel = field === 'password' ? 'Mật khẩu' : field === 'email' ? 'Email' : field === 'fullName' ? 'Họ và tên' : field
+          const detail = Array.isArray(fieldErrList) ? (fieldErrList as any).join(', ') : String(fieldErrList)
+          errorList.push(`${fieldLabel}: ${detail.replace(/String must contain at least (\d+) character\(s\)/i, 'Tối thiểu $1 ký tự')}`)
+        }
+        if (errorList.length > 0) {
+          msg = `${msg}: ${errorList.join('; ')}`
+        }
+      }
+      if (res.status === 500 && (msg === 'Internal Server Error' || !msg || msg === 'API error')) {
+        msg = 'Lỗi kết nối máy chủ (500). Vui lòng thử lại sau vài giây.'
+      }
+      const isRateLimit =
+        res.status === 429 ||
+        json.statusCode === 429 ||
+        ((/\b429\b/.test(String(msg)) || String(msg).includes('RESOURCE_EXHAUSTED')) &&
+         /(ai|gemini|rate limit|quota)/i.test(String(msg)));
+      if (isRateLimit) {
         msg = 'Hệ thống AI đang vượt giới hạn lượt gọi (Rate Limit 429). Vui lòng thử lại sau 5–10 giây.';
+      }
+      const isAiKeyExpired =
+        errorCode === 'AI_API_KEY_EXPIRED' ||
+        (res.status === 401 && /invalid_api_key|expired_api_key|api_key_invalid|api key|hết hạn|không hợp lệ/i.test(String(msg))) ||
+        /AI_API_KEY_EXPIRED/i.test(String(msg));
+      if (isAiKeyExpired) {
+        msg = 'Khóa API của hệ thống AI (Groq / Gemini) đã hết hạn hoặc không hợp lệ. Vui lòng kiểm tra lại cấu hình API Key trong file .env (GROQ_API_KEY).';
       }
       if (res.status === 403 || json.statusCode === 403) {
         msg = msg === 'Forbidden' ? 'Tài khoản không có quyền truy cập tài nguyên này (403 Forbidden).' : msg;

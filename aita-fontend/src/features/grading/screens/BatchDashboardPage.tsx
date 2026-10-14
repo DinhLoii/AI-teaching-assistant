@@ -284,7 +284,7 @@ export default function BatchDashboardPage() {
       requiredRole="lecturer"
       title="Bảng theo dõi chấm hàng loạt (Batch Dashboard)"
     >
-      <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-6 w-full pb-12">
         {/* Header Bar */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">

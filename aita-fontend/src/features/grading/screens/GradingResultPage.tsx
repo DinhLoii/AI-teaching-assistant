@@ -213,7 +213,7 @@ export default function GradingResultPage() {
       requiredRole="lecturer"
       title={t('lecturer.grading.result_title', 'Chi tiết bài chấm & Báo cáo Rubric')}
     >
-      <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-6 w-full pb-12">
         {/* Navigation & Action Bar */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">

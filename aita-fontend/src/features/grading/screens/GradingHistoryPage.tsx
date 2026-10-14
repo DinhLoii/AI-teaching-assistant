@@ -86,7 +86,7 @@ export default function GradingHistoryPage() {
       requiredRole="lecturer"
       title="Lịch sử chấm bài"
     >
-      <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-6 w-full pb-12">
         {/* Header Banner */}
         <div className="relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">

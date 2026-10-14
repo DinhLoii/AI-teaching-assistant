@@ -114,3 +114,35 @@ test('loginDestination routes each role to correct portal and rejects cross-role
   assert.equal(loginDestination('/profile', 'student'), '/profile');
   assert.equal(loginDestination('/profile', 'admin'), '/profile');
 });
+
+test('RAG AI Tutor client sends structured query and unpacks response correctly', async () => {
+  const requests = [];
+  const { load, localStorage } = setup(async (url, options) => {
+    requests.push({ url, options });
+    return response({
+      data: {
+        answer: 'Gợi ý từ AI Tutor: Sử dụng cây AVL để duy trì độ cao O(log n)',
+        sourcesUsed: [{ docType: 'ASSIGNMENT_SPEC', title: 'Đặc tả BST', sourceRef: 'exam-1' }],
+        suggestedFollowUps: ['Làm sao để thực hiện phép quay kép?']
+      }
+    });
+  });
+  localStorage.setItem('aita_token', 'test-access-token');
+
+  const { aiApi } = load('lib/api/modules/ai.ts');
+  const res = await aiApi.ragChat({
+    query: 'Làm sao để tối ưu Binary Search Tree?',
+    examId: 'exam-1',
+    subjectCode: 'CSD201'
+  });
+
+  assert.equal(requests[0].url, '/api/ai/rag/chat');
+  assert.equal(requests[0].options.method, 'POST');
+  assert.equal(requests[0].options.headers.Authorization, 'Bearer test-access-token');
+  const body = JSON.parse(requests[0].options.body);
+  assert.equal(body.query, 'Làm sao để tối ưu Binary Search Tree?');
+  assert.equal(body.subjectCode, 'CSD201');
+  assert.ok(res.answer.includes('AVL'));
+  assert.equal(res.sourcesUsed[0].docType, 'ASSIGNMENT_SPEC');
+});
+

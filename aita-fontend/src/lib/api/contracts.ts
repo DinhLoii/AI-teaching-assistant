@@ -59,6 +59,7 @@ export interface CreateUserBody {
   studentCode?: string
   lecturerCode?: string
   phone?: string
+  campus?: string
   avatar?: string | null
   classIds?: string[]
   externalId?: string

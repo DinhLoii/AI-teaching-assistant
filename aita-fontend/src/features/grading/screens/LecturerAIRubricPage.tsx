@@ -122,7 +122,7 @@ export function LecturerAIRubricPage() {
   const calculatedTotal = criteria.reduce((sum, c) => sum + (Number(c.maxPoints) || 0), 0)
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto p-4 sm:p-6">
+    <div className="space-y-6 w-full p-4 sm:p-6 pb-12">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-4">
         <div className="flex items-center gap-3">
           <Link
