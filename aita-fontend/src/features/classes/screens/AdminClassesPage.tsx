@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { ADMIN_NAV } from '@/config/navigation'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { ErrorNotice, Pagination } from '@/components/ui/feedback'
@@ -16,7 +17,7 @@ import type { ClassRow, CreateClassBody, SemesterRow, SubjectRow, UserRow } from
 import { useAuth } from '@/providers/auth-provider'
 import { useLanguage } from '@/providers/language-provider'
 import Link from 'next/link'
-import { ExternalLink, GraduationCap, Users, BookOpen, Calendar, Sparkles, School } from 'lucide-react'
+import { ExternalLink, GraduationCap, Users, BookOpen, Calendar, Sparkles, School, RefreshCw } from 'lucide-react'
 
 const blankForm = { code: '', subjectId: '', semesterId: '', lecturerId: '' }
 const selectStyle = 'w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs dark:border-slate-700 dark:bg-slate-900 focus:outline-none focus:border-[#FA7014]'
@@ -209,11 +210,11 @@ export default function AdminClassesPage() {
       headerTitle={t('admin.classes.title', 'Quản lý lớp học phần')}
       headerSubtitle={t('admin.classes.subtitle', 'Môn học, học kỳ và phân công giảng viên')}
     >
-      <div className="space-y-6 max-w-7xl mx-auto pb-12">
+      <div className="space-y-6 w-full pb-12">
         {/* ── 1. SIGNATURE EXECUTIVE KPI CARDS ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* KPI 1: Tổng số lớp */}
-          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition-all group">
             <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-tr from-orange-400/15 via-amber-300/15 to-transparent rounded-full blur-2xl group-hover:from-orange-400/25 group-hover:via-amber-300/25 transition-all pointer-events-none" />
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -322,86 +323,136 @@ export default function AdminClassesPage() {
 
         <ErrorNotice message={error} onRetry={() => void loadClasses()} />
 
-        {/* ── 3. CLASSES LIST ── */}
-        <div className="space-y-3">
-          {loading ? (
-            <div className="p-12 text-center text-slate-400 text-sm bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs">
-              {t('admin.classes.loading', 'Đang tải danh sách lớp học…')}
-            </div>
-          ) : !error && classes.length === 0 ? (
-            <div className="p-12 text-center text-slate-400 text-sm bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs">
-              {t('admin.classes.no_classes', 'Chưa có lớp học ở trang này.')}
-            </div>
-          ) : !error && classes.map(row => (
-            <article
-              key={row.id}
-              className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-2xs hover:border-slate-300 dark:hover:border-slate-700 transition-all"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <Link
-                    href={`/admin/classes/${row.id}`}
-                    className="font-extrabold flex items-center gap-1.5 text-slate-900 dark:text-white hover:text-[#FA7014] text-base font-mono transition-colors"
-                  >
-                    {row.code}
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </Link>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
-                    {typeof row.semester === 'object' ? row.semester?.code : row.semester || 'Chưa có kỳ'}
-                  </span>
-                </div>
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                  {typeof row.subject === 'object' ? `${row.subject?.code} — ${row.subject?.name}` : row.subject || t('admin.classes.no_subject', 'Chưa có môn học')}
-                </p>
-              </div>
+        {/* ── 3. CLASSES DATA TABLE ── */}
+        <Card className="rounded-2xl bg-white dark:bg-slate-900 shadow-xs overflow-hidden border border-slate-200/80 dark:border-slate-800">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-slate-200/80 dark:border-slate-800 bg-slate-50/75 dark:bg-slate-800/50">
+                  <th className="py-3.5 pl-5 pr-3">Mã lớp học</th>
+                  <th className="py-3.5 px-3">Học kỳ</th>
+                  <th className="py-3.5 px-3">Môn học</th>
+                  <th className="py-3.5 px-3">Giảng viên phụ trách</th>
+                  <th className="py-3.5 px-3">Sĩ số</th>
+                  <th className="py-3.5 pl-3 pr-5 text-right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="py-16 text-center text-slate-400">
+                      <div className="inline-flex items-center gap-2">
+                        <RefreshCw className="w-4 h-4 animate-spin text-slate-500" />
+                        <span>{t('admin.classes.loading', 'Đang tải danh sách lớp học…')}</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : !error && classes.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-16 text-center text-slate-400">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <School className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+                        <p className="font-semibold text-slate-600 dark:text-slate-300">
+                          {t('admin.classes.no_classes', 'Chưa có lớp học ở trang này.')}
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : !error && classes.map(row => {
+                  const semesterCode = typeof row.semester === 'object' ? (row.semester as any)?.season || (row.semester as any)?.code : row.semester || '—'
+                  const subjectTitle = typeof row.subject === 'object' ? `${row.subject?.code} — ${row.subject?.name}` : row.subject || t('admin.classes.no_subject', 'Chưa có môn học')
+                  const lecturerNames = row.lecturers?.map(l => l.name).join(', ')
 
-              <div className="flex items-center gap-4 text-xs">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
-                  <School className="w-4 h-4 text-slate-700 dark:text-slate-300 shrink-0" />
-                  <div>
-                    <p className="text-[10px] text-slate-500 uppercase font-semibold">Giảng viên phụ trách</p>
-                    <p className="font-bold text-slate-900 dark:text-white">
-                      {row.lecturers?.map(l => l.name).join(', ') || t('admin.classes.unassigned_lecturer', 'Chưa phân công')}
-                    </p>
-                  </div>
-                </div>
+                  return (
+                    <tr
+                      key={row.id}
+                      className="group transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40"
+                    >
+                      {/* Cột 1: Mã lớp */}
+                      <td className="py-3.5 pl-5 pr-3">
+                        <Link
+                          href={`/admin/classes/${row.id}`}
+                          className="font-mono font-bold text-xs text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 inline-flex items-center gap-1.5 transition-colors"
+                        >
+                          <span>{row.code}</span>
+                          <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                        </Link>
+                      </td>
 
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
-                  <Users className="w-4 h-4 text-slate-700 dark:text-slate-300 shrink-0" />
-                  <div>
-                    <p className="text-[10px] text-slate-500 uppercase font-semibold">Sĩ số lớp</p>
-                    <p className="font-bold text-slate-900 dark:text-white">
-                      {row.studentCount ?? 0} sinh viên
-                    </p>
-                  </div>
-                </div>
-              </div>
+                      {/* Cột 2: Học kỳ */}
+                      <td className="py-3.5 px-3">
+                        <span className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 inline-block">
+                          {semesterCode}
+                        </span>
+                      </td>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={saving}
-                  onClick={() => void openForm(row)}
-                  className="text-xs border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl cursor-pointer font-bold"
-                >
-                  {t('ui.edit', 'Chỉnh sửa')}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={saving}
-                  onClick={() => void deleteClass(row)}
-                  className="text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl cursor-pointer font-bold"
-                >
-                  {t('ui.delete', 'Xóa')}
-                </Button>
-              </div>
-            </article>
-          ))}
+                      {/* Cột 3: Môn học */}
+                      <td className="py-3.5 px-3">
+                        <span className="font-medium text-slate-800 dark:text-slate-200">
+                          {subjectTitle}
+                        </span>
+                      </td>
 
-          <Pagination page={page} hasNext={hasNext} loading={loading || saving} onChange={next => { setLoading(true); setPage(next) }} />
-        </div>
+                      {/* Cột 4: Giảng viên phụ trách */}
+                      <td className="py-3.5 px-3">
+                        {lecturerNames ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0">
+                              <School className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="font-medium text-slate-800 dark:text-slate-200">
+                              {lecturerNames}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border border-slate-200/80 dark:border-slate-700 inline-flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                            Chưa phân công giảng viên
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Cột 5: Sĩ số */}
+                      <td className="py-3.5 px-3">
+                        <div className="inline-flex items-center gap-1.5 text-slate-700 dark:text-slate-300 font-medium">
+                          <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span>{row.studentCount ?? 0} sinh viên</span>
+                        </div>
+                      </td>
+
+                      {/* Cột 6: Thao tác */}
+                      <td className="py-3.5 pl-3 pr-5 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={saving}
+                            onClick={() => void openForm(row)}
+                            className="text-xs h-7 px-2.5 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-lg cursor-pointer font-medium"
+                          >
+                            {t('ui.edit', 'Chỉnh sửa')}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={saving}
+                            onClick={() => void deleteClass(row)}
+                            className="text-xs h-7 px-2.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg cursor-pointer font-medium"
+                          >
+                            {t('ui.delete', 'Xóa')}
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="p-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+            <Pagination page={page} hasNext={hasNext} loading={loading || saving} onChange={next => { setLoading(true); setPage(next) }} />
+          </div>
+        </Card>
       </div>
     {(() => {
       const selectedSubject = subjects.find(s => s.id === form.subjectId)

@@ -101,8 +101,19 @@ export async function extractCorpus(buffer: Buffer, fileName: string): Promise<s
 
   if (ext === '.pdf') {
     try {
-      const data = await pdfParse(buffer)
-      return String(data?.text ?? '')
+      if (pdfParse.PDFParse) {
+        const parser = new pdfParse.PDFParse({ data: buffer })
+        await parser.load()
+        const res = await parser.getText()
+        await parser.destroy()
+        return String(res?.text ?? '')
+      }
+      const fn = pdfParse.default || pdfParse
+      if (typeof fn === 'function') {
+        const data = await fn(buffer)
+        return String(data?.text ?? '')
+      }
+      return ''
     } catch {
       return ''
     }

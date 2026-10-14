@@ -88,6 +88,8 @@ import { GetAiConfigUseCase, UpdateAiConfigUseCase } from '../../modules/ai/appl
 import { GenerateRubricUseCase } from '../../modules/ai/application/use-cases/generate-rubric.use-case.js'
 import { GeneratePromptUseCase } from '../../modules/ai/application/use-cases/generate-prompt.use-case.js'
 import { RefinePromptUseCase } from '../../modules/ai/application/use-cases/refine-prompt.use-case.js'
+import { RagTutorChatUseCase } from '../../modules/ai/application/use-cases/rag-tutor-chat.use-case.js'
+import { RagCodeDiagnosticsUseCase } from '../../modules/ai/application/use-cases/rag-code-diagnostics.use-case.js'
 import { AiController as ModularAiController } from '../../modules/ai/presentation/ai.controller.js'
 import { PrismaAuditRepository } from '../../modules/audit/infrastructure/repositories/prisma-audit-repository.js'
 import { GetAuditLogsUseCase } from '../../modules/audit/application/use-cases/get-audit-logs.use-case.js'
@@ -336,6 +338,8 @@ export class DIContainer {
       const generateRubricUseCase = new GenerateRubricUseCase(aiService, logger)
       const generatePromptUseCase = new GeneratePromptUseCase(aiService, aiRepo)
       const refinePromptUseCase = new RefinePromptUseCase(aiService, aiRepo)
+      const ragTutorChatUseCase = new RagTutorChatUseCase()
+      const ragCodeDiagnosticsUseCase = new RagCodeDiagnosticsUseCase()
 
       const modularAiController = new ModularAiController(
         generateExerciseUseCase,
@@ -346,7 +350,9 @@ export class DIContainer {
         updateAiConfigUseCase,
         generateRubricUseCase,
         generatePromptUseCase,
-        refinePromptUseCase
+        refinePromptUseCase,
+        ragTutorChatUseCase,
+        ragCodeDiagnosticsUseCase
       )
       this.services.set('AiController', modularAiController)
 

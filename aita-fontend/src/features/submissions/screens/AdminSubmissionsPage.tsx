@@ -110,11 +110,11 @@ export default function AdminSubmissionsPage() {
     >
       <div className="space-y-6">
         <Link
-          href="/admin/exams"
+          href="/admin"
           className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          {t('admin.exams.back_to_dashboard', 'Quay lại danh sách đề thi')}
+          {t('admin.exams.back_to_dashboard', 'Quay lại Bảng điều khiển')}
         </Link>
 
         {/* Header Actions */}

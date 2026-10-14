@@ -44,6 +44,8 @@ model User {
   PendingEnrollment                      PendingEnrollment[]
   SubmissionOverride_Student             SubmissionOverride[]    @relation("SubmissionOverride_StudentIdToUser")
   SubmissionOverride_Creator             SubmissionOverride[]    @relation("SubmissionOverride_CreatedByToUser")
+  RubricCreated                          Rubric[]                @relation("Rubric_CreatedByToUser")
+  RubricApproved                         Rubric[]                @relation("Rubric_ApprovedByToUser")
 
   @@index([StudentCode])
   @@index([LecturerCode])
@@ -297,6 +299,7 @@ model Exam {
   TestCase              TestCase[]
   ExamClass             ExamClass[]
   SubmissionOverride    SubmissionOverride[]
+  Rubric                Rubric[]
 
   @@index([SubjectId])
   @@index([CreatedBy])
@@ -841,3 +844,88 @@ model Note {
   UpdatedAt DateTime @updatedAt
   User      User?    @relation(fields: [UserId], references: [Id], onDelete: Cascade)
 }
+
+model Rubric {
+  Id           String            @id @default(uuid())
+  Title        String
+  Description  String?           @db.Text
+  ExamId       String?
+  SubjectCode  String?
+  Language     String?
+  Category     String?           @default("standard")
+  SourceType   String            @default("EXTRACTED_ORIGINAL")
+  Status       String            @default("DRAFT")
+  Version      Int               @default(1)
+  TotalPoints  Decimal           @default(10) @db.Decimal(18, 2)
+  RawEvidence  String?           @db.Text
+  DocumentHash String?
+  DocumentName String?
+  DocumentUrl  String?
+  CreatedBy    String?
+  ApprovedBy   String?
+  ApprovedAt   DateTime?
+  MetadataJson String?           @db.Text
+  CreatedAt    DateTime          @default(now())
+  UpdatedAt    DateTime          @updatedAt
+  Criteria     RubricItem[]
+  Embeddings   RubricEmbedding[]
+  Exam         Exam?             @relation(fields: [ExamId], references: [Id], onDelete: SetNull)
+  UserCreator  User?             @relation("Rubric_CreatedByToUser", fields: [CreatedBy], references: [Id], onDelete: SetNull)
+  UserApprover User?             @relation("Rubric_ApprovedByToUser", fields: [ApprovedBy], references: [Id], onDelete: SetNull)
+
+  @@index([ExamId])
+  @@index([SubjectCode])
+  @@index([Language])
+  @@index([Status])
+  @@index([CreatedBy])
+  @@index([DocumentHash])
+}
+
+model RubricItem {
+  Id             String            @id @default(uuid())
+  RubricId       String
+  Name           String
+  Description    String            @db.Text
+  MaxPoints      Decimal           @default(2) @db.Decimal(18, 2)
+  Weight         Decimal?          @default(1) @db.Decimal(18, 2)
+  Method         String            @default("ai_assessment")
+  PassCondition  String?           @db.Text
+  FailCondition  String?           @db.Text
+  LevelsJson     String?           @db.Text
+  EvidenceSource String?           @db.Text
+  SortOrder      Int               @default(1)
+  ReviewNeeded   Boolean           @default(false)
+  CreatedAt      DateTime          @default(now())
+  UpdatedAt      DateTime          @updatedAt
+  Rubric         Rubric            @relation(fields: [RubricId], references: [Id], onDelete: Cascade)
+  Embeddings     RubricEmbedding[]
+
+  @@index([RubricId])
+  @@index([SortOrder])
+}
+
+model RubricEmbedding {
+  Id           String                      @id @default(uuid())
+  RubricId     String?
+  RubricItemId String?
+  ExamId       String?
+  ContentType  String
+  Content      String                      @db.Text
+  Embedding    Unsupported("vector(768)")?
+  ModelName    String                      @default("text-embedding-004")
+  Dimensions   Int                         @default(768)
+  Language     String?
+  SubjectCode  String?
+  Category     String?
+  MetadataJson String?                     @db.Text
+  CreatedAt    DateTime                    @default(now())
+  Rubric       Rubric?                     @relation(fields: [RubricId], references: [Id], onDelete: Cascade)
+  RubricItem   RubricItem?                 @relation(fields: [RubricItemId], references: [Id], onDelete: Cascade)
+
+  @@index([RubricId])
+  @@index([RubricItemId])
+  @@index([ExamId])
+  @@index([SubjectCode])
+  @@index([ContentType])
+}
+

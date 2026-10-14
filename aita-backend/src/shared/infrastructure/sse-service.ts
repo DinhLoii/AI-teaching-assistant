@@ -45,8 +45,19 @@ class SseService {
         if (set.size === 0) this.clients.delete(userId)
     }
 
-    /** Push a JSON event to every open connection for userId. */
+    /** Push a JSON event to every open connection for userId (SSE + WebSocket). */
     push(userId: string, event: { type: string; payload?: unknown }) {
+        // Also push through WebSocket in real-time
+        try {
+            import('./websocket/notification-ws.service.js').then(({ notificationWsService }) => {
+                if (event.type === 'NOTIFICATION' && event.payload) {
+                    notificationWsService.notifyNewNotification(userId, event.payload)
+                } else {
+                    notificationWsService.sendToUser(userId, event)
+                }
+            }).catch(() => {})
+        } catch {}
+
         const set = this.clients.get(userId)
         if (!set || set.size === 0) return
         const data = `data: ${JSON.stringify(event)}\n\n`
@@ -61,6 +72,12 @@ class SseService {
 
     /** Broadcast to every connected user (e.g. admin announcements). */
     broadcast(event: { type: string; payload?: unknown }) {
+        try {
+            import('./websocket/notification-ws.service.js').then(({ notificationWsService }) => {
+                notificationWsService.broadcast(event)
+            }).catch(() => {})
+        } catch {}
+
         for (const userId of this.clients.keys()) {
             this.push(userId, event)
         }

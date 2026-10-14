@@ -9,6 +9,7 @@ export const CreateUserDto = z.object({
     lecturerCode: z.string().nullable().optional(),
     phone: z.string().nullable().optional(),
     avatar: z.string().nullable().optional(),
+    campus: z.string().nullable().optional(),
     classIds: z.array(z.string()).optional(),
 })
 
@@ -21,6 +22,7 @@ export const UpdateUserDto = z.object({
     studentCode: z.string().nullable().optional(),
     lecturerCode: z.string().nullable().optional(),
     phone: z.string().nullable().optional(),
+    campus: z.string().nullable().optional(),
     avatar: z.string().nullable().optional(),
     updatedClasses: z.array(z.object({
         classId: z.string().optional(),

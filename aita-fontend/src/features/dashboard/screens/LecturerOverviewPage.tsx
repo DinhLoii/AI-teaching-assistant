@@ -14,6 +14,7 @@ import { classesApi } from '@/lib/api/modules/classes'
 import { assignmentsApi } from '@/lib/api/modules/assignments'
 import { submissionsApi } from '@/lib/api/modules/submissions'
 import { notificationsApi } from '@/lib/api/modules/notifications'
+import { aiApi } from '@/lib/api/modules/ai'
 import { formatDate, cn } from '@/lib/utils'
 import { errorMessage } from '@/lib/api/errors'
 import {
@@ -218,7 +219,7 @@ export default function LecturerOverviewPage() {
   }
 
   // Handle Ask AI Tutor
-  const handleAskAi = (e?: React.FormEvent) => {
+  const handleAskAi = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     if (!tutorQuery.trim()) return
 
@@ -226,7 +227,18 @@ export default function LecturerOverviewPage() {
     setAiThinking(true)
     setAiResponse(null)
 
-    setTimeout(() => {
+    try {
+      const res = await aiApi.ragChat({
+        query: tutorQuery,
+      })
+
+      if (res?.answer) {
+        setAiResponse(res.answer)
+      } else {
+        throw new Error('No answer')
+      }
+    } catch {
+      // Pedagogical Fallback
       const q = tutorQuery.toLowerCase()
       if (q.includes('barem') || q.includes('rubric') || q.includes('chấm')) {
         setAiResponse(
@@ -247,8 +259,9 @@ export default function LecturerOverviewPage() {
             : `🤖 **AI Assistant Analysis:** For "${tutorQuery}", recommend scaffolding questions for students and review sandbox execution logs in the Grading Hub.`
         )
       }
+    } finally {
       setAiThinking(false)
-    }, 500)
+    }
   }
 
   // Appeal Review Modal handlers
@@ -311,7 +324,7 @@ export default function LecturerOverviewPage() {
       headerTitle={t('lecturer.dashboard.title', 'Không gian Làm việc Giảng viên')}
       headerSubtitle={t('lecturer.dashboard.subtitle', 'Quản lý lớp học, bài tập, giám sát chấm bài AI và thông báo')}
     >
-      <div className="max-w-[1600px] mx-auto space-y-3 pb-1">
+      <div className="w-full space-y-4 pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 xl:gap-5 items-start">
           <div className="lg:col-span-8 space-y-4">
             
@@ -966,7 +979,7 @@ export default function LecturerOverviewPage() {
                 Câu hỏi của Giảng viên:
               </span>
               <p className="text-slate-800 dark:text-slate-200 italic">
-                "{tutorQuery || 'Hướng dẫn tạo rubric AI chuẩn cho môn học'}"
+                &ldquo;{tutorQuery || 'Hướng dẫn tạo rubric AI chuẩn cho môn học'}&rdquo;
               </p>
             </div>
 
@@ -1016,7 +1029,7 @@ export default function LecturerOverviewPage() {
                   Lý do phúc khảo của sinh viên:
                 </span>
                 <p className="text-slate-800 dark:text-slate-200 italic leading-relaxed">
-                  "{reviewAppealModal.studentFeedback}"
+                  &ldquo;{reviewAppealModal.studentFeedback}&rdquo;
                 </p>
               </div>
 

@@ -159,7 +159,7 @@ export default function StudentSubjectsPage() {
       headerTitle={t('student.results.title', 'Môn học & Kết quả học tập')}
       headerSubtitle={t('student.results.subtitle', 'Theo dõi tiến độ làm bài, điểm số và hạn nộp theo từng môn học')}
     >
-      <div className="space-y-6 max-w-7xl mx-auto pb-16">
+      <div className="space-y-6 w-full pb-16">
         {/* Controls Bar: Semester Selector & Tabs */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs">
           <div className="flex items-center gap-3">

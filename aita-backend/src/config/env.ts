@@ -17,6 +17,8 @@ const schema = z.object({
   AI_ENDPOINT: z.string().default('http://localhost:8000'),
   GEMINI_API_KEYS: z.string().optional().default(''),
   GEMINI_MODEL: z.string().default('gemini-1.5-flash'),
+  GROQ_API_KEY: z.string().optional().default(''),
+  GROQ_MODEL: z.string().default('openai/gpt-oss-120b'),
   GITHUB_TOKEN: z.string().optional().default(''),
   UPLOAD_DIR: z.string().default('temp/uploads'),
   EXTRACTION_DIR: z.string().default('temp/extracted'),

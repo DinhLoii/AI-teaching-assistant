@@ -83,7 +83,7 @@ export default function LecturerSubjectsPage() {
       headerTitle={t('lecturer.subjects.header_title', 'Môn học giảng dạy')}
       headerSubtitle={t('lecturer.subjects.header_subtitle', 'Tài liệu đào tạo, barem Rubric tiêu chuẩn và ngân hàng câu hỏi')}
     >
-      <div className="space-y-6 max-w-7xl mx-auto pb-12">
+      <div className="space-y-6 w-full pb-12">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
             <Library className="w-5 h-5 text-orange-500 dark:text-orange-400" />

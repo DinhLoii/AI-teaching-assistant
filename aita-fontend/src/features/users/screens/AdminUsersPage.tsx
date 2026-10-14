@@ -11,6 +11,7 @@ import { Modal } from '@/components/ui/modal'
 import { Pagination } from '@/components/ui/feedback'
 import { usersApi } from '@/lib/api/modules/users'
 import { classesApi } from '@/lib/api/modules/classes'
+import { getAvailableAcademicSeasons } from '@/lib/seasons'
 import { cn, formatDate } from '@/lib/utils'
 import { useAuth } from '@/providers/auth-provider'
 import { useLanguage } from '@/providers/language-provider'
@@ -326,7 +327,7 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false)
     }
-  }, [authLoading, isAuthenticated, role, roleFilter, page, search, t])
+  }, [authLoading, isAuthenticated, role, roleFilter, page, search, t, setLoading, setLoadError, setUsers])
 
 
   // User metrics calculation
@@ -415,6 +416,13 @@ export default function AdminUsersPage() {
     e.preventDefault()
     setSubmitting(true)
     setModalError(null)
+
+    if (!editingUserId && (!formData.password || formData.password.trim().length < 6)) {
+      setModalError(t('admin.users.password_min_length', 'Mật khẩu khởi tạo phải có ít nhất 6 ký tự.'))
+      setSubmitting(false)
+      return
+    }
+
     try {
       if (editingUserId) {
         await usersApi.updateUser(editingUserId, {
@@ -422,6 +430,8 @@ export default function AdminUsersPage() {
           email: formData.email,
           ...(formData.password ? { password: formData.password } : {}),
           role: formData.role.toUpperCase() as any,
+          phone: formData.phone || undefined,
+          campus: formData.campus || undefined,
           ...(formData.role.toUpperCase() === 'LECTURER' ? { lecturerCode: formData.code } : formData.role.toUpperCase() === 'STUDENT' ? { studentCode: formData.code } : {}),
           deletedClasses: deletedClasses,
           addedClasses: addedClasses,
@@ -432,6 +442,8 @@ export default function AdminUsersPage() {
           email: formData.email,
           password: formData.password,
           role: formData.role.toUpperCase() as any,
+          phone: formData.phone || undefined,
+          campus: formData.campus || undefined,
           ...(formData.role.toUpperCase() === 'LECTURER' ? { lecturerCode: formData.code } : formData.role.toUpperCase() === 'STUDENT' ? { studentCode: formData.code } : {}),
         } as any)
       }
@@ -728,7 +740,7 @@ export default function AdminUsersPage() {
       headerTitle={pageTitle}
       headerSubtitle={pageSubtitle}
     >
-      <div className="space-y-6">
+      <div className="space-y-6 w-full pb-12">
         {/* Hidden Excel File Input */}
         <input
           type="file"
@@ -1388,11 +1400,11 @@ export default function AdminUsersPage() {
         </div>
 
         {/* ── 4. CONSOLIDATED ENTERPRISE DATA TABLE ── */}
-        <Card className="rounded-2xl bg-white dark:bg-slate-900 shadow-xs overflow-hidden border border-orange-100/90 dark:border-orange-900/30">
+        <Card className="rounded-2xl bg-white dark:bg-slate-900 shadow-xs overflow-hidden border border-slate-200/80 dark:border-slate-800">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b text-[11px] font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300 border-orange-100/90 dark:border-orange-900/30 bg-gradient-to-r from-orange-50/70 via-amber-50/40 to-orange-50/50 dark:from-slate-800/80 dark:to-orange-950/20">
+                <tr className="border-b text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-slate-200/80 dark:border-slate-800 bg-slate-50/75 dark:bg-slate-800/50">
                   <th className="py-3.5 pl-4 pr-3">{isLecturerView ? 'Giảng viên & Email' : isStudentView ? 'Sinh viên & Email' : 'Họ và tên & Email'}</th>
                   <th className="py-3.5 px-3">{isStudentView ? 'Mã sinh viên (MSSV)' : isLecturerView ? 'Mã giảng viên (MSGV)' : 'Mã định danh'}</th>
                   <th className="py-3.5 px-3">{isLecturerView ? 'Bộ môn công tác' : isStudentView ? 'Khóa đào tạo' : 'Vai trò'}</th>
@@ -1407,7 +1419,7 @@ export default function AdminUsersPage() {
                   <tr>
                     <td colSpan={7} className="py-16 text-center text-slate-400">
                       <div className="inline-flex items-center gap-2">
-                        <RefreshCw className="w-4 h-4 animate-spin text-orange-500" />
+                        <RefreshCw className="w-4 h-4 animate-spin text-slate-500" />
                         <span>Đang tải danh sách tài khoản...</span>
                       </div>
                     </td>
@@ -1442,7 +1454,7 @@ export default function AdminUsersPage() {
                     return (
                       <tr
                         key={u.id}
-                        className="group transition-colors hover:bg-orange-50/30 dark:hover:bg-orange-950/15"
+                        className="group transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40"
                       >
                         {/* User Identity: Avatar + Full Name + Email */}
                         <td className="py-3.5 pl-4 pr-3">
@@ -1455,7 +1467,7 @@ export default function AdminUsersPage() {
                             <div className="min-w-0">
                               <p
                                 onClick={() => isLecturer ? openLecturerDetailModal(u) : isStudent ? openStudentDetailModal(u) : undefined}
-                                className="font-bold text-slate-900 dark:text-white truncate transition-colors text-xs hover:text-orange-600 dark:hover:text-orange-400 cursor-pointer"
+                                className="font-semibold text-slate-900 dark:text-white truncate transition-colors text-xs hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer"
                               >
                                 {fullName}
                               </p>
@@ -1469,7 +1481,7 @@ export default function AdminUsersPage() {
 
                         {/* Identifier Code */}
                         <td className="py-3.5 px-3">
-                          <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg border shadow-2xs inline-block bg-orange-50/90 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-200/80 dark:border-orange-900/60">
+                          <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md border inline-block bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700">
                             {code}
                           </span>
                         </td>
@@ -1478,16 +1490,16 @@ export default function AdminUsersPage() {
                         <td className="py-3.5 px-3">
                           {isLecturerView ? (
                             <div className="flex items-center gap-2 max-w-[210px]">
-                              <div className="w-6 h-6 rounded-lg bg-orange-50 dark:bg-orange-950/50 flex items-center justify-center text-orange-600 dark:text-orange-400 shrink-0">
+                              <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0">
                                 <Building className="w-3.5 h-3.5" />
                               </div>
-                              <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                              <span className="font-medium text-slate-700 dark:text-slate-200 truncate">
                                 {u.department || 'Bộ môn Kỹ thuật phần mềm (SE)'}
                               </span>
                             </div>
                           ) : isStudentView ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-orange-50/80 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border border-orange-200/60 dark:border-orange-900/60 shadow-2xs">
-                              <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-mono font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                               {code.includes('17') ? 'Khóa K17' : code.includes('18') ? 'Khóa K18' : code.includes('19') ? 'Khóa K19' : 'Sinh viên FPT'}
                             </span>
                           ) : (
@@ -1512,14 +1524,14 @@ export default function AdminUsersPage() {
                               if (classes.length === 0) {
                                 return (
                                   <div className="flex items-center gap-2">
-                                    <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-lg bg-amber-50/80 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-900/60 inline-flex items-center gap-1.5">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 border border-slate-200/80 dark:border-slate-700 inline-flex items-center gap-1.5">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500" />
                                       Chưa xếp lớp
                                     </span>
                                     <button
                                       type="button"
                                       onClick={() => openAssignUserModal(u)}
-                                      className="text-[11px] font-bold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:underline cursor-pointer"
+                                      className="text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:underline cursor-pointer"
                                     >
                                       + Gán lớp
                                     </button>
@@ -1532,7 +1544,7 @@ export default function AdminUsersPage() {
                                     <span
                                       key={c.id || c.code}
                                       title={`${c.code} - ${c.name || c.subjectName || ''} (${c.studentCount || 0} SV)`}
-                                      className="font-mono text-[11px] font-bold px-2.5 py-0.5 rounded-lg bg-gradient-to-r from-orange-50 to-amber-50/80 dark:from-orange-950/50 dark:to-amber-950/50 text-orange-800 dark:text-orange-200 border border-orange-200/80 dark:border-orange-900/60 cursor-pointer hover:scale-105 transition-transform shadow-2xs"
+                                      className="font-mono text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-200/80 dark:hover:bg-slate-700 transition-colors"
                                       onClick={() => openLecturerDetailModal(u)}
                                     >
                                       {c.code}
@@ -1542,7 +1554,7 @@ export default function AdminUsersPage() {
                                     <button
                                       type="button"
                                       onClick={() => openLecturerDetailModal(u)}
-                                      className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+                                      className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
                                       title="Xem tất cả các lớp"
                                     >
                                       +{classes.length - 3}
@@ -1551,7 +1563,7 @@ export default function AdminUsersPage() {
                                   <button
                                     type="button"
                                     onClick={() => openAssignUserModal(u)}
-                                    className="p-1 rounded-lg text-slate-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/50 transition-colors"
+                                    className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors"
                                     title="Phân công thêm lớp"
                                   >
                                     <Plus className="w-3.5 h-3.5" />
@@ -1561,10 +1573,10 @@ export default function AdminUsersPage() {
                             })()
                           ) : isStudentView ? (
                             <div className="flex items-center gap-2 max-w-[210px]">
-                              <div className="w-6 h-6 rounded-lg bg-orange-50 dark:bg-orange-950/50 flex items-center justify-center text-orange-600 dark:text-orange-400 shrink-0">
+                              <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0">
                                 <GraduationCap className="w-3.5 h-3.5" />
                               </div>
-                              <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                              <span className="font-medium text-slate-700 dark:text-slate-200 truncate">
                                 {u.department || 'Kỹ thuật Phần mềm (SE)'}
                               </span>
                             </div>
@@ -1578,22 +1590,22 @@ export default function AdminUsersPage() {
                         {/* Campus */}
                         <td className="py-3.5 px-3">
                           <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 text-xs truncate max-w-[150px]">
-                            <MapPin className="w-3.5 h-3.5 text-rose-500/80 shrink-0" />
+                            <MapPin className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                             <span className="truncate">{u.campus || 'FPT Quy Nhơn'}</span>
                           </div>
                         </td>
 
-                        {/* Account Status with glowing dot */}
+                        {/* Account Status */}
                         <td className="py-3.5 px-3">
                           <div className="flex items-center gap-1.5">
                             {isLocked ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/60 shadow-2xs">
+                              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-50/70 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200/70 dark:border-rose-800/50">
                                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                                 Đã khóa
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/50">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                 Hoạt động
                               </span>
                             )}
@@ -1612,7 +1624,7 @@ export default function AdminUsersPage() {
                               className={cn(
                                 "w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer",
                                 activeActionMenuId === u.id
-                                  ? "bg-orange-100 text-orange-700 dark:bg-orange-950/70 dark:text-orange-300 ring-2 ring-orange-400/30"
+                                  ? "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 ring-2 ring-slate-300/50 dark:ring-slate-700/50"
                                   : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
                               )}
                               title="Tùy chọn thao tác"
@@ -1645,11 +1657,11 @@ export default function AdminUsersPage() {
                                       }}
                                       className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer group"
                                     >
-                                      <span className="p-1.5 rounded-lg shrink-0 transition-colors bg-orange-50 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400 group-hover:bg-orange-100">
+                                      <span className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 shrink-0 transition-colors flex items-center justify-center">
                                         <Eye className="w-3.5 h-3.5" />
                                       </span>
                                       <div className="min-w-0">
-                                        <p className="truncate font-bold">Xem chi tiết hồ sơ</p>
+                                        <p className="truncate font-semibold text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white">Xem chi tiết hồ sơ</p>
                                         <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate font-normal">Thông tin, mã số & liên hệ</p>
                                       </div>
                                     </button>
@@ -1662,11 +1674,11 @@ export default function AdminUsersPage() {
                                       }}
                                       className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer group"
                                     >
-                                      <span className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 group-hover:bg-amber-100 shrink-0 transition-colors">
+                                      <span className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 shrink-0 transition-colors flex items-center justify-center">
                                         <School className="w-3.5 h-3.5" />
                                       </span>
                                       <div className="min-w-0">
-                                        <p className="truncate font-bold">{isLecturer ? 'Phân công lớp dạy' : 'Gán vào lớp học'}</p>
+                                        <p className="truncate font-semibold text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white">{isLecturer ? 'Phân công lớp dạy' : 'Gán vào lớp học'}</p>
                                         <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate font-normal">Quản lý các lớp phụ trách</p>
                                       </div>
                                     </button>
@@ -1679,11 +1691,11 @@ export default function AdminUsersPage() {
                                       }}
                                       className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer group"
                                     >
-                                      <span className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-100 shrink-0 transition-colors">
+                                      <span className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 shrink-0 transition-colors flex items-center justify-center">
                                         <Edit className="w-3.5 h-3.5" />
                                       </span>
                                       <div className="min-w-0">
-                                        <p className="truncate font-bold">Chỉnh sửa thông tin</p>
+                                        <p className="truncate font-semibold text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white">Chỉnh sửa thông tin</p>
                                         <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate font-normal">Họ tên, email, bộ môn...</p>
                                       </div>
                                     </button>
@@ -1697,24 +1709,14 @@ export default function AdminUsersPage() {
                                         setActiveActionMenuId(null)
                                         setLockTargetUser(u)
                                       }}
-                                      className={cn(
-                                        "w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-semibold transition-colors cursor-pointer group",
-                                        isLocked
-                                          ? "text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
-                                          : "text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40"
-                                      )}
+                                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer group"
                                     >
-                                      <span className={cn(
-                                        "p-1.5 rounded-lg shrink-0 transition-colors",
-                                        isLocked
-                                          ? "bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400"
-                                          : "bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400"
-                                      )}>
+                                      <span className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 shrink-0 transition-colors flex items-center justify-center">
                                         {isLocked ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
                                       </span>
                                       <div className="min-w-0">
-                                        <p className="truncate font-bold">{isLocked ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}</p>
-                                        <p className="text-[10px] opacity-75 truncate font-normal">{isLocked ? 'Khôi phục quyền truy cập' : 'Tạm ngưng quyền truy cập'}</p>
+                                        <p className="truncate font-semibold text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white">{isLocked ? 'Mở khóa tài khoản' : 'Khóa tài khoản'}</p>
+                                        <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate font-normal">{isLocked ? 'Khôi phục quyền truy cập' : 'Tạm ngưng quyền truy cập'}</p>
                                       </div>
                                     </button>
 
@@ -1724,14 +1726,14 @@ export default function AdminUsersPage() {
                                         setActiveActionMenuId(null)
                                         setDeleteTargetUser(u)
                                       }}
-                                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer group"
+                                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer group"
                                     >
-                                      <span className="p-1.5 rounded-lg bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 shrink-0 transition-colors">
+                                      <span className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 shrink-0 transition-colors flex items-center justify-center">
                                         <Trash2 className="w-3.5 h-3.5" />
                                       </span>
                                       <div className="min-w-0">
-                                        <p className="truncate font-bold">Xóa tài khoản</p>
-                                        <p className="text-[10px] text-rose-400/80 truncate font-normal">Xóa vĩnh viễn khỏi hệ thống</p>
+                                        <p className="truncate font-semibold text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white">Xóa tài khoản</p>
+                                        <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate font-normal">Xóa vĩnh viễn khỏi hệ thống</p>
                                       </div>
                                     </button>
                                   </div>
@@ -1885,7 +1887,7 @@ export default function AdminUsersPage() {
                         Giảng viên này chưa được phân công lớp học nào
                       </p>
                       <p className="text-[11px] text-slate-400">
-                        Nhấn nút "Gán lớp" bên trên để phân công lớp học phần cho giảng viên.
+                        Nhấn nút &ldquo;Gán lớp&rdquo; bên trên để phân công lớp học phần cho giảng viên.
                       </p>
                     </div>
                   ) : (
@@ -2074,7 +2076,7 @@ export default function AdminUsersPage() {
                         Sinh viên chưa đăng ký lớp học phần nào
                       </p>
                       <p className="text-[11px] text-slate-600 dark:text-slate-400">
-                        Nhấn nút "Gán lớp" bên trên để thêm sinh viên vào lớp học.
+                        Nhấn nút &ldquo;Gán lớp&rdquo; bên trên để thêm sinh viên vào lớp học.
                       </p>
                     </div>
                   ) : (
@@ -2286,15 +2288,21 @@ export default function AdminUsersPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  {t('admin.users.form_password', 'Mật khẩu khởi tạo')} {!editingUserId && <span className="text-rose-500">*</span>}
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    {t('admin.users.form_password', 'Mật khẩu khởi tạo')} {!editingUserId && <span className="text-rose-500">*</span>}
+                  </label>
+                  {!editingUserId && (
+                    <span className="text-[10px] text-slate-400">Tối thiểu 6 ký tự</span>
+                  )}
+                </div>
                 <Input
                   type="password"
-                  placeholder={editingUserId ? t('admin.users.pwd_placeholder_edit', 'Bỏ trống nếu không đổi mật khẩu') : '••••••••'}
+                  placeholder={editingUserId ? t('admin.users.pwd_placeholder_edit', 'Bỏ trống nếu không đổi mật khẩu') : '•••••••• (tối thiểu 6 ký tự)'}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required={!editingUserId}
+                  minLength={editingUserId ? undefined : 6}
                 />
               </div>
 
@@ -2636,8 +2644,11 @@ export default function AdminUsersPage() {
                         .filter((c: any) => {
                           if (assignSeasonFilter !== 'all') {
                             const rawSem = c.semesterSeason || (c.semester && typeof c.semester === 'object' ? c.semester.season || c.semester.code || c.semester.label : c.semester) || ''
-                            const sem = String(rawSem)
-                            if (!sem.toLowerCase().includes(assignSeasonFilter.toLowerCase())) return false
+                            const sem = String(rawSem).toLowerCase().trim()
+                            const filterVal = assignSeasonFilter.toLowerCase().trim()
+                            const filterSeasonWord = filterVal.split(' ')[0]
+                            const matches = sem.includes(filterVal) || filterVal.includes(sem) || (filterSeasonWord && sem.includes(filterSeasonWord))
+                            if (!matches) return false
                           }
                           if (assignClassSearch.trim()) {
                             const q = assignClassSearch.toLowerCase().trim()
@@ -2680,11 +2691,16 @@ export default function AdminUsersPage() {
                   className="h-8 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2.5 text-xs text-slate-800 dark:text-slate-200 outline-none"
                 >
                   <option value="all">{t('admin.users.all_semesters', 'All Semesters')}</option>
-                  {Array.from(new Set(availableClasses.map((c: any) => {
-                    const rawSem = c.semesterSeason || (c.semester && typeof c.semester === 'object' ? c.semester.season || c.semester.code || c.semester.label : c.semester) || ''
-                    return String(rawSem)
-                  }).filter(Boolean))).map((s: any) => (
-                    <option key={s} value={s}>{s}</option>
+                  {getAvailableAcademicSeasons(
+                    new Date(),
+                    availableClasses.map((c: any) => {
+                      const rawSem = c.semesterSeason || (c.semester && typeof c.semester === 'object' ? c.semester.season || c.semester.code || c.semester.label : c.semester) || ''
+                      return String(rawSem)
+                    }).filter(Boolean)
+                  ).map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -2695,8 +2711,11 @@ export default function AdminUsersPage() {
                   .filter((c: any) => {
                     if (assignSeasonFilter !== 'all') {
                       const rawSem = c.semesterSeason || (c.semester && typeof c.semester === 'object' ? c.semester.season || c.semester.code || c.semester.label : c.semester) || ''
-                      const sem = String(rawSem)
-                      if (!sem.toLowerCase().includes(assignSeasonFilter.toLowerCase())) return false
+                      const sem = String(rawSem).toLowerCase().trim()
+                      const filterVal = assignSeasonFilter.toLowerCase().trim()
+                      const filterSeasonWord = filterVal.split(' ')[0]
+                      const matches = sem.includes(filterVal) || filterVal.includes(sem) || (filterSeasonWord && sem.includes(filterSeasonWord))
+                      if (!matches) return false
                     }
                     if (assignClassSearch.trim()) {
                       const q = assignClassSearch.toLowerCase().trim()

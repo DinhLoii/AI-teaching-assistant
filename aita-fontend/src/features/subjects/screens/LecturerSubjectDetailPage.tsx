@@ -320,7 +320,7 @@ export default function LecturerSubjectDetailPage() {
           : 'Course syllabus, CLO/ABET mapping, and assignments'
       }
     >
-      <div className="space-y-6 max-w-6xl mx-auto">
+      <div className="space-y-6 w-full pb-12">
         {/* Breadcrumb Navigation */}
         <div className="flex items-center justify-between">
           <button

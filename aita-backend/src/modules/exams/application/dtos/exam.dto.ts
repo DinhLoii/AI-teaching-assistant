@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const CreateExamSchema = z.object({
-  subjectId: z.string().min(1),
+  subjectId: z.string().optional(),
   title: z.string().min(1),
   description: z.string().optional(),
   type: z.string().optional(),
@@ -29,6 +29,16 @@ export const CreateExamSchema = z.object({
   latePenaltyValue: z.coerce.number().optional(),
   maxLatePenalty: z.coerce.number().optional(),
   allowLateSubmission: z.coerce.boolean().optional().default(true),
+  startDate: z.string().optional(),
+  allowResubmission: z.coerce.boolean().optional(),
+  maxAttempts: z.coerce.number().optional(),
+  submissionFormat: z.union([z.string(), z.record(z.any())]).optional(),
+  runtimeConfig: z.record(z.any()).optional(),
+  sqlConfig: z.record(z.any()).optional(),
+  testCases: z.array(z.record(z.any())).optional(),
+  rubricCriteria: z.array(z.record(z.any())).optional(),
+  aiConfig: z.record(z.any()).optional(),
+  sampleSolution: z.string().optional(),
 }).transform(data => {
   if (data.classId && (!data.classIds || data.classIds.length === 0)) {
     data.classIds = [data.classId]
@@ -149,9 +159,15 @@ export class ExamResponseDto {
       });
     }
 
+    const toSafeIso = (val: any): string | null => {
+      if (!val) return null;
+      const d = new Date(val);
+      return isNaN(d.getTime()) ? null : d.toISOString();
+    };
+
     const classId = (exam.classes && exam.classes.length > 0 ? exam.classes[0] : (exam.classId || null));
     const classIds = exam.classes || (exam.classId ? [exam.classId] : null);
-    const dueDateStr = dueValue ? new Date(dueValue).toISOString() : null;
+    const dueDateStr = toSafeIso(dueValue);
 
     const dto = new ExamResponseDto(
       exam.Id || exam.id,
@@ -163,7 +179,7 @@ export class ExamResponseDto {
       exam.TotalPoints || exam.totalPoints,
       dueDateStr,
       dueDateStr,
-      exam.startDate ? new Date(exam.startDate).toISOString() : (exam.createdAt ? new Date(exam.createdAt).toISOString() : null),
+      toSafeIso(exam.startDate) || toSafeIso(exam.createdAt),
       exam.classes || null,
       exam.subjectName ? `${exam.subjectCode || ''} - ${exam.subjectName}` : null,
       exam.lecturer || null,

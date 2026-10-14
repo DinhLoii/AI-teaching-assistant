@@ -188,7 +188,7 @@ function GradingHubContent() {
       requiredRole="lecturer"
       title="Trung tâm chấm bài (Grading Hub)"
     >
-      <div className="space-y-6 max-w-7xl mx-auto pb-12">
+      <div className="space-y-6 w-full pb-12">
         {/* Hero Banner */}
         <div className="rounded-3xl p-6 md:p-8 bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-blue-500/10 border border-orange-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xs">
           <div className="space-y-2">
@@ -395,7 +395,7 @@ function GradingHubContent() {
 
                       <td className="p-4 max-w-xs">
                         <div className="line-clamp-2 text-slate-700 dark:text-slate-300 italic bg-amber-50/60 dark:bg-amber-950/20 p-2 rounded-xl border border-amber-200/50">
-                          "{sub.studentFeedback}"
+                          &ldquo;{sub.studentFeedback}&rdquo;
                         </div>
                       </td>
 
@@ -545,7 +545,7 @@ function GradingHubContent() {
                   Lý do phúc khảo của sinh viên:
                 </span>
                 <p className="text-slate-800 dark:text-slate-200 italic leading-relaxed">
-                  "{reviewAppealModal.studentFeedback}"
+                  &ldquo;{reviewAppealModal.studentFeedback}&rdquo;
                 </p>
               </div>
 

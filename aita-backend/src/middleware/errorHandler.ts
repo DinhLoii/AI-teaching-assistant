@@ -49,15 +49,30 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
     }
   }
 
+  // Helper to detect actual AI rate limit errors
+  const isAiRateLimit = (code: number, msg: string) =>
+    code === 429 ||
+    (/(\b429\b|too many requests|resource_exhausted|quota exceeded)/i.test(msg) &&
+     /(ai|gemini|openai|rate limit|exhausted)/i.test(msg));
+
+  // Helper to detect AI API key expired / invalid errors
+  const isAiKeyExpired = (code: number, msg: string) =>
+    code === 401 ||
+    (/invalid_api_key|expired_api_key|api_key_invalid|invalid api key|incorrect api key|key expired|insufficient_quota|credit_expired/i.test(msg) &&
+     /(ai|groq|gemini|openai|key|quota)/i.test(msg));
+
   // Handle custom AppError
   if (err instanceof AppError) {
     let statusCode = err.statusCode;
     let message = err.message;
-    if (statusCode === 429 || message.includes('429') || message.includes('no body')) {
+    if (isAiRateLimit(statusCode, message)) {
       statusCode = 503;
       message = 'Hệ thống AI đang quá tải lượt gọi (Rate Limit 429). Vui lòng thử lại sau 5–10 giây.';
+    } else if (isAiKeyExpired(statusCode, message) || err.code === 'AI_API_KEY_EXPIRED') {
+      statusCode = 401;
+      message = message || 'Khóa API của hệ thống AI (Groq / Gemini) đã hết hạn hoặc không hợp lệ. Vui lòng kiểm tra và cập nhật lại API Key mới trong file cấu hình .env (GROQ_API_KEY).';
     }
-    const errorDetails = isDev ? { ...err.details, stack: err.stack } : err.details;
+    const errorDetails = isDev ? { ...err.details, code: err.code, stack: err.stack } : { ...err.details, code: err.code };
     const apiResponse = new ApiResponse(statusCode, message, errorDetails);
     return res.status(statusCode).json(apiResponse);
   }
@@ -72,11 +87,14 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
   // Fallback for unexpected errors
   let statusCode = (err as any).statusCode ?? (err as any).status ?? 500;
   let message = isDev ? err.message || String(err) : 'Lỗi hệ thống';
-  if (statusCode === 429 || String(message).includes('429') || String(message).includes('no body')) {
+  if (isAiRateLimit(statusCode, String(message))) {
     statusCode = 503;
     message = 'Hệ thống AI đang quá tải lượt gọi (Rate Limit 429). Vui lòng thử lại sau 5–10 giây.';
+  } else if (isAiKeyExpired(statusCode, String(message))) {
+    statusCode = 401;
+    message = 'Khóa API của hệ thống AI (Groq / Gemini) đã hết hạn hoặc không hợp lệ. Vui lòng kiểm tra và cập nhật lại API Key mới trong file cấu hình .env (GROQ_API_KEY).';
   }
-  const details = isDev ? { stack: err.stack, requestId } : { requestId };
+  const details = isDev ? { stack: err.stack, requestId, code: 'INTERNAL_ERROR' } : { requestId, code: 'INTERNAL_ERROR' };
 
   const apiResponse = new ApiResponse(statusCode, message, details);
   return res.status(statusCode).json(apiResponse);

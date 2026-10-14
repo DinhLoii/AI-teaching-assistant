@@ -31,6 +31,10 @@ export const config = {
     geminiModel: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
     geminiBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/',
 
+    groqKey: process.env.GROQ_API_KEY || '',
+    groqModel: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+    groqBaseUrl: 'https://api.groq.com/openai/v1',
+
     githubToken: process.env.GITHUB_TOKEN || '',
     githubModel: 'gpt-4o-mini',
     githubBaseUrl: 'https://models.inference.ai.azure.com',

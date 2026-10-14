@@ -522,7 +522,7 @@ function AIRubricTab({ assignment, assignmentId, onUpdateAssignment }: { assignm
   // 1. Published Rubric View (default when rules exist and user hasn't explicitly clicked Generator)
   if (hasPublishedRules && !showGenerator) {
     return (
-      <div className="space-y-6 max-w-5xl animate-in fade-in duration-200">
+      <div className="space-y-6 w-full animate-in fade-in duration-200">
         {/* Header Card */}
         <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -644,7 +644,7 @@ function AIRubricTab({ assignment, assignmentId, onUpdateAssignment }: { assignm
 
   // 2. AI Rubric Generator & Editor View
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 w-full">
       {hasPublishedRules && (
         <div className="flex items-center justify-between p-4 bg-orange-50/60 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800/40 rounded-2xl">
           <div className="flex items-center gap-2 text-xs text-orange-800 dark:text-orange-300">

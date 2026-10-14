@@ -1,72 +1,245 @@
-﻿'use client'
+'use client'
 
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { notificationsApi } from '@/lib/api/modules/notifications'
 import { subscribeNotificationEvents, emitNotificationEvent } from '@/lib/events/notifications'
-import { BASE } from '@/lib/api/client'
 import { useAuth } from '@/providers/auth-provider'
+import { NotificationSocket, type NotificationPayload, type ConnectionStatus } from '@/lib/websocket/notification-socket'
 
-interface NotificationContextValue {
+export interface NotificationContextValue {
   unreadCount: number
   hasNew: boolean
+  latestNotification: NotificationPayload | null
+  isConnected: boolean
+  connectionStatus: ConnectionStatus
   refresh: () => void
   clearNew: () => void
+  markAsRead: (notificationId: string) => Promise<void>
+  markAllAsRead: () => Promise<void>
 }
-const NotificationContext = createContext<NotificationContextValue>({ unreadCount: 0, hasNew: false, refresh: () => {}, clearNew: () => {} })
+
+const NotificationContext = createContext<NotificationContextValue>({
+  unreadCount: 0,
+  hasNew: false,
+  latestNotification: null,
+  isConnected: false,
+  connectionStatus: 'disconnected',
+  refresh: () => {},
+  clearNew: () => {},
+  markAsRead: async () => {},
+  markAllAsRead: async () => {},
+})
+
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const { user, isAuthenticated, loading, token } = useAuth()
   const userId = user?.id
-  const [state, setState] = useState({ owner: '', count: 0, hasNew: false })
-  const clearNew = useCallback(() => setState(previous => ({ ...previous, hasNew: false })), [])
-  useEffect(() => {
-    if (!userId || loading || !isAuthenticated || !token) return
-    let active = true
-    let previousCount: number | null = null
-    let source: EventSource | null = null
-    let retryDelay = 1000
-    let retryTimer: ReturnType<typeof setTimeout> | undefined
-    let highlightTimer: ReturnType<typeof setTimeout> | undefined
-    let requestSequence = 0
-    async function fetchCount() {
-      const sequence = ++requestSequence
-      try {
-        const { count } = await notificationsApi.getUnreadCount()
-        if (!active || sequence !== requestSequence) return
-        const hasNew = previousCount !== null && count > previousCount
-        previousCount = count
-        setState({ owner: userId!, count, hasNew })
-        if (highlightTimer) clearTimeout(highlightTimer)
-        if (hasNew) highlightTimer = setTimeout(clearNew, 4000)
-      } catch { /* Keep the last verified count; polling retries transient errors. */ }
+
+  const [state, setState] = useState<{
+    owner: string
+    count: number
+    hasNew: boolean
+    latestNotification: NotificationPayload | null
+    connectionStatus: ConnectionStatus
+  }>({
+    owner: '',
+    count: 0,
+    hasNew: false,
+    latestNotification: null,
+    connectionStatus: 'disconnected',
+  })
+
+  const socketRef = useRef<NotificationSocket | null>(null)
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const clearNew = useCallback(() => {
+    setState((prev) => ({ ...prev, hasNew: false }))
+  }, [])
+
+  // Sync REST unread count as initial baseline or fallback
+  const fetchCountRest = useCallback(async () => {
+    if (!userId || !isAuthenticated) return
+    try {
+      const { count } = await notificationsApi.getUnreadCount()
+      setState((prev) => {
+        const hasNew = prev.count > 0 && count > prev.count
+        return {
+          ...prev,
+          owner: userId,
+          count,
+          hasNew: hasNew || prev.hasNew,
+        }
+      })
+    } catch {
+      // Retain last known state
     }
-    function connect() {
-      if (!active || typeof EventSource === 'undefined') return
-      source = new EventSource(`${BASE}/notifications/stream?token=${encodeURIComponent(token!)}`)
-      source.onopen = () => { retryDelay = 1000; void fetchCount() }
-      source.onmessage = event => {
+  }, [userId, isAuthenticated])
+
+  // Mark single as read: via WebSocket first, fallback to REST
+  const markAsRead = useCallback(
+    async (notificationId: string) => {
+      const socket = socketRef.current
+      const sentViaWs = socket?.markAsRead(notificationId)
+
+      // Optimistic update
+      setState((prev) => ({
+        ...prev,
+        count: Math.max(0, prev.count - 1),
+      }))
+
+      if (!sentViaWs) {
         try {
-          if (JSON.parse(event.data).type === 'NOTIFICATION') emitNotificationEvent()
-        } catch { /* Ignore malformed frames. */ }
+          await notificationsApi.markNotificationAsRead(notificationId)
+        } catch {}
       }
-      source.onerror = () => {
-        source?.close()
-        if (active) retryTimer = setTimeout(() => { retryDelay = Math.min(retryDelay * 2, 16000); connect() }, retryDelay)
-      }
+
+      emitNotificationEvent()
+    },
+    []
+  )
+
+  // Mark all as read: via WebSocket first, fallback to REST
+  const markAllAsRead = useCallback(async () => {
+    const socket = socketRef.current
+    const sentViaWs = socket?.markAllAsRead()
+
+    // Optimistic update
+    setState((prev) => ({
+      ...prev,
+      count: 0,
+      hasNew: false,
+    }))
+
+    if (!sentViaWs) {
+      try {
+        await notificationsApi.markAllNotificationsAsRead()
+      } catch {}
     }
-    void fetchCount()
-    connect()
-    const unsubscribe = subscribeNotificationEvents(() => void fetchCount())
-    const interval = setInterval(() => void fetchCount(), 60000)
+
+    emitNotificationEvent()
+  }, [])
+
+  useEffect(() => {
+    if (!userId || loading || !isAuthenticated || !token) {
+      if (socketRef.current) {
+        socketRef.current.disconnect()
+        socketRef.current = null
+      }
+      return
+    }
+
+    let active = true
+
+    // Initialize WebSocket client
+    const socket = new NotificationSocket()
+    socketRef.current = socket
+
+    socket.onStatusChange = (status) => {
+      if (!active) return
+      setState((prev) => ({ ...prev, connectionStatus: status }))
+    }
+
+    socket.onUnreadCount = (count) => {
+      if (!active) return
+      setState((prev) => ({
+        ...prev,
+        owner: userId,
+        count,
+      }))
+    }
+
+    socket.onNotification = (notification) => {
+      if (!active) return
+
+      setState((prev) => {
+        const newCount = typeof notification.unreadCount === 'number' ? notification.unreadCount : prev.count + 1
+        return {
+          ...prev,
+          owner: userId,
+          count: newCount,
+          hasNew: true,
+          latestNotification: notification,
+        }
+      })
+
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
+      highlightTimerRef.current = setTimeout(clearNew, 5000)
+
+      // Notify tabs and page listeners
+      emitNotificationEvent()
+    }
+
+    socket.onNotificationRead = ({ unreadCount }) => {
+      if (!active) return
+      setState((prev) => ({
+        ...prev,
+        owner: userId,
+        count: unreadCount,
+      }))
+      emitNotificationEvent()
+    }
+
+    socket.onAllRead = () => {
+      if (!active) return
+      setState((prev) => ({
+        ...prev,
+        owner: userId,
+        count: 0,
+        hasNew: false,
+      }))
+      emitNotificationEvent()
+    }
+
+    // Connect WebSocket
+    socket.connect(token)
+
+    // Initial count fetch via REST
+    void fetchCountRest()
+
+    // Listen to local tab broadcast events
+    const unsubscribe = subscribeNotificationEvents(() => {
+      void fetchCountRest()
+    })
+
+    // Background safety interval (60s)
+    const interval = setInterval(() => {
+      if (socket.isConnected()) {
+        socket.requestUnreadCount()
+      } else {
+        void fetchCountRest()
+      }
+    }, 60_000)
+
     return () => {
       active = false
-      source?.close()
+      socket.disconnect()
+      socketRef.current = null
       unsubscribe()
       clearInterval(interval)
-      if (retryTimer) clearTimeout(retryTimer)
-      if (highlightTimer) clearTimeout(highlightTimer)
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
     }
-  }, [userId, token, loading, isAuthenticated, clearNew])
+  }, [userId, token, loading, isAuthenticated, clearNew, fetchCountRest])
+
   const ownsState = isAuthenticated && state.owner === userId
-  return <NotificationContext.Provider value={{ unreadCount: ownsState ? state.count : 0, hasNew: ownsState && state.hasNew, refresh: emitNotificationEvent, clearNew }}>{children}</NotificationContext.Provider>
+
+  const contextValue: NotificationContextValue = {
+    unreadCount: ownsState ? state.count : 0,
+    hasNew: ownsState && state.hasNew,
+    latestNotification: ownsState ? state.latestNotification : null,
+    isConnected: state.connectionStatus === 'connected',
+    connectionStatus: state.connectionStatus,
+    refresh: emitNotificationEvent,
+    clearNew,
+    markAsRead,
+    markAllAsRead,
+  }
+
+  return (
+    <NotificationContext.Provider value={contextValue}>
+      {children}
+    </NotificationContext.Provider>
+  )
 }
-export function useNotifications() { return useContext(NotificationContext) }
+
+export function useNotifications() {
+  return useContext(NotificationContext)
+}

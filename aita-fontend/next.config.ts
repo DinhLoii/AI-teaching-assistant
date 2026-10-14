@@ -19,6 +19,16 @@ const nextConfig: NextConfig = {
         destination: '/lecturer/grading/hub',
         permanent: false,
       },
+      {
+        source: '/admin/exams',
+        destination: '/admin',
+        permanent: false,
+      },
+      {
+        source: '/admin/audit-logs',
+        destination: '/admin',
+        permanent: false,
+      },
     ];
   },
   async rewrites() {

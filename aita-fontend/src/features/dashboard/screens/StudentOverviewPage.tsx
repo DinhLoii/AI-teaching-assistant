@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
 import { studentPortalApi } from '@/lib/api/modules/student-portal'
 import { notificationsApi } from '@/lib/api/modules/notifications'
+import { aiApi } from '@/lib/api/modules/ai'
 import { FrogChatbotLauncher } from '@/components/chatbot/FrogChatbotLauncher'
 import { cn } from '@/lib/utils'
 import {
@@ -189,6 +190,7 @@ export default function StudentOverviewPage() {
   const [aiTutorOpen, setAiTutorOpen] = React.useState(false)
   const [tutorQuestion, setTutorQuestion] = React.useState('')
   const [tutorAnswer, setTutorAnswer] = React.useState<string | null>(null)
+  const [tutorSources, setTutorSources] = React.useState<Array<{ title: string; docType: string }>>([])
   const [tutorThinking, setTutorThinking] = React.useState(false)
 
   React.useEffect(() => {
@@ -255,7 +257,7 @@ export default function StudentOverviewPage() {
     if (graded.length === 0) return null
     const sum = graded.reduce((acc, a) => acc + Number(a.score), 0)
     return (sum / graded.length).toFixed(1)
-  }, [dashboard?.avgAiScore, assignmentsList])
+  }, [dashboard, assignmentsList])
 
   // Recent AI Graded Result (Section 2) - purely real data from Neon DB
   const recentAiResult = React.useMemo(() => {
@@ -272,7 +274,7 @@ export default function StudentOverviewPage() {
       review: isVi ? 'Đã hoàn thành đánh giá Rubric AI' : 'Rubric AI evaluation completed',
       assignmentId: graded.id,
     }
-  }, [dashboard?.recentAiResult, assignmentsList, isVi])
+  }, [dashboard, assignmentsList, isVi])
 
   // Actionable AI Feedback List (Section 3) - purely real feedback from DB
   const aiFeedbackList = React.useMemo(() => {
@@ -280,7 +282,7 @@ export default function StudentOverviewPage() {
       return dashboard.aiFeedbackList
     }
     return []
-  }, [dashboard?.aiFeedbackList])
+  }, [dashboard])
 
   // Upcoming deadlines list - derived purely from real pending tasks with due dates
   const upcomingDeadlines = React.useMemo(() => {
@@ -331,14 +333,32 @@ export default function StudentOverviewPage() {
     }
   }
 
-  // Handle AI Tutor Query
-  const handleAskTutor = (prompt?: string) => {
+  // Handle AI Tutor Query with RAG
+  const handleAskTutor = async (prompt?: string) => {
     const q = prompt || tutorQuestion
     if (!q.trim()) return
     setTutorThinking(true)
     setTutorAnswer(null)
+    setTutorSources([])
 
-    setTimeout(() => {
+    try {
+      const currentAssignment = assignmentsList[0]
+      const res = await aiApi.ragChat({
+        query: q,
+        examId: currentAssignment?.id,
+        subjectCode: currentAssignment?.subjectCode,
+      })
+
+      if (res?.answer) {
+        setTutorAnswer(res.answer)
+        if (res.sourcesUsed) {
+          setTutorSources(res.sourcesUsed)
+        }
+      } else {
+        throw new Error('No RAG answer')
+      }
+    } catch {
+      // Pedagogical fallback
       if (q.includes('BST') || q.includes('Binary Search Tree') || q.includes('cây')) {
         setTutorAnswer(
           isVi
@@ -358,8 +378,9 @@ export default function StudentOverviewPage() {
             : `🤖 **AI Tutor Analysis:** Break down your problem into modular functions, verify edge cases (empty inputs, single items) to satisfy rubric criteria.`
         )
       }
+    } finally {
       setTutorThinking(false)
-    }, 600)
+    }
   }
 
   return (
@@ -1280,14 +1301,25 @@ export default function StudentOverviewPage() {
           )}
 
           {tutorAnswer && !tutorThinking && (
-            <div className="p-4 rounded-xl bg-orange-50/30 dark:bg-slate-900/90 border border-orange-200/80 dark:border-orange-900/40 text-xs leading-relaxed space-y-2 max-h-[300px] overflow-y-auto">
+            <div className="p-4 rounded-xl bg-orange-50/30 dark:bg-slate-900/90 border border-orange-200/80 dark:border-orange-900/40 text-xs leading-relaxed space-y-2.5 max-h-[350px] overflow-y-auto">
               <div className="flex items-center gap-1.5 text-[11px] font-bold text-orange-600 dark:text-orange-400">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>{isVi ? 'Phản hồi từ AI Tutor:' : 'AI Tutor Response:'}</span>
+                <span>{isVi ? 'Phản hồi từ AI Tutor (RAG Grounded):' : 'AI Tutor Response (RAG Grounded):'}</span>
               </div>
               <div className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-sans">
                 {tutorAnswer}
               </div>
+
+              {tutorSources.length > 0 && (
+                <div className="pt-2 border-t border-orange-200/50 dark:border-slate-800 flex flex-wrap gap-1.5 items-center">
+                  <span className="text-[10px] text-slate-400 font-semibold">{isVi ? 'Căn cứ tài liệu RAG:' : 'Grounded Sources:'}</span>
+                  {tutorSources.map((s, idx) => (
+                    <span key={idx} className="text-[10px] px-2 py-0.5 rounded-md bg-orange-100/70 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 font-medium border border-orange-200/50 dark:border-orange-900/40">
+                      📚 {s.title}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

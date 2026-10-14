@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/providers/auth-provider'
 import { useLanguage } from '@/providers/language-provider'
+import { useNotifications } from '@/providers/notification-provider'
 import { AnonymousAvatar } from '@/components/ui/avatar'
 import type { NavItem } from '@/types'
 import {
@@ -68,12 +69,13 @@ export function Sidebar({ navItems, title, roleLabel, collapsed = false, onNavig
   const pathname = usePathname()
   const { user, role, logout } = useAuth()
   const { t } = useLanguage()
+  const { unreadCount } = useNotifications()
 
   const isUserPortal = Boolean(pathname?.startsWith('/student') || pathname === '/profile')
 
   // Group by category
   const categories = React.useMemo(() => {
-    let items = [...navItems]
+    const items = [...navItems]
 
     if (isUserPortal) {
       if (role === 'lecturer') {
@@ -173,6 +175,16 @@ export function Sidebar({ navItems, title, roleLabel, collapsed = false, onNavig
                       )}
                     />
                     <span className={collapsed ? 'sr-only' : 'truncate'}>{t(item.label)}</span>
+                    {item.id === 'notifications' && unreadCount > 0 && (
+                      <span
+                        className={cn(
+                          'ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500 text-white shadow-xs',
+                          collapsed && 'sr-only'
+                        )}
+                      >
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
                   </Link>
                 )
               })}
