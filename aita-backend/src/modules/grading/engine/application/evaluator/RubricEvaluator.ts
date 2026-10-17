@@ -15,6 +15,8 @@ import { AiTextAnalysisEngine } from './AiTextAnalysisEngine';
 import { ExtractedDocument } from '../../assignment/DocumentExtractor';
 import { globalJobManager } from '../queue/SubmissionJobManager';
 import { normaliseSubjectCode } from '../../core/domain/rubric/SubjectProjectTypes';
+import { config } from '../../config/index.js';
+import { assertRealGradingMode } from '../../config/grading-mode.js';
 
 export interface EvaluationContext {
     sandbox: SandboxHandle;
@@ -61,6 +63,7 @@ export class RubricEvaluator {
         context: EvaluationContext,
         onProgress?: (current: number, total: number, message: string, meta?: any) => void
     ): Promise<AssessmentReport> {
+        assertRealGradingMode(config.ai.stubMode);
         let totalScore = 0;
         const passedRules: ScoredRule[] = [];
         const failedRules: ScoredRule[] = [];
@@ -185,6 +188,10 @@ export class RubricEvaluator {
             }
 
             const ruleResult = await this.evaluateRuleAsync(rule, context, sharedVariables);
+            if (ruleResult.reviewWarning) {
+                requiresManualReview = true;
+                manualReviewNotes.push(`${rule.title}: ${ruleResult.reviewWarning}`);
+            }
 
             if (ruleResult.needsReview) {
                 requiresManualReview = true;
@@ -218,6 +225,7 @@ export class RubricEvaluator {
                 description: rule.description,
                 weight: rule.weight,
                 earnedScore: ruleResult.score,
+                scoringStrategy: rule.scoringStrategy,
                 passed: ruleResult.passed,
                 evidenceIds: [],
                 evidence: ruleResult.evidence || {},
@@ -344,6 +352,13 @@ export class RubricEvaluator {
             failedRules,
             manualReviewNotes: requiresManualReview ? manualReviewNotes : undefined,
             overallFeedback,
+            sourceSnapshot: context.sourceSnapshot ? {
+                projectType: context.sourceSnapshot.projectType,
+                files: context.sourceSnapshot.files.slice(0, 50).map(f => ({
+                    relativePath: f.relativePath.replace(/^[/\\]+/, ''),
+                    content: f.content
+                }))
+            } : undefined,
             auditMetadata: {
                 evaluatorVersion: '3.1.0',
                 timestamp: new Date().toISOString(),
@@ -813,6 +828,7 @@ export class RubricEvaluator {
                         passed: pct >= 0.5,
                         score: score,
                         reason: result.reasoning,
+                        reviewWarning: result.reviewWarning,
                         evidence: {
                             snippets: result.relevantSnippets,
                             codeSnippet: result.relevantSnippets?.[0]?.codeSnippet,

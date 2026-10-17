@@ -54,11 +54,14 @@ test('multipart submission leaves Content-Type to the browser', async () => {
   assert.equal(request.options.headers['Content-Type'], undefined);
 });
 
-test('SQL answer-key URL uses the shared Next.js API base instead of Vite import.meta.env', () => {
-  const { load, localStorage } = setup(() => { throw new Error('No network expected'); });
+test('SQL answer-key download uses the shared API base and Authorization header without a token in the URL', async () => {
+  let received;
+  const { load, localStorage } = setup(async (url, options) => { received = { url, options }; return { ok: true, blob: async () => 'sql bytes' }; });
   localStorage.setItem('aita_token', 'test-access');
   const { gradingApi } = load('lib/api/modules/grading.ts');
-  assert.equal(gradingApi.getSqlKeyUrl('assignment-1'), '/api/grading/assignments/assignment-1/sql-key?token=test-access');
+  assert.equal(await gradingApi.downloadSqlKey('assignment-1'), 'sql bytes');
+  assert.equal(received.url, '/api/grading/assignments/assignment-1/sql-key');
+  assert.equal(received.options.headers.Authorization, 'Bearer test-access');
 });
 
 test('API error status/code survives the transport extraction', async () => {

@@ -1,5 +1,7 @@
 'use client'
 
+import { RefreshAction } from '@/components/actions/RefreshAction'
+
 import * as React from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
@@ -13,6 +15,7 @@ import { Modal } from '@/components/ui/modal'
 import { EvaluationReportViewer } from '@/features/submissions/components/EvaluationReportViewer'
 import { assignmentsApi } from '@/lib/api/modules/assignments'
 import { submissionsApi } from '@/lib/api/modules/submissions'
+import { gradingApi } from '@/lib/api/modules/grading'
 import { formatDate } from '@/lib/utils'
 import {
   ArrowLeft,
@@ -25,7 +28,6 @@ import {
   Edit,
   Award,
   Search,
-  RefreshCw,
   Sparkles,
   RotateCcw,
   Eye,
@@ -55,15 +57,16 @@ export default function AdminSubmissionsPage() {
     sub: null,
   })
 
-  const loadData = React.useCallback(async () => {
+  const loadData = React.useCallback(async (background = false) => {
     try {
       const [assign, subs] = await Promise.all([
-        assignmentsApi.getAssignment(assignmentId).catch(() => null),
-        submissionsApi.getSubmissions({ assignmentId }).catch(() => []),
+        assignmentsApi.getAssignment(assignmentId).catch((err) => { if (background) throw err; return null }),
+        submissionsApi.getSubmissions({ assignmentId }).catch((err) => { if (background) throw err; return [] }),
       ])
       setAssignment(assign)
       setSubmissions(subs || [])
     } catch (err) {
+      if (background) throw err
       console.error('Failed to load submissions:', err)
     } finally {
       setLoading(false)
@@ -132,15 +135,7 @@ export default function AdminSubmissionsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadData}
-              className="text-xs gap-1.5 rounded-xl border-slate-200 dark:border-slate-800 font-bold text-slate-900 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              {t('ui.refresh', 'Làm mới')}
-            </Button>
+            <RefreshAction onRefresh={() => loadData(true)} disabled={loading} cachePaths={["/submissions","/assignments","/exams"]} />
           </div>
         </div>
 
@@ -337,15 +332,13 @@ export default function AdminSubmissionsPage() {
                         </td>
                         <td className="p-4 text-xs">
                           {sub.downloadUrl || sub.zipFileUrl ? (
-                            <a
-                              href={sub.downloadUrl || sub.zipFileUrl}
-                              target="_blank"
-                              rel="noreferrer"
+                            <button
+                              onClick={() => gradingApi.downloadSubmission(sub.id, 'submission').catch(() => alert('Không tải được bài nộp. Vui lòng thử lại.'))}
                               className="text-orange-600 dark:text-orange-400 hover:underline flex items-center gap-1 font-mono"
                             >
                               <Download className="w-3.5 h-3.5" />
                               <span className="truncate max-w-[140px]">{sub.filename || 'source.zip'}</span>
-                            </a>
+                            </button>
                           ) : (
                             <span className="text-slate-400">{t('lecturer.submissions.no_link', 'Chưa có link')}</span>
                           )}

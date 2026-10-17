@@ -1,5 +1,7 @@
 'use client'
 
+import { RefreshAction } from '@/components/actions/RefreshAction'
+
 import * as React from 'react'
 import Link from 'next/link'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
@@ -37,14 +39,15 @@ export default function StudentResultsPage() {
   const { t, language } = useLanguage()
   const isVi = language === 'vi'
 
-  const loadSubmissions = React.useCallback(() => {
-    setLoading(true)
-    submissionsApi
+  const loadSubmissions = React.useCallback(async (background = false) => {
+    if (!background) setLoading(true)
+    return submissionsApi
       .getSubmissions()
       .then((data: any) => {
         setSubmissions(Array.isArray(data) ? data : [])
       })
       .catch((err: any) => {
+        if (background) throw err
         console.error('Failed to load my submissions:', err)
         setSubmissions([])
       })
@@ -55,15 +58,25 @@ export default function StudentResultsPage() {
     loadSubmissions()
   }, [loadSubmissions])
 
+  // Helper for case-insensitive status checks
+  const checkIsGraded = React.useCallback((s: any) => {
+    const gs = String(s.gradingStatus || s.status || '').toUpperCase()
+    return gs === 'GRADED' || gs === 'COMPLETED' || gs === 'SUCCESS' || s.score != null || s.finalScore != null || s.totalScore != null
+  }, [])
+
+  const checkIsPublished = React.useCallback((s: any) => {
+    return Boolean(s.isPublished) || String(s.reviewStatus || '').toUpperCase() === 'PUBLISHED'
+  }, [])
+
   // Filters
   const gradedAndPublished = submissions.filter(
-    s => (s.gradingStatus === 'Graded' || s.status === 'graded' || s.status === 'COMPLETED') && s.isPublished
+    s => checkIsGraded(s) && checkIsPublished(s)
   )
   const pendingPublish = submissions.filter(
-    s => (s.gradingStatus === 'Graded' || s.status === 'graded' || s.status === 'COMPLETED') && !s.isPublished
+    s => checkIsGraded(s) && !checkIsPublished(s)
   )
   const gradingCount = submissions.filter(
-    s => !(s.gradingStatus === 'Graded' || s.status === 'graded' || s.status === 'COMPLETED')
+    s => !checkIsGraded(s)
   ).length
 
   // Average Score
@@ -76,8 +89,8 @@ export default function StudentResultsPage() {
 
   const filteredSubmissions = React.useMemo(() => {
     return submissions.filter((sub) => {
-      const isGraded = sub.gradingStatus === 'Graded' || sub.status === 'graded' || sub.status === 'COMPLETED'
-      const isPublished = Boolean(sub.isPublished)
+      const isGraded = checkIsGraded(sub)
+      const isPublished = checkIsPublished(sub)
 
       if (filterTab === 'published' && (!isGraded || !isPublished)) return false
       if (filterTab === 'pending_publish' && (!isGraded || isPublished)) return false
@@ -96,7 +109,7 @@ export default function StudentResultsPage() {
 
       return true
     })
-  }, [submissions, filterTab, searchQuery])
+  }, [submissions, filterTab, searchQuery, checkIsGraded, checkIsPublished])
 
   return (
     <DashboardLayout
@@ -267,14 +280,7 @@ export default function StudentResultsPage() {
               />
             </div>
 
-            <button
-              type="button"
-              onClick={loadSubmissions}
-              className="border border-orange-200/80 dark:border-orange-900/40 bg-gradient-to-br from-orange-50/60 via-white to-amber-50/30 dark:from-slate-900 dark:to-slate-800 text-slate-700 dark:text-slate-200 hover:border-orange-300 rounded-xl h-10 px-3 text-xs font-semibold shadow-xs flex items-center gap-1 cursor-pointer"
-              title={isVi ? 'Tải lại' : 'Refresh'}
-            >
-              <RefreshCw className={`w-3.5 h-3.5 text-orange-500 ${loading ? 'animate-spin' : ''}`} />
-            </button>
+            <RefreshAction onRefresh={() => loadSubmissions(true)} disabled={loading} iconOnly cachePaths={["/submissions"]} />
           </div>
         </div>
 
@@ -313,8 +319,8 @@ export default function StudentResultsPage() {
                   </tr>
                 ) : (
                   filteredSubmissions.map((sub: any, idx: number) => {
-                    const isGraded = sub.gradingStatus === 'Graded' || sub.status === 'graded' || sub.status === 'COMPLETED'
-                    const isPublished = Boolean(sub.isPublished)
+                    const isGraded = checkIsGraded(sub)
+                    const isPublished = checkIsPublished(sub)
                     const assignmentId = sub.assignmentId || sub.examId || sub.ExamId
 
                     return (

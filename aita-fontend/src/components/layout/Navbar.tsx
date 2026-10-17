@@ -81,8 +81,8 @@ export function Navbar({ title, subtitle, onMenu, onCollapse, collapsed }: Navba
   const majorInfo = getMajorInfo(role, displayId, isVi)
 
   return (
-    <header className="min-h-16 gap-3 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/70 backdrop-blur-xl px-3 md:px-6 flex items-center justify-between sticky top-0 z-20 transition-colors">
-      <div className="flex items-center gap-3 min-w-0">
+    <header className="min-h-16 gap-3 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/70 backdrop-blur-xl px-3 py-2 sm:py-0 md:px-6 flex flex-wrap sm:flex-nowrap items-center justify-between sticky top-0 z-20 transition-colors">
+      <div className="flex flex-1 items-center gap-3 min-w-0">
         <button type="button" aria-label={t('ui.open_menu', 'Mở menu điều hướng')} onClick={onMenu} className="p-2 lg:hidden">
           <Menu size={20} />
         </button>
@@ -124,12 +124,14 @@ export function Navbar({ title, subtitle, onMenu, onCollapse, collapsed }: Navba
         </Link>
       </div>
 
-      <div className="flex items-center gap-2.5">
+      <div className="contents sm:flex sm:items-center sm:gap-2.5">
+        <div className="order-last flex w-full items-center gap-2 sm:contents">
         {/* Campus Display */}
         <CampusSelector />
 
         {/* Language Switcher */}
         <LanguageDropdown />
+        </div>
 
         {/* Notification Bell with Real-time WebSocket Counter */}
         <Link
@@ -155,7 +157,7 @@ export function Navbar({ title, subtitle, onMenu, onCollapse, collapsed }: Navba
           {/* Subtle live WebSocket connection dot */}
           {isConnected && (
             <span
-              title="Real-time WebSocket connected"
+              title={isVi ? 'Thông báo đang cập nhật trực tiếp' : 'Notifications are updating live'}
               className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 ring-1 ring-white dark:ring-slate-900"
             />
           )}

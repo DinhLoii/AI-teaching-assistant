@@ -1,6 +1,9 @@
+import { invalidateAnalytics } from '../../../../../shared/infrastructure/analytics-realtime.js'
 import { prisma } from '../../../../../database/prisma.js';
 import { Prisma } from '@prisma/client';
 import { calculateLatePenalty } from '../../../../submissions/domain/utils/late-penalty-calculator.js';
+import { failedGradingUpdate } from './grading-failure.js';
+import { gradingLeaseScope } from '../../application/queue/grading-lease.js';
 
 export interface GradedSubmission {
     id: string;
@@ -88,6 +91,11 @@ export class SubmissionHistoryRepository {
     }
 
     async saveAsync(submission: GradedSubmission): Promise<void> {
+        if (submission.report?.error) {
+            const existing = await prisma.submission.findUnique({ where: { Id: submission.id } });
+            if (existing) await prisma.submission.updateMany({ where: { Id: submission.id, ...gradingLeaseScope() }, data: failedGradingUpdate(existing, String(submission.report.error), submission.report) });
+            return;
+        }
         let validExamId = isValidUUID(submission.assignmentId) ? submission.assignmentId : undefined;
         let validStudentId = isValidUUID(submission.studentId) ? submission.studentId : undefined;
 
@@ -189,8 +197,8 @@ export class SubmissionHistoryRepository {
         const reportJson = JSON.stringify(enrichedReport);
 
         if (existing) {
-            await prisma.submission.update({
-                where: { Id: submission.id },
+            const saved = await prisma.submission.updateMany({
+                where: { Id: submission.id, ...gradingLeaseScope() },
                 data: {
                     GradingStatus: 'GRADED',
                     RawScore: penaltyCalc.rawScore,
@@ -203,6 +211,7 @@ export class SubmissionHistoryRepository {
                     StudentId: validStudentId,
                 },
             });
+            if (!saved.count) throw new Error('Grading lease expired or was cancelled; report was not saved.');
         } else {
             // Batch grading creates UUIDs in memory that may not exist in DB yet
             const randomAttempt = Math.floor(Math.random() * 2147483647); // Bypass SQL Server NULL unique constraint
@@ -223,11 +232,13 @@ export class SubmissionHistoryRepository {
                 },
             });
         }
+        invalidateAnalytics();
     }
 
     async deleteAsync(id: string): Promise<boolean> {
         try {
             await prisma.submission.delete({ where: { Id: id } });
+            invalidateAnalytics();
             return true;
         } catch {
             return false;
@@ -258,5 +269,3 @@ export class SubmissionHistoryRepository {
         };
     }
 }
-
-

@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 import { prisma } from './prisma.js'
 import { syncClassSemesters } from './sync-class-semesters.js'
+import { canSeedDemoAccounts } from './dev-seed-policy.js'
 
 /**
  * Dev-only bootstrap: upsert the three demo accounts on server start so a fresh
@@ -18,6 +19,7 @@ const ACCOUNTS = [
 ] as const
 
 export async function seedTestAccounts(): Promise<void> {
+  if (!canSeedDemoAccounts(process.env)) throw new Error('Demo seed requires explicit opt-in and a local development PostgreSQL database.')
   try {
     // Proactively connect to test the connection and prevent verbose Prisma query stack traces on failure.
     await prisma.$connect()

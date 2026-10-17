@@ -1,5 +1,7 @@
 'use client'
 
+import { RefreshAction } from '@/components/actions/RefreshAction'
+
 import * as React from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -9,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { EvaluationReportViewer } from '@/features/submissions/components/EvaluationReportViewer'
+import { LiveGradingRunnerModal } from '@/features/grading/components/LiveGradingRunnerModal'
 import { assignmentsApi } from '@/lib/api/modules/assignments'
 import { submissionsApi } from '@/lib/api/modules/submissions'
 import { classesApi } from '@/lib/api/modules/classes'
@@ -26,20 +29,20 @@ import {
   Edit,
   Award,
   Search,
-  RefreshCw,
   Sparkles,
   RotateCcw,
+  ExternalLink,
+  Calendar,
   Eye,
   Check,
   X,
   FileSearch,
   UploadCloud,
-  Calendar,
   AlertCircle,
   ShieldAlert,
   HelpCircle,
   FileArchive,
-  ExternalLink,
+  Terminal,
 } from 'lucide-react'
 import { useLanguage } from '@/providers/language-provider'
 
@@ -61,6 +64,7 @@ export default function LecturerSubmissionsPage() {
   // Selection for bulk actions
   const [selectedIds, setSelectedIds] = React.useState<string[]>([])
   const [regradingBatch, setRegradingBatch] = React.useState(false)
+  const [regradingSub, setRegradingSub] = React.useState<any | null>(null)
 
   // Batch Upload State
   const fileInputRef = React.useRef<HTMLInputElement | null>(null)
@@ -117,12 +121,12 @@ export default function LecturerSubmissionsPage() {
   })
   const [savingReopen, setSavingReopen] = React.useState(false)
 
-  const loadData = React.useCallback(async () => {
+  const loadData = React.useCallback(async (background = false) => {
     try {
-      setLoading(true)
+      if (!background) setLoading(true)
       const [assign, subs] = await Promise.all([
-        assignmentsApi.getAssignment(assignmentId).catch(() => null),
-        submissionsApi.getSubmissions({ assignmentId }).catch(() => []),
+        assignmentsApi.getAssignment(assignmentId).catch((err) => { if (background) throw err; return null }),
+        submissionsApi.getSubmissions({ assignmentId }).catch((err) => { if (background) throw err; return [] }),
       ])
       setAssignment(assign)
       setSubmissions(subs || [])
@@ -133,11 +137,13 @@ export default function LecturerSubmissionsPage() {
         try {
           const students = await classesApi.getClassStudents(classId)
           setRoster(students || [])
-        } catch {
+        } catch (err) {
+          if (background) throw err
           setRoster([])
         }
       }
     } catch (err) {
+      if (background) throw err
       console.error('Failed to load submissions:', err)
     } finally {
       setLoading(false)
@@ -493,14 +499,7 @@ export default function LecturerSubmissionsPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            type="button"
-            onClick={loadData}
-            className="border border-orange-200/80 dark:border-orange-900/40 bg-gradient-to-br from-orange-50/60 via-white to-amber-50/30 dark:from-slate-900 dark:to-slate-800 text-slate-700 dark:text-slate-200 hover:border-orange-300 rounded-2xl h-10 px-4 font-semibold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
-          >
-            <RefreshCw className="w-3.5 h-3.5 text-orange-500" />
-            <span>{t('ui.refresh', 'Làm mới')}</span>
-          </button>
+          <RefreshAction onRefresh={() => loadData(true)} disabled={loading} cachePaths={["/submissions","/assignments","/exams","/classes"]} />
 
           <Link href={`/lecturer/grading/assignments/${assignmentId}/submit`}>
             <button
@@ -739,6 +738,23 @@ export default function LecturerSubmissionsPage() {
                                 <span>Chi tiết</span>
                               </Button>
                             </Link>
+
+                            {/* Xem chi tiết phiên Docker Sandbox & AI (>_ logs) */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setRegradingSub(sub)
+                                gradingApi.gradeExistingSubmission(sub.id).catch((err: any) => {
+                                  console.warn('Backend grade trigger:', err)
+                                })
+                              }}
+                              className="text-xs py-1 px-2.5 gap-1 font-mono text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800/60 bg-amber-50/60 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                              title="Xem chi tiết phiên chấm Docker Sandbox & AI Rubric (>_ logs)"
+                            >
+                              <Terminal className="w-3 h-3 text-orange-500" />
+                              <span>&gt;_ Logs Sandbox & AI</span>
+                            </Button>
 
                             {/* Edit score */}
                             <Button
@@ -1018,6 +1034,26 @@ export default function LecturerSubmissionsPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Live Grading Runner Modal for Lecturer single regrade */}
+      {regradingSub && (
+        <LiveGradingRunnerModal
+          isOpen={Boolean(regradingSub)}
+          onClose={() => {
+            setRegradingSub(null)
+            loadData()
+          }}
+          submissionId={regradingSub.id}
+          assignmentTitle={assignment?.title || 'Bài tập'}
+          subjectCode={assignment?.subjectCode || assignment?.SubjectCode || 'CNTT'}
+          role="lecturer"
+          studentName={regradingSub.studentName || regradingSub.user?.name || regradingSub.studentCode}
+          studentCode={regradingSub.studentCode || regradingSub.studentId}
+          onFinished={() => {
+            loadData()
+          }}
+        />
+      )}
     </div>
   )
 }

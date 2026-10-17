@@ -57,6 +57,7 @@ export class ExamMapper {
           lecturer: user?.FullName ?? null,
           lecturerAvatar: user?.Avatar ?? null,
           studentIds: (ec.Class?.StudentClass ?? []).map((sc: any) => sc.UserId),
+          instructorIds: (ec.Class?.InstructorClass ?? []).map((ic: any) => ic.UserId || ic.User?.Id),
         };
       });
 

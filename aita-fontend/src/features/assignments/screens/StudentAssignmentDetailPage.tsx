@@ -10,10 +10,15 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { EvaluationReportViewer } from '@/features/submissions/components/EvaluationReportViewer'
-import { VsCodeExplorerViewer } from '@/features/submissions/components/VsCodeExplorerViewer'
+import { StudentSubmissionModal } from '@/features/assignments/components/StudentSubmissionModal'
+import { AssignmentDocument } from '../components/AssignmentDocument'
+import { assignmentDocumentContent } from '../document-content'
 import { assignmentsApi } from '@/lib/api/modules/assignments'
 import { submissionsApi } from '@/lib/api/modules/submissions'
+import { gradingApi } from '@/lib/api/modules/grading'
 import { studentPortalApi } from '@/lib/api/modules/student-portal'
+import { normalizeSubmissionRow } from '@/lib/api/normalizers/submission'
+import { clearClientApiCache } from '@/lib/api/client'
 import { formatDate } from '@/lib/utils'
 import {
   UploadCloud,
@@ -43,6 +48,8 @@ import {
   User,
   Code2,
   Folder,
+  Terminal,
+  X,
 } from 'lucide-react'
 import { useLanguage } from '@/providers/language-provider'
 import { ApiError } from '@/lib/api/client'
@@ -112,6 +119,20 @@ export default function StudentAssignmentDetailPage() {
   const [isGradingWait, setIsGradingWait] = React.useState(false)
   const [gradingSeconds, setGradingSeconds] = React.useState(0)
   const [showUploadForm, setShowUploadForm] = React.useState(false)
+  const [studentSubmissionModal, setStudentSubmissionModal] = React.useState<{
+    open: boolean
+    mode: 'processing' | 'receipt' | 'uploading'
+    subId: string
+    file?: File | null
+    noteContent?: string
+    fileName: string
+    fileSize?: number
+    attemptNumber?: number
+    submittedAt?: string | Date
+  } | null>(null)
+  const [isDownloadingSubmitted, setIsDownloadingSubmitted] = React.useState(false)
+  const [downloadingAttachment, setDownloadingAttachment] = React.useState<string | null>(null)
+  const [documentDownloadError, setDocumentDownloadError] = React.useState('')
   const pollingRef = React.useRef<NodeJS.Timeout | null>(null)
 
   // Active view tab: 'spec' (Đề bài & Folder) | 'report' (Báo cáo AI)
@@ -172,8 +193,9 @@ export default function StudentAssignmentDetailPage() {
       const mergedAssignment = {
         id: assignmentId,
         title: extractText(grading?.metadata?.title, extractText(summary?.title, 'Assignment')),
-        description: extractText(grading?.metadata?.description, extractText(summary?.description, '')),
-        content: extractText(grading?.metadata?.content, extractText(summary?.content, '')),
+        description: assignmentDocumentContent(summary, grading),
+        content: assignmentDocumentContent(summary, grading),
+        documentAnalysis: summary?.documentAnalysis || null,
         subjectCode: extractText(grading?.metadata?.subject, extractText(summary?.subjectCode, extractText(summary?.subjectName?.split(' - ')[0], ''))),
         type: extractText(grading?.metadata?.assignmentType, extractText(grading?.metadata?.category, extractText(summary?.type, 'Workshop'))),
         due: summary?.due || summary?.dueDate || summary?.dueAt || grading?.metadata?.dueDate || grading?.stats?.dueDate,
@@ -194,7 +216,11 @@ export default function StudentAssignmentDetailPage() {
         setSubmission([...history].sort((a, b) => new Date(b.submittedAt ?? 0).getTime() - new Date(a.submittedAt ?? 0).getTime())[0])
       }
     } catch (err: any) {
-      console.error('Failed to load assignment:', err)
+      if (err?.status !== 401 && err?.message !== 'Unauthorized' && err?.code !== 'SESSION_EXPIRED' && !err?.message?.includes('hết hạn')) {
+        console.error('Failed to load assignment:', err)
+      } else {
+        console.warn('Session expired or unauthorized when loading assignment.')
+      }
       setErrorMsg(err?.message || t('student.assignment.load_error', 'Không thể tải thông tin bài tập'))
     } finally {
       setLoading(false)
@@ -408,8 +434,8 @@ export default function StudentAssignmentDetailPage() {
     }
   }, [submission, isSubmissionGraded, isGradingWait, startGradingPolling])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
     if (!selectedFile) {
       setErrorMsg(t('student.assignment.select_zip_warning', 'Vui lòng chọn file .zip bài làm trước khi nộp.'))
       return
@@ -420,27 +446,39 @@ export default function StudentAssignmentDetailPage() {
       return
     }
 
-    setUploading(true)
+    const fileToUpload = selectedFile
+    const note = noteContent
+
+    // Preserve the selected file and note until the server confirms acceptance.
     setErrorMsg(null)
     setSuccessMsg(null)
+    setShowUploadForm(false)
 
+    // Open StudentSubmissionModal IMMEDIATELY at 0ms with live production upload telemetry & verification pipeline!
+    setStudentSubmissionModal({
+      open: true,
+      mode: 'uploading',
+      subId: '',
+      file: fileToUpload,
+      noteContent: note,
+      fileName: fileToUpload.name,
+      fileSize: fileToUpload.size,
+      attemptNumber: (submission?.attemptNumber || 0) + 1,
+      submittedAt: new Date(),
+    })
+  }
+
+  // Download submitted archive for student
+  const handleDownloadSubmittedFile = async () => {
+    const subId = submission?.id || (submission as any)?.submissionId || (submission as any)?.Id
+    if (!subId) return
+    setIsDownloadingSubmitted(true)
     try {
-      const res = await submissionsApi.submitAssignment(selectedFile, noteContent, assignmentId)
-      setSelectedFile(null)
-      setNoteContent('')
-      setUploading(false)
-      setShowUploadForm(false)
-
-      // Start automatic polling for instant AI evaluation
-      const subId = (res as any)?.submissionId || (res as any)?.id || (res as any)?.Id || (res as any)?.data?.id || (res as any)?.data?.submissionId
-      if (subId && subId !== 'undefined' && subId !== 'null') {
-        startGradingPolling(subId)
-      } else {
-        loadData()
-      }
+      await gradingApi.downloadSubmission(subId, submission.filename?.replace(/\.zip$/i, '') || 'submission')
     } catch (err: any) {
-      setErrorMsg(err?.message || t('student.assignment.submit_error', 'Lỗi khi nộp bài. Vui lòng thử lại.'))
-      setUploading(false)
+      alert(err?.message || (isVi ? 'Không thể tải tệp bài làm về lúc này.' : 'Failed to download file.'))
+    } finally {
+      setIsDownloadingSubmitted(false)
     }
   }
 
@@ -482,10 +520,20 @@ export default function StudentAssignmentDetailPage() {
     }
   }
 
-  const isHtmlContent = (text?: string) => {
-    if (!text) return false
-    return /<\/?[a-z][\s\S]*>/i.test(text)
-  }
+  const handleUploadSuccess = React.useCallback((res: any) => {
+    setSelectedFile(null)
+    setNoteContent('')
+    clearClientApiCache('/submissions')
+    const normalized = normalizeSubmissionRow(res)
+    setSubmission(normalized)
+  }, [])
+
+  const handleModalComplete = React.useCallback(() => {
+    setStudentSubmissionModal(null)
+    clearClientApiCache('/submissions')
+    void loadData()
+    setSuccessMsg(t('student.assignment.graded_success', 'Bài làm đã được hệ thống tiếp nhận an toàn và chuyển tới Giảng viên để duyệt và công bố điểm chính thức.'))
+  }, [loadData, t])
 
   if (loading) {
     return (
@@ -514,48 +562,19 @@ export default function StudentAssignmentDetailPage() {
     : (typeof (assignment?.description as any)?.description === 'string' ? (assignment.description as any).description : '')
   const rubricRules = assignment?.rubricRules || []
 
-  // Download Assignment Brief / Specs
-  const handleDownloadBrief = () => {
-    // 1. If lecturer uploaded attachment files, download the primary attachment
-    if (assignment?.attachments && assignment.attachments.length > 0) {
-      const firstAtt = assignment.attachments[0]
-      if (firstAtt.fileUrl) {
-        window.open(firstAtt.fileUrl, '_blank')
-        return
-      }
-    }
-
-    // 2. Generate and download a structured Markdown brief of assignment & rubric
-    const briefContent = `# ${assignment?.title || 'Assignment'}\n\n` +
-      `Môn học: ${assignment?.subjectCode || ''}\n` +
-      `Loại bài tập: ${assignment?.type || ''}\n` +
-      `Hạn chót: ${assignment?.due ? formatDate(assignment.due) : 'N/A'}\n` +
-      `Giảng viên: ${assignment?.lecturer || 'N/A'}\n\n` +
-      `========================================\n` +
-      `YÊU CẦU ĐỀ BÀI\n` +
-      `========================================\n\n` +
-      `${detailedContent || 'Vui lòng hoàn thành theo hướng dẫn của giảng viên.'}\n\n` +
-      (rubricRules && rubricRules.length > 0
-        ? `========================================\n` +
-          `TIÊU CHÍ CHẤM ĐIỂM (BAREM RUBRIC)\n` +
-          `========================================\n\n` +
-          rubricRules.map((r: any, idx: number) => {
-            const score = Number(r.weight ?? r.maxPoints ?? 0).toFixed(1)
-            const title = r.title || r.name || r.description || `Tiêu chí ${idx + 1}`
-            const desc = r.description && r.description !== title ? `\n   ${r.description}` : ''
-            return `${idx + 1}. ${title} (${score} điểm)${desc}`
-          }).join('\n')
-        : '')
-
-    const blob = new Blob([briefContent], { type: 'text/markdown;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    const safeTitle = (assignment?.title || 'De_bai').replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1E00-\u1EFF]/g, '_')
-    a.download = `${safeTitle}_DeBai.md`
-    a.click()
-    URL.revokeObjectURL(url)
+  const handleDownloadDocument = async (attachment: any) => {
+    if (!attachment?.id || downloadingAttachment) return
+    setDownloadingAttachment(attachment.id); setDocumentDownloadError('')
+    try {
+      const blob = await assignmentsApi.getDocumentFile(attachment.id)
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a'); link.href = url
+      link.download = attachment.fileName || 'De_bai'; document.body.appendChild(link); link.click(); link.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch (error) { setDocumentDownloadError(error instanceof Error ? error.message : 'Không tải được tệp gốc. Vui lòng thử lại.') }
+    finally { setDownloadingAttachment(null) }
   }
+  const handleDownloadBrief = () => { void handleDownloadDocument(assignment?.attachments?.[0]) }
 
   if (!assignment) {
     return (
@@ -732,10 +751,12 @@ export default function StudentAssignmentDetailPage() {
                   <button
                     type="button"
                     onClick={handleDownloadBrief}
+                    disabled={!assignment.attachments?.[0]?.id || downloadingAttachment !== null}
+                    title={!assignment.attachments?.length ? 'Giảng viên chưa lưu tệp đề bài gốc cho bài tập này.' : assignment.attachments[0].fileName}
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl transition-all cursor-pointer shadow-2xs"
                   >
-                    <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                    <span>{isVi ? 'Tải đề bài về' : 'Download Brief'}</span>
+                    {downloadingAttachment ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
+                    <span>{downloadingAttachment ? 'Đang tải đề...' : !assignment.attachments?.length ? 'Chưa có tệp đề gốc' : (isVi ? 'Tải đề bài gốc' : 'Download original')}</span>
                   </button>
 
                   {deadlineStatus !== 'EXPIRED' && (
@@ -849,44 +870,88 @@ export default function StudentAssignmentDetailPage() {
               </div>
 
               {submission ? (
-                <div className="p-4 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <RealisticFolderIcon className="w-9 h-9 shrink-0 drop-shadow-xs" />
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-sm text-slate-900 dark:text-white font-mono">
-                          {submission.filename ? submission.filename.replace(/\.zip$/i, '') : 'source'}
-                        </span>
-                        <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                          {submission.filename || 'source.zip'}
-                        </span>
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <RealisticFolderIcon className="w-10 h-10 shrink-0 drop-shadow-xs" />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-sm text-slate-900 dark:text-white font-mono">
+                            {submission.filename ? submission.filename.replace(/\.zip$/i, '') : 'source'}
+                          </span>
+                          <span className="text-[11px] font-mono px-2.5 py-0.5 rounded bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300/50 dark:border-slate-700">
+                            {submission.filename || 'source.zip'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-slate-700 dark:text-slate-300">{isVi ? 'Lần nộp' : 'Attempt'} #{submission.attemptNumber || 1}</span>
+                          <span>•</span>
+                          <span>
+                            {isGradingWait ? (
+                              <span className="text-blue-600 dark:text-blue-400 font-medium inline-flex items-center gap-1">
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                {isVi ? 'Đang chấm AI...' : 'AI Grading...'}
+                              </span>
+                            ) : isPublished ? (
+                              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                                {isVi ? `Đã hoàn tất đánh giá (${Number(submission.score ?? submission.finalScore ?? 0).toFixed(1)}/10)` : `Graded (${submission.score}/10)`}
+                              </span>
+                            ) : (
+                              <span className="text-slate-700 dark:text-slate-300 inline-flex items-center gap-1 font-medium">
+                                <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+                                <span>{isVi ? 'Đã tiếp nhận bài nộp • Chờ giảng viên duyệt' : 'Submitted successfully • Pending Review'}</span>
+                              </span>
+                            )}
+                          </span>
+                        </p>
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
-                        <span>{isVi ? 'Lần nộp' : 'Attempt'} #{submission.attemptNumber || 1}</span>
-                        <span>•</span>
-                        <span>
-                          {isGradingWait ? (
-                            <span className="text-blue-600 dark:text-blue-400 font-medium inline-flex items-center gap-1">
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                              {isVi ? 'Đang chấm AI...' : 'AI Grading...'}
-                            </span>
-                          ) : isPublished ? (
-                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                              {isVi ? `Đã hoàn tất đánh giá (${Number(submission.score ?? submission.finalScore ?? 0).toFixed(1)}/10)` : `Graded (${submission.score}/10)`}
-                            </span>
-                          ) : (
-                            <span className="text-slate-600 dark:text-slate-300 inline-flex items-center gap-1">
-                              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
-                              <span>{isVi ? 'Đã tiếp nhận bài nộp' : 'Submitted successfully'}</span>
-                            </span>
-                          )}
-                        </span>
-                      </p>
                     </div>
-                  </div>
 
-                  <div className="text-xs text-slate-400 font-mono sm:text-right shrink-0">
-                    {formatDate(submission.submittedAt)}
+                    <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+                      {/* Tải tệp đã nộp về máy */}
+                      <button
+                        type="button"
+                        onClick={handleDownloadSubmittedFile}
+                        disabled={isDownloadingSubmitted}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-xs transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
+                        title={isVi ? 'Tải tệp bài làm đã nộp về máy' : 'Download submitted file'}
+                      >
+                        {isDownloadingSubmitted ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
+                        ) : (
+                          <Download className="w-3.5 h-3.5 text-blue-500" />
+                        )}
+                        <span>{isVi ? 'Tải bài nộp về' : 'Download'}</span>
+                      </button>
+
+                      {/* Biên nhận tiếp nhận bài nộp */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const id = submission.id || (submission as any).submissionId || (submission as any).Id
+                          if (id) {
+                            setStudentSubmissionModal({
+                              open: true,
+                              mode: 'receipt',
+                              subId: id,
+                              fileName: submission.filename || `${id}.zip`,
+                              fileSize: undefined,
+                              attemptNumber: submission.attemptNumber || 1,
+                              submittedAt: submission.submittedAt,
+                            })
+                          }
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-xs transition-colors cursor-pointer border border-emerald-200 dark:border-emerald-800"
+                        title={isVi ? 'Xem biên nhận xác thực tiếp nhận bài nộp' : 'View Submission Receipt'}
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>{isVi ? 'Biên nhận tiếp nhận' : 'Receipt'}</span>
+                      </button>
+
+                      <div className="text-xs text-slate-400 font-mono">
+                        {formatDate(submission.submittedAt)}
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -964,6 +1029,105 @@ export default function StudentAssignmentDetailPage() {
                     </div>
                   )}
                 </div>
+              )}
+            </div>
+
+            {/* PHẦN 3: MÔ TẢ ĐỀ BÀI & YÊU CẦU KỸ THUẬT */}
+            <div className="p-5 md:p-6 space-y-4">
+              {documentDownloadError && <p role="alert" className="rounded-xl bg-red-50 dark:bg-red-950/30 p-3 text-xs text-red-700 dark:text-red-300">{documentDownloadError}</p>}
+              <AssignmentDocument content={detailedContent} analysis={assignment.documentAnalysis} attachments={assignment.attachments || []} onDownload={file => void handleDownloadDocument(file)} downloadingId={downloadingAttachment} />
+
+              {/* Attachments */}
+              {assignment?.sqlSetupScript && (
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                  <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Download className="w-3.5 h-3.5 text-orange-500" />
+                    <span>{isVi ? 'Tài liệu & Tệp đính kèm' : 'Attachments & Resources'}</span>
+                  </h4>
+                  <div className="flex flex-wrap gap-2.5">
+                    {assignment.sqlSetupScript && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const blob = new Blob([assignment.sqlSetupScript], { type: 'text/plain;charset=utf-8' })
+                          const url = URL.createObjectURL(blob)
+                          const a = document.createElement('a')
+                          a.href = url
+                          a.download = `${assignment.title.replace(/[^a-zA-Z0-9]/g, '_')}_Setup.sql`
+                          a.click()
+                          URL.revokeObjectURL(url)
+                        }}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-50 hover:bg-orange-100 dark:bg-orange-500/10 dark:hover:bg-orange-500/20 text-xs font-medium text-orange-700 dark:text-orange-300 transition-colors border border-orange-200 dark:border-orange-500/30"
+                      >
+                        <Database className="w-3.5 h-3.5 text-orange-500" />
+                        <span>{isVi ? 'Tải SQL Setup Script (.sql)' : 'Download SQL Setup'}</span>
+                        <Download className="w-3 h-3 opacity-60 ml-1" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* PHẦN 4: TIÊU CHÍ CHẤM ĐIỂM (BAREM RUBRIC) */}
+            <div className="p-5 md:p-6 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-orange-500 shrink-0" />
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                    {isVi ? 'Tiêu chí chấm điểm (Barem Rubric AI)' : 'Grading Rubric & AI Criteria'}
+                  </h3>
+                </div>
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  {isVi ? 'Thang điểm tối đa' : 'Max points'}: <strong className="text-orange-600 dark:text-orange-400 font-bold">10.0 {isVi ? 'điểm' : 'pts'}</strong>
+                </span>
+              </div>
+
+              {rubricRules && rubricRules.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {rubricRules.map((rule: any, idx: number) => {
+                    const maxScore = Number(rule.weight ?? rule.maxPoints ?? 0).toFixed(1)
+                    return (
+                      <div
+                        key={rule.id || idx}
+                        className="p-3.5 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold text-xs text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                            <span className="w-4 h-4 rounded-full bg-orange-500/15 text-orange-600 dark:text-orange-400 text-[10px] flex items-center justify-center font-mono font-bold">
+                              {idx + 1}
+                            </span>
+                            <span>{rule.title || rule.name || `Tiêu chí ${idx + 1}`}</span>
+                          </span>
+                          <span className="px-2 py-0.5 rounded text-[11px] font-bold font-mono bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300 border border-orange-200/60 dark:border-orange-800/60 shrink-0">
+                            {maxScore} {isVi ? 'điểm' : 'pts'}
+                          </span>
+                        </div>
+                        {rule.description && (
+                          <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed pl-5.5">
+                            {rule.description}
+                          </p>
+                        )}
+                        {rule.passCondition && (
+                          <p className="text-[11px] text-emerald-600 dark:text-emerald-400 pl-5.5 flex items-start gap-1">
+                            <Check className="w-3 h-3 shrink-0 mt-0.5" />
+                            <span><strong>{isVi ? 'Đạt' : 'Pass'}:</strong> {rule.passCondition}</span>
+                          </p>
+                        )}
+                        {rule.failCondition && (
+                          <p className="text-[11px] text-rose-500 dark:text-rose-400 pl-5.5 flex items-start gap-1">
+                            <X className="w-3 h-3 shrink-0 mt-0.5" />
+                            <span><strong>{isVi ? 'Trừ điểm' : 'Penalty'}:</strong> {rule.failCondition}</span>
+                          </p>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 italic">
+                  {isVi ? 'Đang cập nhật barem chấm điểm chi tiết...' : 'Rubric criteria will be updated soon.'}
+                </p>
               )}
             </div>
           </div>
@@ -1047,6 +1211,30 @@ export default function StudentAssignmentDetailPage() {
             </div>
           </form>
         </Modal>
+
+        {/* Professional Student Submission & Verification Modal */}
+        {studentSubmissionModal?.open && (
+          <StudentSubmissionModal
+            isOpen={studentSubmissionModal.open}
+            onClose={() => {
+              if (studentSubmissionModal.mode === 'uploading' && selectedFile) setShowUploadForm(true)
+              setStudentSubmissionModal(null)
+            }}
+            submissionId={studentSubmissionModal.subId}
+            assignmentId={assignmentId}
+            file={studentSubmissionModal.file}
+            noteContent={studentSubmissionModal.noteContent}
+            assignmentTitle={assignment?.title}
+            subjectCode={assignment?.subjectCode || assignment?.SubjectCode}
+            fileName={studentSubmissionModal.fileName}
+            fileSize={studentSubmissionModal.fileSize}
+            attemptNumber={studentSubmissionModal.attemptNumber}
+            initialMode={studentSubmissionModal.mode}
+            submittedAt={studentSubmissionModal.submittedAt}
+            onUploadSuccess={handleUploadSuccess}
+            onComplete={handleModalComplete}
+          />
+        )}
       </div>
     </DashboardLayout>
   )

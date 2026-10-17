@@ -3,17 +3,21 @@ import path from 'path'
 import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
+import { safeUrl } from './shared/infrastructure/redact-secrets.js'
+morgan.token('safe-url', req => safeUrl((req as { originalUrl?: string }).originalUrl || req.url || ''))
+import { protectSubmissionUploads } from './modules/submissions/infrastructure/submission-storage.js'
 import compression from 'compression'
 import { env } from './config/env.js'
 import { routeManager } from './shared/presentation/route-manager.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import { requestLogger } from './middleware/request-logger.js'
 import { ApiResponse } from './shared/presentation/api-response.js'
+import { analyticsMutationEvents } from './shared/infrastructure/analytics-realtime.js'
 
 export function createApp() {
   const app = express()
 
-  app.use(compression())
+  app.use(compression({ filter: (req, res) => String(res.getHeader('Content-Type') || '').includes('text/event-stream') ? false : compression.filter(req, res) }))
   app.use(helmet())
   // Accept both :5173 and :5174 for frontend dev.
   // :8081 = Expo/Metro web (mobile app reviewed in the browser).
@@ -42,7 +46,8 @@ export function createApp() {
   }
   app.use(cors(corsOptions))
   app.use(requestLogger)
-  app.use(morgan(env.NODE_ENV === 'development' ? 'dev' : 'combined'))
+  app.use(analyticsMutationEvents)
+  app.use(morgan(':method :safe-url :status :response-time ms', { immediate: false }))
   app.use(express.json({ limit: '100mb' }))
   app.use(express.urlencoded({ limit: '100mb', extended: true }))
   // Uploaded avatars/attachments are fetched by the web client (:5173) and the Expo web build
@@ -52,6 +57,7 @@ export function createApp() {
   // it silently failed. These are public static files, so opt this path out.
   app.use(
     '/uploads',
+    protectSubmissionUploads,
     (_req, res, next) => {
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
       next()

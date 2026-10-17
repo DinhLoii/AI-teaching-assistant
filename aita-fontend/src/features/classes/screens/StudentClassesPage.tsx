@@ -1,5 +1,7 @@
 'use client'
 
+import { RefreshAction } from '@/components/actions/RefreshAction'
+
 import * as React from 'react'
 import Link from 'next/link'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
@@ -11,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { studentPortalApi } from '@/lib/api/modules/student-portal'
 import { semestersApi } from '@/lib/api/modules/semesters'
+import { clearClientApiCache } from '@/lib/api/client'
 import {
   Users,
   BookOpen,
@@ -28,25 +31,44 @@ export default function StudentClassesPage() {
   const [selectedSemester, setSelectedSemester] = React.useState<string>('all')
   const [searchQuery, setSearchQuery] = React.useState('')
   const [loading, setLoading] = React.useState(true)
+  const [refreshing, setRefreshing] = React.useState(false)
+  const [status, setStatus] = React.useState('')
+  const inFlight = React.useRef(false)
+  const hasLoaded = React.useRef(false)
+  const sequence = React.useRef(0)
   const [error, setError] = React.useState<string | null>(null)
   const { t, language } = useLanguage()
   const isVi = language === 'vi'
 
-  const loadData = React.useCallback(async () => {
-    setLoading(true)
+  const loadData = React.useCallback(async (forceRefresh = false) => {
+    if (inFlight.current) return
+    inFlight.current = true
+    const current = ++sequence.current
+    const isRefresh = hasLoaded.current
+    setLoading(!isRefresh)
+    setRefreshing(isRefresh || forceRefresh)
+    setStatus('')
     setError(null)
     try {
+      if (forceRefresh) {
+        clearClientApiCache('/student-portal/dashboard')
+        clearClientApiCache('/semesters')
+      }
+      const options = forceRefresh ? { cache: 'no-store' as const } : {}
       const [dashData, semsData] = await Promise.allSettled([
-        studentPortalApi.getStudentDashboard(),
-        semestersApi.getSemesters()
+        studentPortalApi.getStudentDashboard(options),
+        semestersApi.getSemesters(options)
       ])
+      if (current !== sequence.current) return
 
       if (dashData.status === 'fulfilled') {
         setClasses(dashData.value?.enrolledClasses || [])
       } else {
+        if (isRefresh) throw dashData.reason
         console.error('Failed to load student dashboard:', dashData.reason)
         try {
           const subjects = await studentPortalApi.getStudentSubjects()
+          if (current !== sequence.current) return
           if (Array.isArray(subjects) && subjects.length > 0) {
             setClasses(subjects.map((s: any) => ({
               id: s.classId || s.id,
@@ -66,8 +88,8 @@ export default function StudentClassesPage() {
           } else {
             setClasses([])
           }
-        } catch {
-          setClasses([])
+        } catch (err) {
+          throw err
         }
       }
 
@@ -75,16 +97,28 @@ export default function StudentClassesPage() {
         const list = Array.isArray(semsData.value) ? semsData.value : []
         setSemesters(list)
       }
+      hasLoaded.current = true
+      if (semsData.status === 'rejected') {
+        setError(isVi ? 'Đã cập nhật lớp học nhưng chưa tải được danh sách học kỳ. Vui lòng thử lại.' : 'Classes updated, but semesters could not be refreshed. Please try again.')
+      } else if (forceRefresh) {
+        setStatus(isVi ? 'Đã cập nhật danh sách lớp học.' : 'Class list updated.')
+      }
     } catch (err: any) {
+      if (current !== sequence.current) return
       console.error('Error loading classes:', err)
       setError(err?.message || (isVi ? 'Không thể tải danh sách lớp học.' : 'Failed to load classes.'))
     } finally {
-      setLoading(false)
+      if (current === sequence.current) {
+        inFlight.current = false
+        setLoading(false)
+        setRefreshing(false)
+      }
     }
   }, [isVi])
 
   React.useEffect(() => {
-    loadData()
+    void loadData()
+    return () => { sequence.current++; inFlight.current = false }
   }, [loadData])
 
   const filteredClasses = React.useMemo(() => {
@@ -128,6 +162,9 @@ export default function StudentClassesPage() {
       headerSubtitle={t('student.classes.subtitle', 'Danh sách các lớp học phần sinh viên đang tham gia')}
     >
       <div className="space-y-6 w-full pb-12">
+        <p role="status" aria-live="polite" className="sr-only">
+          {refreshing ? (isVi ? 'Đang làm mới danh sách lớp học...' : 'Refreshing classes...') : status}
+        </p>
         {/* Executive KPI Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-100/90 dark:border-orange-900/30 shadow-xs hover:shadow-md transition-all group">
@@ -243,26 +280,18 @@ export default function StudentClassesPage() {
               </select>
             </div>
 
-            <button
-              type="button"
-              onClick={loadData}
-              className="border border-orange-200/80 dark:border-orange-900/40 bg-gradient-to-br from-orange-50/60 via-white to-amber-50/30 dark:from-slate-900 dark:to-slate-800 text-slate-700 dark:text-slate-200 hover:border-orange-300 rounded-xl h-9 px-3 text-xs font-semibold shadow-xs flex items-center gap-1 cursor-pointer"
-              title={isVi ? 'Làm mới' : 'Refresh'}
-            >
-              <RefreshCw className={`w-3.5 h-3.5 text-orange-500 ${loading ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{isVi ? 'Làm mới' : 'Refresh'}</span>
-            </button>
+            <RefreshAction onRefresh={() => loadData(true)} disabled={loading} busy={refreshing} cachePaths={[]} />
           </div>
         </div>
 
         {/* Error State */}
         {error && (
-          <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex items-center justify-between gap-3 text-xs">
+          <div role="alert" className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2 text-rose-700 dark:text-rose-300">
               <AlertTriangle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
-            <Button variant="outline" size="sm" onClick={loadData} className="h-7 text-xs px-2.5 rounded-xl">
+            <Button variant="outline" size="sm" onClick={() => { void loadData(true) }} disabled={loading || refreshing} className="h-7 text-xs px-2.5 rounded-xl">
               {isVi ? 'Thử lại' : 'Retry'}
             </Button>
           </div>

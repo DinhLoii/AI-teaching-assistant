@@ -1,242 +1,93 @@
-/**
- * WebSocket client for Real-Time Notification synchronization
- */
+import { BASE, request } from '../api/client'
+import { AUTH_STORAGE_KEYS, getStoredItem } from '../api/storage'
+import type { NotificationItem } from '../notifications/feed'
 
-export interface NotificationPayload {
-  id: string
-  title: string
-  message: string
-  notificationType?: string
-  referenceId?: string | null
-  referenceType?: string | null
-  createdAt?: string
-  isRead?: boolean
-  unreadCount?: number
-}
-
+export type NotificationPayload = NotificationItem
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected'
 
+// Authenticated fetch streaming works through the same API proxy as REST,
+// including HTTPS deployments without exposing a separate WebSocket port.
 export class NotificationSocket {
-  private ws: WebSocket | null = null
-  private token: string | null = null
-  private active = false
-  private reconnectTimer: ReturnType<typeof setTimeout> | null = null
-  private pingTimer: ReturnType<typeof setInterval> | null = null
-  private retryDelay = 1000
-  private status: ConnectionStatus = 'disconnected'
-
-  // Callbacks
-  public onNotification: ((notification: NotificationPayload) => void) | null = null
-  public onUnreadCount: ((count: number) => void) | null = null
-  public onNotificationRead: ((data: { notificationId: string; unreadCount: number }) => void) | null = null
-  public onAllRead: (() => void) | null = null
+  public onEvent: ((event: { type: string; payload?: any }) => void) | null = null
   public onStatusChange: ((status: ConnectionStatus) => void) | null = null
-
-  constructor() {}
-
-  public getStatus(): ConnectionStatus {
-    return this.status
-  }
-
-  public isConnected(): boolean {
-    return this.status === 'connected' && this.ws?.readyState === WebSocket.OPEN
-  }
-
-  private setStatus(status: ConnectionStatus) {
-    if (this.status !== status) {
-      this.status = status
-      this.onStatusChange?.(status)
-    }
-  }
-
-  private resolveUrl(token: string): string {
-    if (typeof window === 'undefined') return ''
-    const configured = process.env.NEXT_PUBLIC_WS_URL
-    if (configured) {
-      const sep = configured.includes('?') ? '&' : '?'
-      return `${configured}${sep}token=${encodeURIComponent(token)}`
-    }
-
-    const isHttps = window.location.protocol === 'https:'
-    const protocol = isHttps ? 'wss:' : 'ws:'
-    const host = window.location.hostname || 'localhost'
-    return `${protocol}//${host}:3001/ws/notifications?token=${encodeURIComponent(token)}`
-  }
-
-  public connect(token: string) {
-    if (!token || typeof window === 'undefined') return
-    this.token = token
+  public onServerTime: ((time: string) => void) | null = null
+  private controller: AbortController | null = null
+  private timer: ReturnType<typeof setTimeout> | null = null
+  private active = false
+  private attempt = 0
+  private generation = 0
+  private status: ConnectionStatus = 'disconnected'
+  getStatus() { return this.status }
+  isConnected() { return this.status === 'connected' }
+  private setStatus(status: ConnectionStatus) { this.status = status; this.onStatusChange?.(status) }
+  connect(_token: string) {
+    this.disconnect()
     this.active = true
-    this.cleanupSocket()
-    this.initSocket()
+    void this.open(++this.generation)
   }
-
-  private initSocket() {
-    if (!this.active || !this.token || typeof WebSocket === 'undefined') return
-
+  private async open(generation: number): Promise<void> {
+    if (!this.active || generation !== this.generation) return
+    const controller = new AbortController()
+    this.controller = controller
+    let watchdog: ReturnType<typeof setTimeout> | undefined
+    const touch = () => { clearTimeout(watchdog); watchdog = setTimeout(() => controller.abort(), 45_000) }
     try {
       this.setStatus('connecting')
-      const url = this.resolveUrl(this.token)
-      this.ws = new WebSocket(url)
-
-      this.ws.onopen = () => {
-        this.setStatus('connected')
-        this.retryDelay = 1000
-        this.startHeartbeat()
+      touch()
+      const response = await fetch(`${BASE}/notifications/stream`, {
+        headers: { Authorization: `Bearer ${getStoredItem(AUTH_STORAGE_KEYS.token) || ''}`, Accept: 'text/event-stream' },
+        cache: 'no-store', signal: controller.signal,
+      })
+      if (response.status === 401) {
+        // Use the common refresh-token queue; the provider will reconnect after session sync.
+        await request('/auth/me', { cache: 'no-store' })
+        throw new Error('Reconnect with refreshed session')
       }
-
-      this.ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          this.handleMessage(data)
-        } catch {
-          // Ignore non-json frames
+      if (!response.ok || !response.body || !response.headers.get('content-type')?.includes('text/event-stream')) throw new Error('Stream unavailable')
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      while (this.active && generation === this.generation) {
+        const { done, value } = await reader.read()
+        if (done) break
+        if (!this.active || generation !== this.generation) return
+        touch()
+        buffer = (buffer + decoder.decode(value, { stream: true })).replace(/\r\n/g, '\n')
+        if (buffer.length > 1024 * 1024) throw new Error('Stream frame too large')
+        let end: number
+        while ((end = buffer.indexOf('\n\n')) >= 0) {
+          const frame = buffer.slice(0, end)
+          buffer = buffer.slice(end + 2)
+          const body = frame.split('\n').filter(line => line.startsWith('data:')).map(line => line.slice(5).trimStart()).join('\n')
+          if (!body) continue
+          try {
+            const event = JSON.parse(body)
+            if (typeof event.type !== 'string') continue
+            if (event.serverTime || event.payload?.serverTime) this.onServerTime?.(event.serverTime || event.payload.serverTime)
+            if (event.type === 'CONNECTED') {
+              this.attempt = 0
+              this.setStatus('connected')
+            }
+            this.onEvent?.(event)
+          } catch { /* Malformed frames must not tear down a healthy connection. */ }
         }
       }
-
-      this.ws.onerror = () => {
-        // Handled in onclose
-      }
-
-      this.ws.onclose = () => {
+    } catch { /* Reconciliation on reconnect recovers missed events. */ }
+    finally {
+      clearTimeout(watchdog)
+      controller.abort()
+      if (this.active && generation === this.generation) {
         this.setStatus('disconnected')
-        this.stopHeartbeat()
-        this.scheduleReconnect()
+        const delay = Math.min(30_000, 1000 * 2 ** Math.min(this.attempt++, 5)) * (0.8 + Math.random() * 0.4)
+        this.timer = setTimeout(() => { void this.open(generation) }, delay)
       }
-    } catch {
-      this.setStatus('disconnected')
-      this.scheduleReconnect()
     }
   }
-
-  private handleMessage(data: any) {
-    const type = String(data?.type || '').toUpperCase()
-
-    switch (type) {
-      case 'CONNECTED':
-        if (typeof data?.payload?.unreadCount === 'number') {
-          this.onUnreadCount?.(data.payload.unreadCount)
-        }
-        break
-
-      case 'NEW_NOTIFICATION':
-        if (data?.payload) {
-          const payload = data.payload as NotificationPayload
-          if (typeof payload.unreadCount === 'number') {
-            this.onUnreadCount?.(payload.unreadCount)
-          }
-          this.onNotification?.(payload)
-        }
-        break
-
-      case 'UNREAD_COUNT':
-        if (typeof data?.payload?.count === 'number') {
-          this.onUnreadCount?.(data.payload.count)
-        }
-        break
-
-      case 'NOTIFICATION_READ':
-        if (data?.payload) {
-          if (typeof data.payload.unreadCount === 'number') {
-            this.onUnreadCount?.(data.payload.unreadCount)
-          }
-          this.onNotificationRead?.(data.payload)
-        }
-        break
-
-      case 'ALL_READ':
-        this.onUnreadCount?.(0)
-        this.onAllRead?.()
-        break
-
-      case 'PONG':
-        // Heartbeat acknowledged
-        break
-
-      default:
-        break
-    }
-  }
-
-  private startHeartbeat() {
-    this.stopHeartbeat()
-    this.pingTimer = setInterval(() => {
-      if (this.isConnected()) {
-        try {
-          this.ws?.send(JSON.stringify({ type: 'PING' }))
-        } catch {}
-      }
-    }, 25_000)
-  }
-
-  private stopHeartbeat() {
-    if (this.pingTimer) {
-      clearInterval(this.pingTimer)
-      this.pingTimer = null
-    }
-  }
-
-  private scheduleReconnect() {
-    if (!this.active) return
-    if (this.reconnectTimer) clearTimeout(this.reconnectTimer)
-
-    this.reconnectTimer = setTimeout(() => {
-      this.retryDelay = Math.min(this.retryDelay * 1.5, 15_000)
-      this.initSocket()
-    }, this.retryDelay)
-  }
-
-  public markAsRead(notificationId: string): boolean {
-    if (!this.isConnected()) return false
-    try {
-      this.ws?.send(JSON.stringify({ type: 'MARK_READ', payload: { notificationId } }))
-      return true
-    } catch {
-      return false
-    }
-  }
-
-  public markAllAsRead(): boolean {
-    if (!this.isConnected()) return false
-    try {
-      this.ws?.send(JSON.stringify({ type: 'MARK_ALL_READ' }))
-      return true
-    } catch {
-      return false
-    }
-  }
-
-  public requestUnreadCount(): boolean {
-    if (!this.isConnected()) return false
-    try {
-      this.ws?.send(JSON.stringify({ type: 'GET_UNREAD_COUNT' }))
-      return true
-    } catch {
-      return false
-    }
-  }
-
-  private cleanupSocket() {
-    this.stopHeartbeat()
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer)
-      this.reconnectTimer = null
-    }
-    if (this.ws) {
-      this.ws.onopen = null
-      this.ws.onmessage = null
-      this.ws.onerror = null
-      this.ws.onclose = null
-      try {
-        this.ws.close()
-      } catch {}
-      this.ws = null
-    }
-  }
-
-  public disconnect() {
+  disconnect() {
     this.active = false
-    this.cleanupSocket()
+    this.generation++
+    if (this.timer) clearTimeout(this.timer)
+    this.controller?.abort()
     this.setStatus('disconnected')
   }
 }

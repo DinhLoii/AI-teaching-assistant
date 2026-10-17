@@ -5,6 +5,7 @@ import { CreateExamRequestDto, ExamResponseDto } from '../dtos/exam.dto.js'
 import { Exam } from '../../domain/entities/exam.entity.js'
 import { ValidationError } from '../../../../shared/application/app.error.js'
 import type { SendAssignmentNotificationUseCase } from '../../../notifications/application/use-cases/send-assignment-notification.use-case.js'
+import { originalAttachmentName } from '../document-access.js'
 
 export class CreateExamUseCase implements IUseCase<{ dto: CreateExamRequestDto; file?: Express.Multer.File; userId?: string }, ExamResponseDto> {
   constructor(
@@ -14,6 +15,14 @@ export class CreateExamUseCase implements IUseCase<{ dto: CreateExamRequestDto; 
 
   async execute(input: { dto: CreateExamRequestDto; file?: Express.Multer.File; userId?: string }): Promise<ExamResponseDto> {
     const { data } = input.dto
+    if (data.status?.toLowerCase() === 'published' && data.aiConfig?.analysisReview) {
+      if (data.aiConfig.analysisReview.acknowledged !== true) throw new ValidationError('Giảng viên cần đối chiếu đề gốc và xác nhận barem trước khi giao bài.')
+      if (!data.runtimeConfig?.language || data.runtimeConfig.language === 'Unknown') throw new ValidationError('Cần xác nhận ngôn ngữ theo đề bài.')
+      const rules = data.rubricCriteria || []
+      const total = rules.reduce((sum: number, rule: any) => sum + Number(rule.maxPoints || 0), 0)
+      if (!rules.length || !Number.isFinite(total) || Math.abs(total - Number(data.maxScore ?? 10)) > .01) throw new ValidationError('Tổng điểm barem phải bằng thang điểm đã chọn trước khi giao bài.')
+      if (rules.some((rule: any) => ['test_runner', 'hybrid'].includes(rule.method) && !data.testCases?.length)) throw new ValidationError('Barem yêu cầu kiểm thử tự động nhưng chưa có testcase thực thi.')
+    }
     const file = input.file
     const examType = data.type === 'quiz' ? 'Quiz' : (data.type || 'Assignment')
 
@@ -254,10 +263,10 @@ export class CreateExamUseCase implements IUseCase<{ dto: CreateExamRequestDto; 
 
     if (file) {
       await this.examRepo.addAttachment(exam.id, {
-        fileName: file.originalname,
+        fileName: originalAttachmentName(file.originalname),
         fileUrl: `/uploads/attachments/${file.filename}`,
         fileType: file.mimetype
-      }).catch(console.warn)
+      })
     }
 
     // System Optimization: Fetch complete created entity, with graceful fallback to exam instance

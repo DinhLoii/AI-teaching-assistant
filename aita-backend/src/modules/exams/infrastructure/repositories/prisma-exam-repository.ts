@@ -124,14 +124,16 @@ export class PrismaExamRepository implements IExamRepository {
     })
   }
 
-  async getAttachment(attachmentId: string): Promise<{ fileUrl: string, fileName: string } | null> {
+  async getAttachment(attachmentId: string): Promise<{ fileUrl: string, fileName: string, examId?: string | null, fileType?: string | null } | null> {
     const attachment = await this.client.examAttachment.findUnique({
       where: { Id: attachmentId }
     })
     if (!attachment) return null;
     return {
       fileUrl: attachment.FileUrl,
-      fileName: attachment.FileName
+      fileName: attachment.FileName,
+      examId: attachment.ExamId,
+      fileType: attachment.FileType,
     }
   }
 }

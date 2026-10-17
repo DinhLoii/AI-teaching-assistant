@@ -113,6 +113,14 @@ export interface StudentRow {
 }
 
 export interface AssignmentRow {
+  documentContent?: string
+  documentAnalysis?: {
+    language?: string | null
+    platform?: string | null
+    reviewStatus: 'teacher_reviewed' | 'unreviewed'
+    requirementGroups?: Record<string, { text: string; sourceQuote?: string }[]> | null
+    acceptanceTests?: { id: string; steps: string; expectedResult: string; level: string }[]
+  }
   id: string
   title: string
   description: string
@@ -155,6 +163,8 @@ export interface AssignmentRow {
 }
 
 export interface SubmissionRow {
+  gradingError?: string | null
+  maxScore?: number | null
   id: string
   assignmentId: string
   examId?: string | null
@@ -188,6 +198,7 @@ export interface SubmissionRow {
   isReopened?: boolean
   reopenReason?: string | null
   extendedDueDate?: string | null
+  attemptNumber?: number
   ruleScores?: any[] | null
 }
 

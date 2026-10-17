@@ -4,16 +4,17 @@ import { AppError } from '../shared/application/app.error.js'
 import { logger } from '../shared/infrastructure/logger.js'
 import { ApiResponse } from '../shared/presentation/api-response.js'
 import { requestContext } from '../shared/infrastructure/logger.js'
+import { safeUrl, safeLogData } from '../shared/infrastructure/redact-secrets.js'
 
 export function errorHandler(err: Error, req: Request, res: Response, _next: NextFunction) {
   const store = requestContext.getStore()
   const requestId = store?.get('requestId') || 'unknown'
   const isDev = process.env.NODE_ENV === 'development'
 
-  logger.error(`Request error: ${req.method} ${req.originalUrl}`, {
+  logger.error(`Request error: ${req.method} ${safeUrl(req.originalUrl)}`, {
     error: err,
-    body: req.body,
-    query: req.query,
+    body: safeLogData(req.body),
+    query: safeLogData(req.query),
     user: (req as any).user?.id,
   })
 
@@ -32,7 +33,7 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
   if (err.name === 'PrismaClientInitializationError' || (err as any).code === 'P1001' || err.message?.includes("Can't reach database server")) {
     const apiResponse = new ApiResponse(
       503,
-      'Không thể kết nối đến cơ sở dữ liệu (SQL Server tại localhost:1433). Vui lòng kiểm tra lại dịch vụ SQL Server.'
+      'Không thể kết nối đến cơ sở dữ liệu. Vui lòng thử lại sau.'
     )
     return res.status(503).json(apiResponse)
   }

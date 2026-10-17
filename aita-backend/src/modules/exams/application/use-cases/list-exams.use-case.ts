@@ -25,23 +25,7 @@ export class ListExamsUseCase implements IUseCase<{ user: AuthUser; params: any 
       for (const p of deletedPublished) {
         if (p.Id) softDeletedPublishedIds.add(p.Id);
       }
-      if (softDeletedPublishedIds.size > 0) {
-        prisma.exam.updateMany({
-          where: {
-            Id: { in: Array.from(softDeletedPublishedIds) },
-            OR: [
-              { IsDeleted: false },
-              { IsDeleted: null },
-              { Status: { not: 'Deleted' } }
-            ]
-          },
-          data: {
-            IsDeleted: true,
-            Status: 'Deleted',
-            DeletedAt: new Date()
-          }
-        }).catch(() => {});
-      }
+      // Reads must not schedule background writes that can race a later restore.
     } catch (e) { }
 
     // Base filter

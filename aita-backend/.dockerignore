@@ -1,0 +1,14 @@
+node_modules
+dist
+coverage
+temp
+uploads
+storage
+prisma/dev.db
+.git
+.vscode
+.env
+.env.*
+!.env.example
+*.log
+*.resolved

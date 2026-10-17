@@ -1,5 +1,7 @@
 'use client'
 
+import { RefreshAction } from '@/components/actions/RefreshAction'
+
 import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -16,7 +18,6 @@ import { errorMessage } from '@/lib/api/errors'
 import {
   History,
   Search,
-  RefreshCw,
   Trash2,
   ExternalLink,
   Award,
@@ -41,8 +42,8 @@ export default function GradingHistoryPage() {
   const [totalPages, setTotalPages] = React.useState(1)
   const [deletingId, setDeletingId] = React.useState<string | null>(null)
 
-  const loadHistory = React.useCallback(async () => {
-    setLoading(true)
+  const loadHistory = React.useCallback(async (background = false) => {
+    if (!background) setLoading(true)
     try {
       const res = await gradingApi.getHistory(
         undefined,
@@ -55,6 +56,7 @@ export default function GradingHistoryPage() {
       setHistory(res?.history || [])
       setTotalPages(res?.meta?.totalPages || 1)
     } catch (err) {
+      if (background) throw err
       console.error('Failed to load grading history:', err)
       setHistory([])
     } finally {
@@ -100,15 +102,7 @@ export default function GradingHistoryPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadHistory}
-              className="text-xs gap-1.5"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Làm mới</span>
-            </Button>
+            <RefreshAction onRefresh={() => loadHistory(true)} disabled={loading} cachePaths={["/grading"]} />
           </div>
         </div>
 

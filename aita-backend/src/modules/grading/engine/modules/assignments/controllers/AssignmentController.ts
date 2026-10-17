@@ -26,6 +26,11 @@ import { CloudinaryService } from '../../../../../../shared/infrastructure/servi
 import { globalJobManager } from '../../../application/queue/SubmissionJobManager.js';
 import { SendAssignmentNotificationUseCase } from '../../../../../../modules/notifications/application/use-cases/send-assignment-notification.use-case.js';
 import { NodemailerService } from '../../../../../../shared/infrastructure/email/nodemailer.service.js';
+import { memoryCache } from '../../../../../../shared/infrastructure/memory-cache.js';
+import { changeAssignmentTrashState } from '../../../assignment/assignment-trash.js';
+import { assignmentTrashQuery } from '../../../assignment/assignment-trash-query.js';
+import { permanentlyDeleteAssignments } from '../../../assignment/assignment-permanent-delete.js';
+import { assignmentScope, studentAssignmentView, assertClassesMatchSubject } from '../../../assignment/assignment-access.js';
 
 // ─── Server-Side Image Cache ─────────────────────────────────────────
 // Stores extracted document images in-memory so they never need to
@@ -334,7 +339,7 @@ export class AssignmentController extends BaseController {
                 testSuites
             };
 
-            await this.assignmentRepository.saveAsync(publishedAssignment);
+
 
             // INTEGRATION WITH AITA CORE
             const { 
@@ -384,14 +389,14 @@ export class AssignmentController extends BaseController {
                 });
             }
             if (!subjectRecord && Array.isArray(classIds) && classIds.length > 0) {
-                const firstClsId = classIds.find((c: any) => typeof c === 'string' && uuidRegex.test(c));
+                const firstClsId = classIds.find((c: any) => typeof c === 'string' && c);
                 if (firstClsId) {
                     const cls = await prisma.class.findUnique({ where: { Id: firstClsId }, include: { Subject: true } }).catch(() => null);
                     if (cls?.Subject) subjectRecord = cls.Subject;
                 }
             }
             if (!subjectRecord) {
-                subjectRecord = await prisma.subject.findFirst().catch(() => null);
+                throw new BadRequestError('Không xác định được môn học từ lớp đã chọn. Vui lòng chọn đúng lớp và môn học.');
             }
 
             // Weight validation
@@ -430,10 +435,13 @@ export class AssignmentController extends BaseController {
                 if (!isNaN(d.getTime())) parsedDueDate = d;
             }
 
-            const validClassIds = Array.isArray(classIds) ? classIds.filter((c: any) => typeof c === 'string' && uuidRegex.test(c)) : [];
-            const creatorId = (req.user?.id && uuidRegex.test(req.user.id)) ? req.user.id : null;
+            const validClassIds = [...new Set(classIds)] as string[];
+            await assertClassesMatchSubject(validClassIds, subjectRecord.Id);
+            const creatorId = req.user?.id || null;
 
-            await prisma.exam.create({
+            await prisma.$transaction(async (tx: any) => {
+                await new PublishedAssignmentRepository(tx).saveAsync(publishedAssignment);
+            await tx.exam.create({
                 data: {
                     Id: examId,
                     Title: title || 'AI Assignment',
@@ -470,7 +478,7 @@ export class AssignmentController extends BaseController {
 
             // 3. Create ExamAttachment if a file was uploaded
             if (fileUrl) {
-                await prisma.examAttachment.create({
+                await tx.examAttachment.create({
                     data: {
                         ExamId: examId,
                         FileUrl: fileUrl,
@@ -479,6 +487,8 @@ export class AssignmentController extends BaseController {
                     }
                 });
             }
+
+            });
 
             // 4. Send Notifications (In-App & Email)
             try {
@@ -505,9 +515,11 @@ export class AssignmentController extends BaseController {
         }
     };
 
-    getAll = async (_req: Request, res: Response): Promise<void> => {
+    getAll = async (req: Request, res: Response): Promise<void> => {
         try {
-            const assignments = await this.assignmentRepository.getAllAsync();
+            const allowed = await prisma.exam.findMany({ where: assignmentScope(req.user!), select: { Id: true } });
+            const allowedIds = new Set(allowed.map(exam => exam.Id));
+            const assignments = (await this.assignmentRepository.getAllAsync()).filter(a => allowedIds.has(a.id));
 
             if (!assignments || assignments.length === 0) {
                 this.ok(res, [], 'Assignments fetched');
@@ -612,7 +624,7 @@ export class AssignmentController extends BaseController {
                 };
             });
 
-            this.ok(res, enhancedAssignments, 'Assignments fetched');
+            this.ok(res, req.user?.role?.toUpperCase() === 'STUDENT' ? enhancedAssignments.map(studentAssignmentView) : enhancedAssignments, 'Assignments fetched');
         } catch (error) {
             console.error("GetAll Error:", error);
             throw new Error('Error fetching assignments');
@@ -812,7 +824,7 @@ export class AssignmentController extends BaseController {
                 stats
             };
 
-            this.ok(res, enhancedAssignment, 'Assignment fetched');
+            this.ok(res, req.user?.role?.toUpperCase() === 'STUDENT' ? studentAssignmentView(enhancedAssignment) : enhancedAssignment, 'Assignment fetched');
         } catch (error) {
             console.error('Error fetching assignment in getById:', error);
             res.status(500).json(ApiResponse.error((error as any)?.message || 'Error fetching assignment', 500));
@@ -1017,7 +1029,7 @@ export class AssignmentController extends BaseController {
 
             try {
                 const { globalJobManager } = await import('../../application/queue/SubmissionJobManager.js');
-                globalJobManager.emit(`assignment_event:${id}`, {
+                globalJobManager.emitAssignmentEvent(id, {
                     type: 'ASSIGNMENT_DEADLINE_UPDATED',
                     assignmentId: id,
                     dueDate: parsedDueDate ? parsedDueDate.toISOString() : null
@@ -1076,71 +1088,25 @@ export class AssignmentController extends BaseController {
         try {
             const id = req.params.id;
 
-            // 1. Soft Delete Core SQL record
-            try {
-                await prisma.exam.update({
-                    where: { Id: id },
-                    data: {
-                        IsDeleted: true,
-                        Status: 'Deleted',
-                        DeletedAt: new Date()
-                    }
-                });
-            } catch (e) {
-                console.warn(`[AssignmentController] Failed to soft-delete exam record for ${id}:`, e);
-            }
-
-            // 2. Soft Delete in PublishedAssignmentRepository
-            await this.assignmentRepository.softDeleteAsync(id);
+            await changeAssignmentTrashState(prisma, memoryCache, [id], true);
             this.ok(res, null, 'Assignment soft-deleted successfully');
-        } catch (error) {
-            throw new Error('Error soft-deleting assignment');
+        } catch (error: any) {
+            res.status(error.statusCode || 500).json(ApiResponse.error(error.message || 'Không thể chuyển bài tập vào thùng rác.', error.statusCode || 500));
         }
     };
 
-    getTrash = async (_req: Request, res: Response): Promise<void> => {
+    getTrash = async (req: Request, res: Response): Promise<void> => {
         try {
-            const publishedTrash = await this.assignmentRepository.getTrashAsync().catch(() => []);
+            res.setHeader('Cache-Control', 'private, no-store');
+            const publishedTrash = await this.assignmentRepository.getTrashAsync();
 
-            const deletedExams = await prisma.exam.findMany({
-                where: {
-                    OR: [
-                        { IsDeleted: true },
-                        { Status: 'Deleted' },
-                        { DeletedAt: { not: null } }
-                    ]
-                },
-                include: {
-                    Subject: {
-                        select: {
-                            SubjectCode: true,
-                            SubjectName: true
-                        }
-                    },
-                    ExamClass: {
-                        select: {
-                            ClassId: true,
-                            Class: {
-                                select: {
-                                    Id: true,
-                                    Name: true
-                                }
-                            }
-                        }
-                    }
-                },
-                orderBy: {
-                    DeletedAt: 'desc'
-                }
-            }).catch(err => {
-                console.error('[AssignmentController] Error fetching deleted exams:', err);
-                return [];
-            });
+            const deletedExams = await prisma.exam.findMany({ ...assignmentTrashQuery, where: { AND: [assignmentTrashQuery.where, assignmentScope(req.user!, true)] } });
+            const allowedIds = new Set(deletedExams.map(exam => exam.Id));
 
             const trashMap = new Map<string, any>();
 
             // 1. Add PublishedAssignment trash items
-            for (const pa of publishedTrash) {
+            for (const pa of publishedTrash.filter(pa => req.user?.role?.toUpperCase() === 'ADMIN' || allowedIds.has(pa.id))) {
                 if (pa && pa.id) {
                     trashMap.set(pa.id, {
                         ...pa,
@@ -1203,7 +1169,7 @@ export class AssignmentController extends BaseController {
             this.ok(res, combinedTrash, 'Trash assignments fetched');
         } catch (error) {
             console.error("GetTrash Error:", error);
-            res.status(500).json(ApiResponse.error((error as any)?.message || 'Error fetching trash assignments', 500));
+            res.status(500).json(ApiResponse.error('Không tải được thùng rác. Vui lòng thử lại.', 500));
         }
     };
 
@@ -1211,100 +1177,32 @@ export class AssignmentController extends BaseController {
         try {
             const id = req.params.id;
 
-            // 1. Restore Core SQL record
-            try {
-                await prisma.exam.update({
-                    where: { Id: id },
-                    data: {
-                        IsDeleted: false,
-                        Status: 'Published',
-                        DeletedAt: null
-                    }
-                });
-            } catch (e) {
-                console.warn(`[AssignmentController] Failed to restore exam record for ${id}:`, e);
-            }
-
-            // 2. Restore in PublishedAssignmentRepository
-            await this.assignmentRepository.restoreAsync(id);
+            await changeAssignmentTrashState(prisma, memoryCache, [id], false);
             this.ok(res, null, 'Assignment restored successfully');
-        } catch (error) {
-            throw new Error('Error restoring assignment');
+        } catch (error: any) {
+            res.status(error.statusCode || 500).json(ApiResponse.error(error.message || 'Không thể khôi phục bài tập.', error.statusCode || 500));
         }
     };
 
-    private async safelyDeleteExamSql(examId: string): Promise<void> {
-        try {
-            await prisma.submissionOverride.deleteMany({ where: { ExamId: examId } }).catch(() => {});
-            await prisma.examAttachment.deleteMany({ where: { ExamId: examId } }).catch(() => {});
-            await prisma.examClass.deleteMany({ where: { ExamId: examId } }).catch(() => {});
-            await (prisma as any).aiUsageLog?.deleteMany({ where: { ExamId: examId } }).catch(() => {});
-            await (prisma as any).examGenerationHistory?.deleteMany({ where: { ExamId: examId } }).catch(() => {});
-
-            const subs = await prisma.submission.findMany({ where: { ExamId: examId }, select: { Id: true } }).catch(() => []);
-            const subIds = subs.map(s => s.Id);
-            if (subIds.length > 0) {
-                await prisma.criterionScore.deleteMany({ where: { RuleScore: { ExecutionResult: { SubmissionId: { in: subIds } } } } }).catch(() => {});
-                await prisma.evidence.deleteMany({ where: { RuleScore: { ExecutionResult: { SubmissionId: { in: subIds } } } } }).catch(() => {});
-                await prisma.ruleScore.deleteMany({ where: { ExecutionResult: { SubmissionId: { in: subIds } } } }).catch(() => {});
-                await prisma.executionResult.deleteMany({ where: { SubmissionId: { in: subIds } } }).catch(() => {});
-                await (prisma as any).buildArtifact?.deleteMany({ where: { GradingSession: { SubmissionId: { in: subIds } } } }).catch(() => {});
-                await prisma.gradingSession.deleteMany({ where: { SubmissionId: { in: subIds } } }).catch(() => {});
-                await prisma.submission.deleteMany({ where: { ExamId: examId } }).catch(() => {});
-            }
-
-            const sections = await prisma.examSection.findMany({ where: { ExamId: examId }, select: { Id: true } }).catch(() => []);
-            const sectionIds = sections.map(s => s.Id);
-            if (sectionIds.length > 0) {
-                const rules = await prisma.rubricRule.findMany({ where: { SectionId: { in: sectionIds } }, select: { Id: true } }).catch(() => []);
-                const ruleIds = rules.map(r => r.Id);
-                if (ruleIds.length > 0) {
-                    await prisma.rubricCriterion.deleteMany({ where: { RubricRuleId: { in: ruleIds } } }).catch(() => {});
-                    await prisma.rubricRule.deleteMany({ where: { SectionId: { in: sectionIds } } }).catch(() => {});
-                }
-                await prisma.examSection.deleteMany({ where: { ExamId: examId } }).catch(() => {});
-            }
-
-            await prisma.testCase.deleteMany({ where: { ExamId: examId } }).catch(() => {});
-            await prisma.sampleCode.deleteMany({ where: { ExamId: examId } }).catch(() => {});
-            await prisma.referenceArtifact.deleteMany({ where: { ExamId: examId } }).catch(() => {});
-
-            await prisma.exam.delete({ where: { Id: examId } });
-        } catch (e) {
-            console.warn(`[AssignmentController] Soft-deleting SQL exam ${examId} instead of hard delete:`, e);
-            await prisma.exam.update({
-                where: { Id: examId },
-                data: { IsDeleted: true, Status: 'Deleted', DeletedAt: new Date() }
-            }).catch(() => {});
-        }
-    }
-
     hardDelete = async (req: Request, res: Response): Promise<void> => {
         try {
-            const id = req.params.id;
-            await this.safelyDeleteExamSql(id);
-            await this.assignmentRepository.deleteAsync(id);
+            await permanentlyDeleteAssignments(prisma, memoryCache, [req.params.id]);
             this.ok(res, null, 'Assignment permanently deleted');
-        } catch (error) {
-            throw new Error('Error permanently deleting assignment');
+        } catch (error: any) {
+            res.status(error.statusCode || 500).json(ApiResponse.error('Không thể xóa vĩnh viễn bài tập. Dữ liệu được giữ nguyên; vui lòng thử lại.', error.statusCode || 500));
         }
     };
 
     bulkHardDelete = async (req: Request, res: Response): Promise<void> => {
         try {
             const { ids } = req.body;
-            if (!Array.isArray(ids) || ids.length === 0) {
-                throw new BadRequestError('Ids array is required');
+            if (!Array.isArray(ids) || !ids.length || ids.some(id => typeof id !== 'string' || !id)) {
+                res.status(400).json(ApiResponse.error('Danh sách bài tập không hợp lệ.', 400)); return;
             }
-
-            for (const id of ids) {
-                await this.safelyDeleteExamSql(id);
-                await this.assignmentRepository.deleteAsync(id);
-            }
-
-            this.ok(res, { count: ids.length }, 'Assignments permanently deleted');
-        } catch (error) {
-            throw new Error('Error performing bulk hard delete');
+            await permanentlyDeleteAssignments(prisma, memoryCache, ids);
+            this.ok(res, { count: new Set(ids).size }, 'Assignments permanently deleted');
+        } catch (error: any) {
+            res.status(error.statusCode || 500).json(ApiResponse.error('Không thể xóa vĩnh viễn bài tập. Dữ liệu được giữ nguyên; vui lòng thử lại.', error.statusCode || 500));
         }
     };
 
@@ -1315,21 +1213,7 @@ export class AssignmentController extends BaseController {
                 throw new BadRequestError('Ids array is required');
             }
 
-            for (const id of ids) {
-                try {
-                    await prisma.exam.update({
-                        where: { Id: id },
-                        data: {
-                            IsDeleted: false,
-                            Status: 'Published',
-                            DeletedAt: null
-                        }
-                    });
-                } catch (e) {
-                    console.warn(`[AssignmentController] Failed to restore exam record for bulk restore ${id}:`, e);
-                }
-                await this.assignmentRepository.restoreAsync(id);
-            }
+            await changeAssignmentTrashState(prisma, memoryCache, ids, false);
 
             this.ok(res, { count: ids.length }, 'Assignments restored successfully');
         } catch (error) {
@@ -1345,12 +1229,15 @@ export class AssignmentController extends BaseController {
             }
 
             // Update all exams in SQL Database
+            const allowed = await prisma.exam.findMany({ where: assignmentScope(req.user!, true), select: { Id: true } });
+            const ids = allowed.map(exam => exam.Id);
             await prisma.exam.updateMany({
+                where: { Id: { in: ids } },
                 data: { GradingStrategy: strategy }
             });
 
             // Update all published assignments in Document Store
-            const allAssignments = await this.assignmentRepository.getAllAsync();
+            const allAssignments = (await this.assignmentRepository.getAllAsync()).filter(a => ids.includes(a.id));
             for (const assignment of allAssignments) {
                 const updated = {
                     ...assignment,
@@ -1372,7 +1259,8 @@ export class AssignmentController extends BaseController {
     streamAssignmentEvents = async (req: Request, res: Response): Promise<void> => {
         const id = req.params.id;
         res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Cache-Control', 'no-cache, no-transform');
+        res.setHeader('X-Accel-Buffering', 'no');
         res.setHeader('Connection', 'keep-alive');
         res.flushHeaders();
 
@@ -1387,7 +1275,12 @@ export class AssignmentController extends BaseController {
 
         globalJobManager.on(`assignment_event:${id}`, onAssignmentEvent);
 
-        req.on('close', () => {
+        const heartbeat = setInterval(() => {
+            if (res.destroyed || res.writableEnded || res.writableLength > 1024 * 1024) { res.end(); return; }
+            res.write(': keep-alive\n\n');
+        }, 25000);
+        res.on('close', () => {
+            clearInterval(heartbeat);
             globalJobManager.removeListener(`assignment_event:${id}`, onAssignmentEvent);
         });
     };

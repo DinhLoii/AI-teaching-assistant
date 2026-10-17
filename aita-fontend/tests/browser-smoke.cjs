@@ -47,8 +47,9 @@ async function main() {
     return { ctx, page }
   }
   try {
+    const base = process.env.TEST_BASE_URL || 'http://localhost:5174'
     const { ctx, page } = await context('admin')
-    await page.goto('http://localhost:5194/admin/classes')
+    await page.goto(`${base}/admin/classes`)
     await page.getByRole('heading', { name: 'SE0', exact: true }).waitFor()
     await page.getByRole('button', { name: 'Trang sau' }).click()
     await page.getByRole('heading', { name: 'SE10', exact: true }).waitFor()
@@ -71,7 +72,7 @@ async function main() {
     assert.equal(await page.getByRole('dialog').count(), 0)
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
     await page.setViewportSize({ width: 1280, height: 800 })
-    await page.goto('http://localhost:5194/admin/ai-config')
+    await page.goto(`${base}/admin/ai-config`)
     await page.getByLabel('Tên mô hình').fill('updated-model')
     await page.getByRole('button', { name: 'Lưu cấu hình' }).click()
     await page.getByRole('status').filter({ hasText: 'Đã lưu và kiểm tra lại dữ liệu' }).waitFor()
@@ -81,7 +82,7 @@ async function main() {
     assert.equal(await page.getByLabel('Tên mô hình').inputValue(), 'updated-model')
     await ctx.close()
     const lecturer = await context('lecturer')
-    await lecturer.page.goto('http://localhost:5194/lecturer/prompts')
+    await lecturer.page.goto(`${base}/lecturer/prompts`)
     await lecturer.page.getByRole('combobox').selectOption('subject-1')
     await lecturer.page.getByRole('button', { name: 'Tạo prompt', exact: true }).click()
     await lecturer.page.getByLabel('Tên prompt', { exact: true }).fill('Test prompt')

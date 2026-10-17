@@ -17,5 +17,5 @@ export interface IExamRepository {
   save(exam: Exam): Promise<void>
   assignToClass(examId: string, classId: string, dueDate?: string): Promise<void>
   addAttachment(examId: string, attachment: { fileName: string, fileUrl: string, fileType: string }): Promise<void>
-  getAttachment(attachmentId: string): Promise<{ fileUrl: string, fileName: string } | null>
+  getAttachment(attachmentId: string): Promise<{ fileUrl: string, fileName: string, examId?: string | null, fileType?: string | null } | null>
 }

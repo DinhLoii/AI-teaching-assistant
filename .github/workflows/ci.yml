@@ -25,6 +25,26 @@ jobs:
   backend-ci:
     name: Backend CI (Typecheck & Build)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.7-pg16
+        env:
+          POSTGRES_USER: aita_test
+          POSTGRES_PASSWORD: ci_fixture_only
+          POSTGRES_DB: aita_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aita_test -d aita_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://aita_test:ci_fixture_only@localhost:5432/aita_test
+      DIRECT_URL: postgresql://aita_test:ci_fixture_only@localhost:5432/aita_test
+      TEST_DATABASE_URL: postgresql://aita_test:ci_fixture_only@localhost:5432/aita_test
+      JWT_SECRET: ci-test-only-secret-longer-than-32-characters
+      NODE_ENV: test
     defaults:
       run:
         working-directory: aita-backend
@@ -48,6 +68,10 @@ jobs:
 
       - name: TypeScript Compilation & Build
         run: npm run build
+      - name: Authorization, archive privacy and credential tests
+        run: npm test
+      - name: PostgreSQL queue recovery and lease fencing
+        run: npm run test:postgres
 
   # =========================================================================
   # 2. FRONTEND CI
@@ -78,6 +102,8 @@ jobs:
 
       - name: Run Automated Unit Tests
         run: npm test
+      - name: Frontend lint
+        run: npm run lint
 
       - name: Next.js Typegen & TypeScript Check
         run: npm run typecheck

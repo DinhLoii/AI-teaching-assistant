@@ -1,3 +1,4 @@
+import { publishNotification } from '../../../../shared/infrastructure/publish-notification.js'
 import { prisma } from '../../../../database/prisma.js'
 import { v4 as uuidv4 } from 'uuid'
 import { IEmailService } from '../../../../shared/application/email.service.interface.js'
@@ -43,11 +44,13 @@ export class SendAssignmentNotificationUseCase {
             if (rawDueDate) {
                 const dt = new Date(rawDueDate)
                 if (!isNaN(dt.getTime())) {
-                    const hours = String(dt.getHours()).padStart(2, '0')
-                    const minutes = String(dt.getMinutes()).padStart(2, '0')
-                    const day = String(dt.getDate()).padStart(2, '0')
-                    const month = String(dt.getMonth() + 1).padStart(2, '0')
-                    const year = dt.getFullYear()
+                    const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(dt)
+                    const part = (type: string) => parts.find(p => p.type === type)?.value || ''
+                    const hours = part('hour')
+                    const minutes = part('minute')
+                    const day = part('day')
+                    const month = part('month')
+                    const year = part('year')
                     formattedDueDate = `${hours}:${minutes} ngày ${day}/${month}/${year}`
                 }
             }
@@ -120,7 +123,7 @@ export class SendAssignmentNotificationUseCase {
 
             // 4. Create In-App Notification
             const notificationId = uuidv4()
-            await prisma.notification.create({
+            const notification = await prisma.notification.create({
                 data: {
                     Id: notificationId,
                     Title: notifTitle,
@@ -143,6 +146,8 @@ export class SendAssignmentNotificationUseCase {
             await prisma.notificationRecipient.createMany({
                 data: recipients
             })
+
+            publishNotification(students.map(student => student.Id), notification)
 
             // 6. Send Emails asynchronously with direct redirect link
             const webUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '')

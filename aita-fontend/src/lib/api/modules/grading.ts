@@ -1,3 +1,4 @@
+import { subscribeProgressStream } from '../../websocket/progress-stream'
 import { request, BASE, ApiError } from '../client'
 import { AUTH_STORAGE_KEYS, getStoredItem } from '../storage'
 
@@ -189,8 +190,10 @@ export const gradingApi = {
     })
   },
 
-  getSqlKeyUrl: (assignmentId: string) => {
-    return `${BASE}/grading/assignments/${assignmentId}/sql-key?token=${getStoredItem(AUTH_STORAGE_KEYS.token)}`
+  downloadSqlKey: async (assignmentId: string) => {
+    const response = await fetch(BASE + '/grading/assignments/' + encodeURIComponent(assignmentId) + '/sql-key', { headers: { Authorization: 'Bearer ' + (getStoredItem(AUTH_STORAGE_KEYS.token) || '') } });
+    if (!response.ok) throw new ApiError('Không tải được đáp án SQL.', response.status);
+    return response.blob();
   },
 
   gradeExistingSubmission: (submissionId: string) => {
@@ -233,52 +236,7 @@ export const gradingApi = {
     onComplete: () => void,
     onError: (err: any) => void
   ) => {
-    const token = getStoredItem(AUTH_STORAGE_KEYS.token)
-    const url = `${BASE}/grading/submissions/${submissionId}/stream?token=${encodeURIComponent(token || '')}`
-    const eventSource = new EventSource(url)
-    let isFinished = false
-
-    eventSource.onmessage = (event) => {
-      try {
-        if (!event.data || event.data.trim() === ': keep-alive') return
-        const job = JSON.parse(event.data)
-        if (job.error) {
-          isFinished = true
-          onError(new Error(job.error))
-          eventSource.close()
-          return
-        }
-
-        onProgress(job)
-
-        if (job.state === 'completed' || Number(job.progressPercent) >= 100) {
-          isFinished = true
-          eventSource.close()
-          onComplete()
-        } else if (job.state === 'failed') {
-          isFinished = true
-          eventSource.close()
-          onError(new Error(job.error || 'Evaluation failed'))
-        }
-      } catch (err) {
-        console.error('Failed to parse SSE message', err, event.data)
-      }
-    }
-
-    eventSource.onerror = (err) => {
-      if (isFinished) return
-      // If server closed connection normally after completing
-      if (eventSource.readyState === EventSource.CLOSED) {
-        console.log('[SSE] Stream closed by server')
-      } else {
-        console.warn('[SSE] EventSource connection state change', eventSource.readyState, err)
-      }
-    }
-
-    return () => {
-      isFinished = true
-      eventSource.close()
-    }
+    return subscribeProgressStream(BASE + '/grading/submissions/' + encodeURIComponent(submissionId) + '/stream', onProgress, onComplete, onError)
   },
 
   getSubmissionResult: (submissionId: string) => request<any>('/grading/submissions/' + submissionId + '/result'),

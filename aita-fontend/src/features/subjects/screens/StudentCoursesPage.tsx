@@ -1,5 +1,7 @@
 'use client'
 
+import { RefreshAction } from '@/components/actions/RefreshAction'
+
 import * as React from 'react'
 import Link from 'next/link'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
@@ -36,9 +38,9 @@ export default function StudentCoursesPage() {
       })
   }, [])
 
-  const loadCourses = React.useCallback(async () => {
-    setLoading(true)
-    setError(null)
+  const loadCourses = React.useCallback(async (background = false) => {
+    if (!background) setLoading(true)
+    if (!background) setError(null)
     try {
       if (viewTab === 'enrolled') {
         const semParam = selectedSemester === 'all' ? undefined : selectedSemester
@@ -53,7 +55,9 @@ export default function StudentCoursesPage() {
         const list = Array.isArray(res) ? res : res?.data || []
         setSubjects(list)
       }
+      setError(null)
     } catch (err: any) {
+      if (background) throw err
       console.error('Failed to load courses:', err)
       setError(err?.message || t('student.courses.load_error', 'Không thể kết nối máy chủ để tải danh sách môn học. Vui lòng thử lại.'))
       setSubjects([])
@@ -262,15 +266,7 @@ export default function StudentCoursesPage() {
                 </p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadCourses}
-              className="text-xs gap-1.5 border-rose-300 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/50 shrink-0"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>{t('ui.retry', 'Thử lại')}</span>
-            </Button>
+            <RefreshAction onRefresh={() => loadCourses(true)} disabled={loading} cachePaths={["/student-portal/subjects","/subjects"]} />
           </div>
         )}
 

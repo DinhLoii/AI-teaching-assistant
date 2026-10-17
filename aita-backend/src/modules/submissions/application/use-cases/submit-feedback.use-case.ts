@@ -1,3 +1,4 @@
+import { publishNotification } from '../../../../shared/infrastructure/publish-notification.js'
 import type { IUseCase } from '../../../../shared/application/base-use-case.js'
 import { NotFoundError, UnauthorizedError } from '../../../../shared/application/app.error.js'
 
@@ -43,7 +44,7 @@ export class SubmitFeedbackUseCase implements IUseCase<{ id: string; user: { id:
         const examTitle = submission.Exam?.Title || 'Assignment';
 
         for (const targetUserId of recipientUserIds) {
-            await this.prisma.notification.create({
+            const notification = await this.prisma.notification.create({
                 data: {
                     Title: 'Grade Inquiry / Student Feedback',
                     Message: `A student submitted feedback for "${examTitle}": ${feedback}`,
@@ -58,6 +59,7 @@ export class SubmitFeedbackUseCase implements IUseCase<{ id: string; user: { id:
                     }
                 }
             });
+            publishNotification([targetUserId], notification)
         }
 
         return { success: true, feedback: updated.StudentFeedback };

@@ -7,6 +7,7 @@ import type {
   RubricDetectionStatus,
   RubricSourceType,
 } from '../../domain/analysis/analysis.types.js'
+import { detectAssignmentProfile, extractDocumentRubric } from './assignment-contract.js'
 
 export interface DeterministicParseResult {
   title: ProvenancedField<string>
@@ -53,6 +54,12 @@ export class DeterministicParserService {
       preferredLanguage,
       preferredCategory
     )
+    const profile = detectAssignmentProfile(text, extraction.filename)
+    if (profile.language !== 'Unknown') {
+      langResult.language = { value: profile.language, source: 'EXTRACTED', evidence: profile.evidence, confidence: .98, validationStatus: 'valid', reviewNeeded: false }
+      langResult.allowedLanguages = { ...langResult.language, value: [profile.language] }
+      langResult.category = { ...langResult.language, value: profile.mode === 'sql' ? 'sql' : 'standard' }
+    }
 
     // ── 2. Title Extraction ──
     const titleResult = this.extractTitle(text, extraction.filename)
@@ -185,8 +192,8 @@ export class DeterministicParserService {
         if (/(?:c#|csharp|\.net|dotnet)/i.test(stated)) foundLangs.push('C#')
         if (/\b(?:java)\b/i.test(stated) && !/javascript/i.test(stated)) foundLangs.push('Java')
         if (/\b(?:python|python3|py)\b/i.test(stated)) foundLangs.push('Python')
-        if (/\b(?:sql|database|csdl|cơ sở dữ liệu)\b/i.test(stated)) foundLangs.push('SQL')
-        if (/\b(?:javascript|typescript|nodejs|node\.js)\b/i.test(stated)) foundLangs.push('JavaScript')
+        if (/\b(?:typescript)\b/i.test(stated)) foundLangs.push('TypeScript')
+        else if (/\b(?:javascript|nodejs|node\.js|next\.js|nextjs)\b/i.test(stated)) foundLangs.push('JavaScript')
 
         // Safe detection of C: only accept explicit programming phrases or C/C++ combos (never bare single letter 'c')
         if (/(?:c\s*[\/\&]\s*c\+\+|c\s+hoặc\s+c\+\+|c\s+và\s+c\+\+|c\s*\/\s*cpp)/i.test(stated)) {
@@ -290,9 +297,9 @@ export class DeterministicParserService {
     if (/(?:c#|csharp|\.net|dotnet|lập\s*trình\s*c#)/i.test(headerLower)) {
       addScore('C#', 35, 'Từ khóa C# trong tiêu đề/phần đầu đề bài')
     }
-    if (/(?:javascript|typescript|nodejs|node\.js)/i.test(headerLower)) {
-      const isTs = /typescript/i.test(headerLower)
-      addScore(isTs ? 'TypeScript' : 'JavaScript', 35, 'Từ khóa JS/TS trong tiêu đề/phần đầu đề bài')
+    if (/(?:javascript|typescript|nodejs|node\.js|next\.js|nextjs)/i.test(headerLower)) {
+      const isTs = /(?:typescript|\.tsx?)/i.test(headerLower) || /(?:typescript|\.tsx?)/i.test(textLower)
+      addScore(isTs ? 'TypeScript' : 'JavaScript', 40, 'Từ khóa JS/TS/Next.js trong tiêu đề/phần đầu đề bài')
     }
 
     // -- Python body signals --
@@ -430,7 +437,7 @@ export class DeterministicParserService {
     }
 
     // 6. User Preferred Fallback (when no language was detected at all in text)
-    const fallbackLang = preferredLanguage || 'Java'
+    const fallbackLang = preferredLanguage || 'Unknown'
     const fallbackCat = preferredCategory || (fallbackLang === 'SQL' ? 'sql' : 'standard')
     return {
       language: { value: fallbackLang, source: 'DEFAULT', confidence: 0.5, validationStatus: 'warning', reviewNeeded: true, notes: 'Không tìm thấy tín hiệu ngôn ngữ rõ ràng trong đề bài, cần AI thẩm định hoặc giảng viên kiểm tra.' },
@@ -447,7 +454,7 @@ export class DeterministicParserService {
 
     // Check for explicit title pattern
     for (const line of lines.slice(0, 15)) {
-      const match = line.match(/^(?:đề\s*bài|bài\s*tập|tên\s*bài|assignment|lab\s*\d+|problem|task)[\s:\-]+([^\n\r]+)/i)
+      const match = line.match(/^(?:tên\s*bài\s*tập|tên\s*bài|bài\s*tập|đề\s*bài|đề\s*thi|assignment|lab\s*\d+|problem|task)[\s:\-]+([^\n\r]+)/i)
       if (match && match[1].trim().length > 3) {
         return {
           value: match[1].trim().replace(/^[#\*\s]+/, ''),
@@ -698,6 +705,13 @@ export class DeterministicParserService {
     criteriaPointsSum: number
     analysisNotes: string
   } {
+    const documentCriteria = extractDocumentRubric(text)
+    if (documentCriteria.length) {
+      const sum = Number(documentCriteria.reduce((total, criterion) => total + criterion.maxPoints, 0).toFixed(2))
+      const stated = text.match(/(?:thang điểm|total points|rubric[^\n]*?\()\s*[:(]?\s*(\d+(?:[.,]\d+)?)/i)?.[1]
+      const statedTotal = stated ? Number(stated.replace(',', '.')) : targetMaxScore
+      return { criteria: documentCriteria, status: Math.abs(sum - statedTotal) < .01 ? 'DETECTED_COMPLETE' : 'DETECTED_MISMATCH_TOTAL', sourceType: 'ORIGINAL_DOCUMENT', rawEvidence: documentCriteria.map(row => row.evidence).join('\n'), statedTotalPoints: statedTotal, criteriaPointsSum: sum, analysisNotes: 'Barem và điểm thành phần được trích nguyên văn từ tài liệu gốc.' }
+    }
     // 1. Check if a dedicated RUBRIC_GRADING section was found
     const rubricSections = sections.filter(s => s.type === 'RUBRIC_GRADING')
     let rubricContent = rubricSections.map(s => s.content).join('\n\n')
@@ -705,7 +719,7 @@ export class DeterministicParserService {
     // 2. If no section separated, search for rubric text blocks using strong anchors
     if (!rubricContent) {
       const rubricAnchorMatch = text.match(
-        /(?:(?:thang|barem)\s*điểm|tiêu\s*chí\s*(?:chấm|đánh\s*giá)|bảng\s*điểm|rubric|grading\s*criteria|marking\s*scheme|evaluation\s*criteria)[\s:\-]+([\s\S]{30,2500})/i
+        /(?:^|\n)\s*(?:#{1,4}\s*)?(?:(?:\d+|[IVXLCDM]+|phần\s*\d+|mục\s*\d+)[\.:\s\-]*)?(?:thang\s*điểm|barem\s*(?:điểm|chấm)?|tiêu\s*chí\s*(?:chấm|đánh\s*giá)|bảng\s*điểm|rubric|grading\s*criteria|marking\s*scheme|evaluation\s*criteria)[\s:\-\–\—]+([^\n]*\n[\s\S]{30,2500})/i
       )
       if (rubricAnchorMatch) {
         rubricContent = rubricAnchorMatch[0]
@@ -743,39 +757,68 @@ export class DeterministicParserService {
     for (let i = 0; i < rawLines.length; i++) {
       const line = rawLines[i]
 
+      if (/^(?:#{1,6}\s*)?(?:\d+\.\s*)?(?:rubric|barem|quy định nộp bài|quy trình demo|grading criteria)/i.test(line)) continue
+
       // Ignore title lines or table headers
       if (/^(?:thang|barem|tiêu\s*chí|rubric|stt|criteria|điểm|points|max\s*points)\b/i.test(line) && !line.includes(':') && !/\d+/.test(line)) {
         continue
       }
       if (/^[\-\|\+\s]+$/.test(line)) continue // separator line
 
-      // Check for table row
-      if (line.includes('|')) {
-        const cols = line.split('|').map(c => c.trim()).filter(Boolean)
+      // Check for table row (pipe-separated OR tab-separated)
+      const isTableLike = line.includes('|') || line.includes('\t')
+      if (isTableLike) {
+        const delimiter = line.includes('|') ? '|' : '\t'
+        const cols = line.split(delimiter).map(c => c.trim()).filter(Boolean)
         if (cols.length >= 2) {
-          // Look for numeric point column
-          let pointVal: number | null = null
-          let nameVal = ''
-          let descVal = ''
-
-          for (let cIdx = cols.length - 1; cIdx >= 0; cIdx--) {
-            const col = cols[cIdx]
-            const pMatch = col.match(/^(\d+(?:[\.,]\d+)?)\s*(?:đ|điểm|pts?|points?|marks?|%)?$/i)
-            if (pMatch && pointVal === null) {
-              pointVal = parseFloat(pMatch[1].replace(',', '.'))
-            } else if (!nameVal) {
-              nameVal = col
-            } else {
-              descVal = `${col} - ${descVal}`.trim()
-            }
-          }
-
-          const isHeader = cols.some(c => /^(?:tiêu\s*chí|điểm|stt|nội\s*dung|tổng|thang\s*điểm|criteria|points?|marks?|score|description|yêu\s*cầu)\b/i.test(c))
-          if (isHeader && pointVal === null) {
+          const isHeader = cols.some(c => /^(?:tiêu\s*chí|điểm|stt|nội\s*dung|tổng|thang\s*điểm|criteria|points?|marks?|score|description|yêu\s*cầu|điều\s*kiện)\b/i.test(c))
+          const hasNumericPoint = cols.some(c => /^(\d+(?:[\.,]\d+)?)\s*(?:đ|điểm|pts?|points?|marks?|%)?$/i.test(c))
+          if (isHeader && !hasNumericPoint) {
             continue
           }
 
-          if (nameVal && !/^(?:tiêu\s*chí|điểm|stt|nội\s*dung|tổng)/i.test(nameVal)) {
+          // Find the column containing the numeric point
+          let pointColIdx = -1
+          let pointVal: number | null = null
+
+          for (let cIdx = 0; cIdx < cols.length; cIdx++) {
+            const pMatch = cols[cIdx].match(/^(\d+(?:[\.,]\d+)?)\s*(?:đ|điểm|pts?|points?|marks?|%)?$/i)
+            if (pMatch && pointVal === null) {
+              const parsed = parseFloat(pMatch[1].replace(',', '.'))
+              // Avoid mistaking integer row numbering (1, 2, 3) as points if it's the first col and there are >= 3 cols
+              const isFirstColIndex = cIdx === 0 && Number.isInteger(parsed) && parsed <= 25 && cols.length >= 3
+              if (!isFirstColIndex) {
+                pointVal = parsed
+                pointColIdx = cIdx
+              }
+            }
+          }
+
+          let nameVal = ''
+          let descVal = ''
+
+          if (pointColIdx !== -1) {
+            const nonPointCols = cols.filter((_, idx) => idx !== pointColIdx)
+            if (nonPointCols.length >= 2) {
+              // Check if first non-point col is just a number like "1." or "1"
+              if (/^\d+[\.\)]?$/.test(nonPointCols[0])) {
+                nameVal = nonPointCols[1]
+                descVal = nonPointCols.slice(2).join(' - ') || nameVal
+              } else {
+                nameVal = nonPointCols[0]
+                descVal = nonPointCols.slice(1).join(' - ') || nameVal
+              }
+            } else if (nonPointCols.length === 1) {
+              nameVal = nonPointCols[0]
+              descVal = nonPointCols[0]
+            }
+          } else {
+            nameVal = cols[0]
+            descVal = cols.slice(1).join(' - ') || nameVal
+          }
+
+          nameVal = nameVal.replace(/^[0-9\.\-\s#]+/, '').trim()
+          if (nameVal && !/^(?:tiêu\s*chí|điểm|stt|nội\s*dung|tổng|total)\b/i.test(nameVal)) {
             const maxPts = pointVal ?? 0
             if (pointVal === null) hasUnscoredCriteria = true
             criteria.push(this.buildCriterionItem(
@@ -796,7 +839,13 @@ export class DeterministicParserService {
       const listItemMatch = line.match(/^(?:[-*•]|\d+[\.\)])\s*(.+)/)
       if (listItemMatch) {
         const itemBody = listItemMatch[1].trim()
-        const pointMatch = itemBody.match(/[:\-\(]\s*(\d+(?:[\.,]\d+)?)\s*(?:đ|điểm|pts?|points?|marks?|\/10|\/20)?\s*[\)\:]?\s*(.*)$/i)
+
+        // Skip document section headings like "1. Thông tin bài tập", "2. Bối cảnh và mục tiêu"
+        if (/^(?:thông\s*tin|bối\s*cảnh|công\s*nghệ|mô\s*hình|các\s*chức\s*năng|yêu\s*cầu\s*bảo\s*mật|kiểm\s*thử|tài\s*liệu|checklist|prompt)/i.test(itemBody)) {
+          continue
+        }
+
+        const pointMatch = itemBody.match(/[:\-\(\t]\s*(\d+(?:[\.,]\d+)?)\s*(?:đ|điểm|pts?|points?|marks?|\/10|\/20)?\s*[\)\:]?\s*(.*)$/i)
 
         if (pointMatch) {
           const pointVal = parseFloat(pointMatch[1].replace(',', '.'))
@@ -828,7 +877,7 @@ export class DeterministicParserService {
       }
 
       // General line with points pattern
-      const generalPointMatch = line.match(/^([^:\-\(]+?)[\s:\-\(]+(\d+(?:[\.,]\d+)?)\s*(?:đ|điểm|pts?|points?|marks?)\s*[\)\:]?\s*(.*)$/i)
+      const generalPointMatch = line.match(/^([^:\-\(\t]+?)[\s:\-\(\t]+(\d+(?:[\.,]\d+)?)\s*(?:đ|điểm|pts?|points?|marks?)\s*[\)\:]?\s*(.*)$/i)
       if (generalPointMatch && !/^(?:thời\s*gian|học\s*kỳ|lớp|ngày|tổng|thang\s*điểm|total|stt)/i.test(generalPointMatch[1])) {
         const pointVal = parseFloat(generalPointMatch[2].replace(',', '.'))
         const namePart = generalPointMatch[1].trim()
@@ -955,6 +1004,12 @@ export class DeterministicParserService {
     let subType: 'single_file' | 'project_archive' = 'single_file'
     let entry = 'main.c'
     let formats = ['.c', '.zip']
+
+    if (['Kotlin', 'Dart', 'Swift', 'Unknown', 'Go', 'Rust', 'PHP'].includes(language)) {
+      subType = 'project_archive'
+      entry = ''
+      formats = ['.zip']
+    }
 
     if (language === 'C++') {
       subType = 'single_file'

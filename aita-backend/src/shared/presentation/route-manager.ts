@@ -19,6 +19,7 @@ import { SemestersRouter } from '../../modules/semesters/presentation/semesters.
 import { StudentPortalRouter } from '../../modules/student-portal/presentation/student-portal.router.js'
 import { PromptsRouter } from '../../modules/prompts/presentation/prompts.router.js'
 import { NotesRouter } from '../../modules/notes/presentation/notes.router.js'
+import { prisma } from '../../database/prisma.js'
 
 /**
  * ApiRouteManager — centrally manages all API routes.
@@ -41,6 +42,12 @@ export class ApiRouteManager {
     // ── Health Check ──────────────────────────────────────────────
     this.router.get('/health', (_req, res) => {
       res.json({ status: 'ok', timestamp: new Date().toISOString() })
+    })
+    this.router.get('/ready', async (_req, res) => {
+      try {
+        const rows = await prisma.$queryRaw<{ jobs: string | null; events: string | null }[]>`SELECT to_regclass('"SubmissionGradingTask"')::text AS jobs, to_regclass('"RealtimeEvent"')::text AS events`
+        res.status(rows[0]?.jobs && rows[0]?.events ? 200 : 503).json({ status: rows[0]?.jobs && rows[0]?.events ? 'ready' : 'migration-required' })
+      } catch { res.status(503).json({ status: 'unavailable' }) }
     })
 
     // ── Clean Architecture Modules ───────────────────────────────

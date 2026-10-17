@@ -10,8 +10,13 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "setup": "prisma generate && prisma db push && tsx prisma/seed.ts",
-    "postinstall": "prisma generate"
+    "db:studio": "prisma studio",
+    "playwright:install": "playwright install chromium",
+    "setup": "npm run db:generate && npm run db:migrate",
+    "postinstall": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "test": "node --import tsx --test tests/production-hardening.test.ts",
+    "test:postgres": "node --import dotenv/config scripts/test-postgres.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

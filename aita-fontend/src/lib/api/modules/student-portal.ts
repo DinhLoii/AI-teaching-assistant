@@ -1,7 +1,7 @@
 import { request } from '../client'
 
 export const studentPortalApi = {
-  getStudentDashboard: () => request<any>('/student-portal/dashboard'),
+  getStudentDashboard: (options: Pick<RequestInit, 'cache'> = {}) => request<any>('/student-portal/dashboard', options),
 
   getStudentSubjects: (semester?: string) => request<any[]>(`/student-portal/subjects${semester ? `?semester=${encodeURIComponent(semester)}` : ''}`),
 

@@ -1,5 +1,7 @@
 'use client'
 
+import { RefreshAction } from '@/components/actions/RefreshAction'
+
 import * as React from 'react'
 import Link from 'next/link'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
@@ -12,6 +14,8 @@ import { studentPortalApi } from '@/lib/api/modules/student-portal'
 import { assignmentsApi } from '@/lib/api/modules/assignments'
 import { submissionsApi } from '@/lib/api/modules/submissions'
 import { semestersApi } from '@/lib/api/modules/semesters'
+import { peekClientApiCache } from '@/lib/api/client'
+import { CardGridSkeleton } from '@/components/ui/skeleton'
 import {
   BookOpen,
   Calendar,
@@ -28,11 +32,11 @@ import {
   FileText,
   User,
   ExternalLink,
-  RefreshCw,
 } from 'lucide-react'
 
 export default function StudentSubjectsPage() {
   const { t } = useLanguage()
+
   const [subjects, setSubjects] = React.useState<any[]>([])
   const [assignments, setAssignments] = React.useState<any[]>([])
   const [semesters, setSemesters] = React.useState<any[]>([])
@@ -41,9 +45,27 @@ export default function StudentSubjectsPage() {
   const [expandedSubjectId, setExpandedSubjectId] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
+  const [semestersReady, setSemestersReady] = React.useState(false)
+  const loadSequence = React.useRef(0)
+  const selectedSemesterRow = semesters.find(s => s.id === selectedSemester)
+  // The student portal endpoint filters by normalized season, not semester ID.
+  const semesterFilter = selectedSemester
+    ? String(selectedSemesterRow?.season || selectedSemesterRow?.code || selectedSemester).toUpperCase().replace(/\s+/g, '')
+    : ''
 
   // Load semesters
   React.useEffect(() => {
+    try {
+      if (typeof peekClientApiCache === 'function') {
+        const cachedSem = peekClientApiCache<any[]>('/semesters')
+        if (cachedSem && cachedSem.length > 0) {
+          setSemesters(cachedSem)
+          const active = cachedSem.find((s: any) => s.isActive) || cachedSem[0]
+          if (active) setSelectedSemester(active.id || active.code || '')
+        }
+      }
+    } catch {}
+
     semestersApi
       .getSemesters()
       .then((sems) => {
@@ -53,18 +75,25 @@ export default function StudentSubjectsPage() {
         if (active) setSelectedSemester(active.id || active.code || '')
       })
       .catch(() => {})
+      .finally(() => setSemestersReady(true))
   }, [])
 
   // Load subjects, assignments, submissions
-  const loadData = React.useCallback(async () => {
-    setLoading(true)
+  const loadData = React.useCallback(async (background = false) => {
+    const sequence = ++loadSequence.current
+    const path = `/student-portal/subjects${semesterFilter ? `?semester=${encodeURIComponent(semesterFilter)}` : ''}`
+    const cachedSubjects = peekClientApiCache<any[]>(path)
+    if (cachedSubjects) setSubjects(cachedSubjects)
+    if (!background) setLoading(!cachedSubjects)
     setError(null)
     try {
       const [subjectsRes, assignmentsRes, submissionsRes] = await Promise.all([
-        studentPortalApi.getStudentSubjects(selectedSemester || undefined),
+        studentPortalApi.getStudentSubjects(semesterFilter || undefined),
         assignmentsApi.getAssignments(),
         submissionsApi.getSubmissions(),
       ])
+
+      if (sequence !== loadSequence.current) return
 
       const rawSubjects = Array.isArray(subjectsRes) ? subjectsRes : []
       setSubjects(rawSubjects)
@@ -107,16 +136,20 @@ export default function StudentSubjectsPage() {
         setExpandedSubjectId(rawSubjects[0].id || rawSubjects[0].code)
       }
     } catch (err: any) {
+      if (background) throw err
+      if (sequence !== loadSequence.current) return
       console.error('Failed to load student subjects data:', err)
       setError(err?.message || 'Không thể tải dữ liệu môn học. Vui lòng thử lại.')
     } finally {
-      setLoading(false)
+      if (sequence === loadSequence.current) setLoading(false)
     }
-  }, [selectedSemester])
+  }, [semesterFilter])
 
   React.useEffect(() => {
-    loadData()
-  }, [loadData])
+    if (!semestersReady) return
+    void loadData()
+    return () => { loadSequence.current++ }
+  }, [loadData, semestersReady])
 
   // Subject tabs
   const subjectTabs = React.useMemo(() => {
@@ -186,10 +219,7 @@ export default function StudentSubjectsPage() {
               ))}
             </select>
 
-            <Button variant="outline" size="sm" onClick={loadData} className="gap-1.5 text-xs">
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              {t('ui.refresh', 'Làm mới')}
-            </Button>
+            <RefreshAction onRefresh={() => loadData(true)} disabled={loading} cachePaths={["/student-portal/subjects","/assignments","/exams","/submissions"]} />
           </div>
         </div>
 
@@ -298,15 +328,15 @@ export default function StudentSubjectsPage() {
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
               <span>{error}</span>
             </div>
-            <Button variant="outline" size="sm" onClick={loadData} className="text-xs">
+            <Button variant="outline" size="sm" onClick={() => void loadData()} className="text-xs">
               {t('ui.retry', 'Thử lại')}
             </Button>
           </div>
         )}
 
         {/* Content List */}
-        {loading ? (
-          <div className="p-16 text-center text-slate-400 text-sm">{t('ui.loading', 'Đang tải danh sách môn học và bài tập...')}</div>
+        {loading && visibleSubjects.length === 0 ? (
+          <CardGridSkeleton columns={2} count={4} />
         ) : visibleSubjects.length === 0 ? (
           <Card className="p-12 text-center text-slate-500 border-dashed">
             <BookOpen className="w-10 h-10 mx-auto text-slate-400 mb-3" />

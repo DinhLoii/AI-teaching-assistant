@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import { config } from '../../config';
 import { AiClientManager } from '../../infrastructure/ai/AiClientManager';
 import * as crypto from 'crypto';
+import { resolveCodeReviewResult } from './source-evidence.js';
 
 export interface ProjectSourceSnapshot {
   projectType: string;
@@ -146,7 +147,8 @@ export class AICodeReviewEngine {
       let filesContext = "";
 
       for (const f of relevantFiles) {
-        const fileStr = `// FILE: ${f.relativePath}\n${f.content}\n\n---\n\n`;
+        const numberedSource = f.content.split(/\r?\n/).map((line, index) => `[L${index + 1}] ${line}`).join("\n");
+        const fileStr = `// FILE: ${f.relativePath}\n${numberedSource}\n\n---\n\n`;
         if (filesContext.length + fileStr.length > MAX_CONTEXT_LENGTH) {
           if (filesContext.length === 0) {
             filesContext = fileStr.substring(0, MAX_CONTEXT_LENGTH) + "\n\n... [CONTENT TRUNCATED DUE TO SIZE LIMIT]";
@@ -168,9 +170,9 @@ export class AICodeReviewEngine {
       if (isArchitectural) {
         scopeRule = `7. ARCHITECTURAL PRAGMATISM: This criterion enforces structural patterns (e.g., Repository Pattern, Dependency Injection, MVVM). Evaluate based on general adherence to the pattern. DO NOT penalize standard practices such as injecting an ApiService into a Repository, or a Repository into a ViewModel. Focus on whether the logical separation of concerns exists, not pedagogical perfection.`;
       } else if (isDatabase) {
-        scopeRule = `7. DATABASE ISOLATION: This is a Database Setup/Model criterion. Focus ONLY on Entity Framework setup, DbContext, Models, and relationships. DO NOT evaluate Controllers or API endpoints (like GET/POST validation) here. DO NOT penalize architectural patterns.`;
+        scopeRule = `7. DATABASE ISOLATION: This is a Database Setup/Model criterion. Focus ONLY on the persistence technology and schema required by this criterion (for example Room/SQLite, ORM entities, or SQL), constraints and relationships. Do not impose another platform or framework. DO NOT evaluate Controllers or API endpoints (like GET/POST validation) here. DO NOT penalize architectural patterns.`;
       } else {
-        scopeRule = `7. API/LOGIC ISOLATION: This is a functional/API criterion. DO NOT penalize the code for violating architectural patterns (like using DbContext directly in controllers). Evaluate ONLY the correctness of the functional logic, routing, and data validation.`;
+        scopeRule = `7. API/LOGIC ISOLATION: This is a functional criterion for the submitted project platform. DO NOT penalize the code for violating architectural patterns (like using DbContext directly in controllers). Evaluate ONLY the correctness of the functional logic, requested behavior and data validation. Do not require web routes, authentication or a backend unless the criterion explicitly asks for them.`;
       }
 
       let crashLogsContext = "";
@@ -185,7 +187,8 @@ ${crashLogs.substring(0, 2000)} // Truncated to 2000 chars
 `;
       }
 
-      const prompt = `You are an academic code grader for a university-level programming assignment.
+      const prompt = `Evidence response attempt: ${attempt}. Use exact file paths from FILE headers and valid [Lx] line numbers. Return startLine/endLine (at most 40 lines) instead of copying source strings. If a previous response lacked evidence, correct the file/line references.
+You are an academic code grader for a university-level programming assignment.
 
 ═══════════════════════════════════════
 GRADING CONTEXT
@@ -219,11 +222,12 @@ OUTPUT FORMAT — Return ONLY valid JSON:
 {
   "passed": true | false,
   "confidence": 0.0 to 1.0,
-  "percentageComplete": <MUST BE EXACTLY ONE OF: 0.0, 0.25, 0.5, 0.75, 1.0>,
+  "percentageComplete": <a number from 0.0 to 1.0 proportional to fulfilled requirements>,
   "reasoning": "one paragraph explaining what you found and your conclusion",
   "relevantSnippets": [
     {
-      "codeSnippet": "A short exact code excerpt from the source that triggered your decision (max 15 lines). CRITICAL: MUST escape all newlines as \\n and quotes as \\\"! DO NOT output literal newlines.",
+      "startLine": 1,
+      "endLine": 15,
       "filePath": "relative path to the file containing this snippet",
       "explanation": "CRITICAL: Must match the code exactly. NEVER extract valid code and then falsely claim the feature doesn't exist!"
     }
@@ -241,12 +245,15 @@ STRICT RULES:
 8. CRITICAL EVIDENCE REQUIREMENT: If percentageComplete > 0, you MUST ALWAYS provide at least one snippet in 'relevantSnippets'. Even if you only found partial code (like finding the UI Screen but missing the ViewModel), you MUST extract the partial code you did find as proof! Empty arrays [] are ABSOLUTELY FORBIDDEN if the score is greater than 0.`;
 
       try {
-        const cacheKey = "code_" + crypto.createHash('sha256').update(prompt).digest('hex');
+        const cacheKey = "code_evidence_v3_" + crypto.createHash('sha256').update(prompt).digest('hex');
         let response: any;
 
         const finalParsed = await AiClientManager.executeWithFallback(async (client, model) => {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 90000);
+          let timeoutId: ReturnType<typeof setTimeout>;
+          const timeout = new Promise((_, reject) => {
+            timeoutId = setTimeout(() => { controller.abort(); reject(new Error('AI_TIMEOUT')); }, 90000);
+          });
           try {
             const result = await Promise.race([
               client.chat.completions.create({
@@ -256,7 +263,7 @@ STRICT RULES:
                 max_tokens: 4096,
                 response_format: { type: "json_object" }
               }, { signal: controller.signal as any }),
-              new Promise((_, reject) => setTimeout(() => reject(new Error("AI_TIMEOUT")), 90000))
+              timeout
             ]);
 
             let text = (result as any).choices[0].message.content?.trim() || "{}";
@@ -292,132 +299,20 @@ STRICT RULES:
               // Ignore sanitizer errors
             }
 
-            let parsedObj: any;
-            try {
-              parsedObj = JSON.parse(text);
-              return parsedObj;
-            } catch (parseError: any) {
-              console.warn(`[AICodeReviewEngine] JSON Parse Failed: ${parseError.message}. Using REGEX fallback extraction...`);
-              try {
-                let passed = false;
-                if (text.includes('"passed": true') || text.includes('"passed":true') || text.includes('"passed":  true')) {
-                  passed = true;
-                }
-
-                let percentageComplete = 0;
-                const pctMatch = text.match(/"percentageComplete"\s*:\s*([0-9.]+)/);
-                if (pctMatch) {
-                  percentageComplete = parseFloat(pctMatch[1]);
-                }
-
-                let reasoning = "Không thể trích xuất nhận xét do lỗi định dạng AI.";
-                const reasoningMatch = text.match(/"reasoning"\s*:\s*"([\s\S]*?)"\s*(,\s*"relevantSnippets"|,\s*"relevantFiles"|})/);
-                if (reasoningMatch) {
-                  reasoning = reasoningMatch[1].replace(/\\n/g, ' ').replace(/\n/g, ' ').replace(/\\"/g, '"');
-                } else {
-                  const fallbackMatch = text.match(/"reasoning"\s*:\s*"([\s\S]*)$/); // Match until end of string if truncated
-                  if (fallbackMatch) {
-                    reasoning = fallbackMatch[1].replace(/\\n/g, ' ').replace(/\n/g, ' ').replace(/\\"/g, '"').replace(/"\s*\]?\s*\}?$/, '');
-                  }
-                }
-
-                // Extract snippets via order-agnostic Regex
-                const relevantSnippets: any[] = [];
-                const arrayMatch = text.match(/"relevantSnippets"\s*:\s*\[([\s\S]*?)\]/);
-                if (arrayMatch) {
-                  const blocks = arrayMatch[1].match(/\{[\s\S]*?\}/g);
-                  if (blocks) {
-                    for (const block of blocks) {
-                      let codeSnippet = "";
-                      let filePath = "";
-                      let explanation = "Được trích xuất qua luồng cứu hộ dự phòng.";
-
-                      const codeM = block.match(/"codeSnippet"\s*:\s*"([\s\S]*?)"(?=\s*(?:,|}|$))/);
-                      if (codeM) codeSnippet = codeM[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-
-                      const fileM = block.match(/"filePath"\s*:\s*"([\s\S]*?)"(?=\s*(?:,|}|$))/);
-                      if (fileM) filePath = fileM[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-
-                      const expM = block.match(/"explanation"\s*:\s*"([\s\S]*?)"(?=\s*(?:,|}|$))/);
-                      if (expM) explanation = expM[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-
-                      if (codeSnippet && filePath) {
-                        relevantSnippets.push({ codeSnippet, filePath, explanation });
-                      }
-                    }
-                  }
-                }
-
-                const regexFallbackObj = {
-                  passed,
-                  confidence: 0.5,
-                  percentageComplete,
-                  reasoning,
-                  relevantSnippets,
-                  relevantFiles: []
-                };
-
-                return regexFallbackObj;
-              } catch (regexErr: any) {
-                throw new Error(`AI Code Review service failed: Đoạn code trích xuất quá dài hoặc chứa ký tự đặc biệt khiến JSON bị vỡ (${parseError.message}).`);
-              }
-            }
+            // Validate before the provider manager caches a response. Invalid evidence must be retried.
+            return resolveCodeReviewResult(snapshot.files, JSON.parse(text));
           } finally {
             clearTimeout(timeoutId);
           }
         }, cacheKey);
 
-        // --- ENFORCE RULE 8 WITHOUT RETRIES (SPEED OPTIMIZATION) ---
-        // If the AI gives a score > 0 but stubbornly returns 0 valid snippets, synthesize the evidence
-        // to prevent retries (which slow down the system).
-
-        const scorePct = typeof finalParsed.percentageComplete === 'number' ? finalParsed.percentageComplete : (finalParsed.passed ? 1 : 0);
-        if (!finalParsed.relevantSnippets) finalParsed.relevantSnippets = [];
-
-        // Ensure snippets have the required fields to be rendered by the dashboard
-        const hasValidSnippets = finalParsed.relevantSnippets.some((s: any) => s && s.codeSnippet && s.codeSnippet.trim() !== '' && s.filePath);
-
-        if (scorePct > 0 && !hasValidSnippets) {
-          finalParsed.relevantSnippets = []; // Clear invalid ones
-
-          // Attempt to synthesize from relevantFiles
-          if (finalParsed.relevantFiles && finalParsed.relevantFiles.length > 0) {
-            // Normalize prompt to forward slashes for easier matching of file paths
-            const normalizedPrompt = prompt.replace(/\\/g, '/');
-            for (const file of finalParsed.relevantFiles) {
-              const normalizedFile = file.replace(/\\/g, '/');
-              const escapedFile = normalizedFile.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-              // Allow partial paths: match anything before the file name on the same line
-              // Stop matching at \n\n--- OR \n\n... [CONTENT TRUNCATED
-              const regex = new RegExp(`// FILE:\\s*(?:[^\\n]*?)${escapedFile}\\s*\\n([\\s\\S]*?)(?=\\n\\n---|\\n\\n\\.\\.\\. \\[CONTENT TRUNCATED)`);
-              const match = normalizedPrompt.match(regex);
-              if (match) {
-                let content = match[1].trim();
-                finalParsed.relevantSnippets.push({
-                  codeSnippet: content, // Return full file content
-                  filePath: file,
-                  explanation: "Toàn bộ mã nguồn tệp được trích xuất làm bằng chứng dự phòng."
-                });
-              }
-            }
-          }
-
-          // 3. Transparent Placeholder Fallback
-          // If snippets are still empty but the AI graded it > 0, do NOT inject a random unrelated file.
-          // Instead, provide a synthetic snippet so the grading engine has evidence, while remaining transparent to the user.
-          if (finalParsed.relevantSnippets.length === 0) {
-            finalParsed.relevantSnippets.push({
-              codeSnippet: "// Bằng chứng mã nguồn đã được AI đánh giá hợp lệ\n// (Không thể trích xuất chi tiết do vượt giới hạn độ dài hiển thị).",
-              filePath: "System/AI_Evaluation_Fallback",
-              explanation: "Hệ thống ghi nhận mã nguồn hợp lệ nhưng không thể hiển thị chi tiết để tránh lỗi tràn bộ nhớ."
-            });
-          }
-        }
-
-        return finalParsed;
+        return resolveCodeReviewResult(snapshot.files, finalParsed);
       } catch (error: any) {
         lastError = error;
-        const isTimeoutOrRateLimit = error.message?.includes('AI_TIMEOUT') ||
+        const isTimeoutOrRateLimit = error.code === 'AI_UNAVAILABLE' || error.code === 'AI_TIMEOUT' ||
+          error.message?.includes('AI_CODE_EVIDENCE_MISSING') ||
+          error.message?.includes('AI_REVIEW_INVALID') ||
+          error.message?.includes('AI_TIMEOUT') ||
           error.message?.includes('abort') ||
           error.status === 429 ||
           error.status === 503 ||
@@ -430,6 +325,7 @@ STRICT RULES:
         }
 
         if (isTimeoutOrRateLimit && attempt < maxContextLengths.length) {
+          if (error.code === 'AI_UNAVAILABLE' || error.code === 'AI_TIMEOUT') await new Promise(resolve => setTimeout(resolve, 1500 * attempt));
           console.warn(`[AICodeReviewEngine] Attempt ${attempt} failed (Error: ${error.message}). Retrying with reduced context (${maxContextLengths[attempt]} chars)...`);
           continue; // Retry loop
         }

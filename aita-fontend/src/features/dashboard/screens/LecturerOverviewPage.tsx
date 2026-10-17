@@ -13,8 +13,10 @@ import { Input } from '@/components/ui/input'
 import { classesApi } from '@/lib/api/modules/classes'
 import { assignmentsApi } from '@/lib/api/modules/assignments'
 import { submissionsApi } from '@/lib/api/modules/submissions'
-import { notificationsApi } from '@/lib/api/modules/notifications'
+import { useNotifications } from '@/providers/notification-provider'
+import { notificationTime } from '@/lib/notifications/presentation'
 import { aiApi } from '@/lib/api/modules/ai'
+import { peekClientApiCache } from '@/lib/api/client'
 import { formatDate, cn } from '@/lib/utils'
 import { errorMessage } from '@/lib/api/errors'
 import {
@@ -42,58 +44,9 @@ import {
 } from 'lucide-react'
 
 // Relative time formatter matching StudentOverviewPage
-function formatRelativeTime(dateStr?: string, isVi: boolean = true) {
-  if (!dateStr) return isVi ? 'Vừa xong' : 'Just now'
-  const date = new Date(dateStr)
-  if (isNaN(date.getTime())) return ''
-  const now = new Date()
-  const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000)
-  if (diffSec < 60) return isVi ? 'Vừa xong' : 'Just now'
-  if (diffSec < 3600) return isVi ? `${Math.floor(diffSec / 60)} phút trước` : `${Math.floor(diffSec / 60)}m ago`
-  if (diffSec < 86400) return isVi ? `${Math.floor(diffSec / 3600)} giờ trước` : `${Math.floor(diffSec / 3600)}h ago`
-  if (diffSec < 604800) return isVi ? `${Math.floor(diffSec / 86400)} ngày trước` : `${Math.floor(diffSec / 86400)}d ago`
-  return date.toLocaleDateString(isVi ? 'vi-VN' : 'en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })
+function formatRelativeTime(date: string | Date | null | undefined, isVi = true, offset = 0) {
+  return notificationTime(date instanceof Date ? date.toISOString() : date || null, Date.now() + offset, isVi ? 'vi' : 'en')
 }
-
-// Sample fallback notifications for teacher
-const DEFAULT_TEACHER_NOTIFICATIONS = [
-  {
-    id: 'notif-1',
-    type: 'SUBMISSION',
-    title: 'Bài nộp mới từ sinh viên',
-    message: 'Sinh viên Nguyễn Văn Anh (SE180123) vừa nộp bài Assignment 1: WPF Application.',
-    isRead: false,
-    read: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
-  },
-  {
-    id: 'notif-2',
-    type: 'GRADE',
-    title: 'AI Engine hoàn tất chấm bài',
-    message: 'Hàng đợi chấm điểm tự động đã chấm xong 18 bài tập Lab 3 môn PRM392.',
-    isRead: false,
-    read: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-  },
-  {
-    id: 'notif-3',
-    type: 'APPEAL',
-    title: 'Đơn phúc khảo cần xử lý',
-    message: 'Sinh viên Trần Thị Mai gửi khiếu nại điểm bài Assignment 1 môn PRJ301.',
-    isRead: true,
-    read: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 360).toISOString(),
-  },
-  {
-    id: 'notif-4',
-    type: 'SYSTEM',
-    title: 'Nhắc nhở hạn nộp đề thi',
-    message: 'Thời hạn ban hành Rubric AI cho kỳ thi Final Exam Spring 2026 là ngày 15/10/2026.',
-    isRead: true,
-    read: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 1440).toISOString(),
-  },
-]
 
 // Clean data for teaching classes (monochrome neutral badges)
 const TEACHING_CLASSES = [
@@ -150,7 +103,7 @@ export default function LecturerOverviewPage() {
   const [classes, setClasses] = React.useState<any[]>([])
   const [exams, setExams] = React.useState<any[]>([])
   const [submissions, setSubmissions] = React.useState<any[]>([])
-  const [notifications, setNotifications] = React.useState<any[]>(DEFAULT_TEACHER_NOTIFICATIONS)
+  const { notifications, unreadCount, markAllAsRead, clockOffset } = useNotifications()
   const [loading, setLoading] = React.useState(true)
 
   // Chart time filter & hover tooltip state
@@ -171,13 +124,11 @@ export default function LecturerOverviewPage() {
   const [reviewSuccess, setReviewSuccess] = React.useState<string | null>(null)
 
   const loadData = React.useCallback(async () => {
-    setLoading((prev) => (classes.length === 0 && exams.length === 0 ? true : prev))
     try {
-      const [cls, exms, subs, notifs] = await Promise.allSettled([
+      const [cls, exms, subs] = await Promise.allSettled([
         classesApi.getClasses(1, 1000).catch(() => []),
         assignmentsApi.getAssignments().catch(() => []),
         submissionsApi.getSubmissions().catch(() => []),
-        notificationsApi.getMyNotifications({ limit: 10 }).catch(() => notificationsApi.getNotifications(1, 10)),
       ])
 
       if (cls.status === 'fulfilled') {
@@ -190,33 +141,30 @@ export default function LecturerOverviewPage() {
       if (subs.status === 'fulfilled') {
         setSubmissions(Array.isArray(subs.value) ? subs.value : [])
       }
-      if (notifs.status === 'fulfilled') {
-        const val = notifs.value
-        const items = Array.isArray(val) ? val : val?.items || val?.data || []
-        if (items.length > 0) {
-          setNotifications(items)
-        }
-      }
     } finally {
       setLoading(false)
     }
   }, [])
 
   React.useEffect(() => {
+    try {
+      if (typeof peekClientApiCache === 'function') {
+        const cachedCls = peekClientApiCache<any[]>('/classes?page=1&limit=1000')
+        const cachedExms = peekClientApiCache<any[]>('/assignments')
+        const cachedSubs = peekClientApiCache<any[]>('/submissions')
+        if (cachedCls || cachedExms) {
+          if (cachedCls) setClasses(cachedCls)
+          if (cachedExms) setExams(cachedExms)
+          if (cachedSubs) setSubmissions(cachedSubs)
+          setLoading(false)
+        }
+      }
+    } catch {}
+
     void loadData()
   }, [loadData])
 
-  // Unread notification count
-  const unreadCount = React.useMemo(() => {
-    return notifications.filter((n) => !n.isRead && !n.read).length
-  }, [notifications])
-
-  const handleMarkAllRead = async () => {
-    try {
-      await notificationsApi.markAllNotificationsAsRead()
-    } catch {}
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true, read: true })))
-  }
+  const handleMarkAllRead = () => { void markAllAsRead().catch(() => {}) }
 
   // Handle Ask AI Tutor
   const handleAskAi = async (e?: React.FormEvent) => {
@@ -862,7 +810,7 @@ export default function LecturerOverviewPage() {
                             </span>
                             <div className="flex items-center gap-1.5">
                               <span className="text-xs text-slate-400 font-medium">
-                                {formatRelativeTime(notif.createdAt, isVi)}
+                                {formatRelativeTime(notif.createdAt, isVi, clockOffset)}
                               </span>
                               {isUnread && (
                                 <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />

@@ -190,27 +190,27 @@ export class DocumentExtractorService {
     }> = [
       {
         type: 'RUBRIC_GRADING',
-        regex: /^(?:#{1,4}\s*)?(?:(?:phần\s*\d+|mục\s*\d+|part\s*\d+|section\s*\d+)[\.:\s]*)?(?:thang\s*điểm|barem\s*điểm|tiêu\s*chí\s*(?:chấm|đánh\s*giá)|bảng\s*điểm|rubric|grading\s*criteria|marking\s*scheme|evaluation\s*criteria)\b/i,
+        regex: /^(?:#{1,4}\s*)?(?:(?:\d+|[IVXLCDM]+|phần\s*\d+|mục\s*\d+|part\s*\d+|section\s*\d+)[\.:\s\-\)]*)?(?:thang\s*điểm|barem\s*(?:điểm|chấm)?|tiêu\s*chí\s*(?:chấm|đánh\s*giá)|bảng\s*điểm|rubric|grading\s*criteria|marking\s*scheme|evaluation\s*criteria)\b/i,
       },
       {
         type: 'INPUT_OUTPUT_SPEC',
-        regex: /^(?:#{1,4}\s*)?(?:(?:phần\s*\d+|mục\s*\d+|part\s*\d+|section\s*\d+)[\.:\s]*)?(?:đầu\s*vào|đầu\s*ra|dữ\s*liệu\s*vào|kết\s*quả\s*xuất|quy\s*cách\s*vào\s*ra|định\s*dạng\s*(?:đầu\s*vào|đầu\s*ra)|input\s*(?:specification|format)?|output\s*(?:specification|format)?)\b/i,
+        regex: /^(?:#{1,4}\s*)?(?:(?:\d+|[IVXLCDM]+|phần\s*\d+|mục\s*\d+|part\s*\d+|section\s*\d+)[\.:\s\-\)]*)?(?:đầu\s*vào|đầu\s*ra|dữ\s*liệu\s*vào|kết\s*quả\s*xuất|quy\s*cách\s*vào\s*ra|định\s*dạng\s*(?:đầu\s*vào|đầu\s*ra)|input\s*(?:specification|format)?|output\s*(?:specification|format)?)\b/i,
       },
       {
         type: 'CONSTRAINTS',
-        regex: /^(?:#{1,4}\s*)?(?:(?:phần\s*\d+|mục\s*\d+|part\s*\d+|section\s*\d+)[\.:\s]*)?(?:ràng\s*buộc|giới\s*hạn|điều\s*kiện\s*dữ\s*liệu|constraints|limitations|time\s*limit|memory\s*limit)\b/i,
+        regex: /^(?:#{1,4}\s*)?(?:(?:\d+|[IVXLCDM]+|phần\s*\d+|mục\s*\d+|part\s*\d+|section\s*\d+)[\.:\s\-\)]*)?(?:ràng\s*buộc|giới\s*hạn|điều\s*kiện\s*dữ\s*liệu|constraints|limitations|time\s*limit|memory\s*limit|yêu\s*cầu\s*bảo\s*mật)\b/i,
       },
       {
         type: 'EXAMPLES',
-        regex: /^(?:#{1,4}\s*)?(?:(?:phần\s*\d+|mục\s*\d+|part\s*\d+|section\s*\d+)[\.:\s]*)?(?:ví\s*dụ|ví\s*dụ\s*minh\s*họa|test\s*cases?|examples?|sample\s*(?:test|case|data))\b/i,
+        regex: /^(?:#{1,4}\s*)?(?:(?:\d+|[IVXLCDM]+|phần\s*\d+|mục\s*\d+|part\s*\d+|section\s*\d+)[\.:\s\-\)]*)?(?:ví\s*dụ|ví\s*dụ\s*minh\s*họa|test\s*cases?|kiểm\s*thử|examples?|sample\s*(?:test|case|data))\b/i,
       },
       {
         type: 'SAMPLE_CODE',
-        regex: /^(?:#{1,4}\s*)?(?:(?:phần\s*\d+|mục\s*\d+|part\s*\d+|section\s*\d+)[\.:\s]*)?(?:mã\s*nguồn\s*(?:mẫu|tham\s*khảo|khởi\s*tạo)|starter\s*code|skeleton\s*code|sample\s*solution|template\s*code)\b/i,
+        regex: /^(?:#{1,4}\s*)?(?:(?:\d+|[IVXLCDM]+|phần\s*\d+|mục\s*\d+|part\s*\d+|section\s*\d+)[\.:\s\-\)]*)?(?:mã\s*nguồn\s*(?:mẫu|tham\s*khảo|khởi\s*tạo)|starter\s*code|skeleton\s*code|sample\s*solution|template\s*code)\b/i,
       },
       {
         type: 'PROBLEM_STATEMENT',
-        regex: /^(?:#{1,4}\s*)?(?:(?:phần\s*\d+|mục\s*\d+|part\s*\d+|section\s*\d+)[\.:\s]*)?(?:mô\s*tả\s*(?:đề\s*bài|bài\s*toán|yêu\s*cầu)|nội\s*dung\s*yêu\s*cầu|bài\s*toán|yêu\s*cầu\s*chức\s*năng|problem\s*description|task\s*description|statement|overview)\b/i,
+        regex: /^(?:#{1,4}\s*)?(?:(?:\d+|[IVXLCDM]+|phần\s*\d+|mục\s*\d+|part\s*\d+|section\s*\d+)[\.:\s\-\)]*)?(?:mô\s*tả\s*(?:đề\s*bài|bài\s*toán|yêu\s*cầu)|nội\s*dung\s*yêu\s*cầu|bài\s*toán|yêu\s*cầu\s*chức\s*năng|problem\s*description|task\s*description|statement|overview)\b/i,
       },
     ]
 

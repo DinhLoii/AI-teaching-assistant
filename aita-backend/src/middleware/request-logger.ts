@@ -1,12 +1,14 @@
 import type { Request, Response, NextFunction } from 'express'
 import { logger } from '../shared/infrastructure/logger.js'
+import { safeUrl, safeLogData } from '../shared/infrastructure/redact-secrets.js'
 
 /**
  * Middleware to log HTTP request metadata and latency.
  */
 export function requestLogger(req: Request, res: Response, next: NextFunction): void {
   const start = process.hrtime()
-  const { method, originalUrl, ip } = req
+  const { method, ip } = req
+  const originalUrl = safeUrl(req.originalUrl)
   const userAgent = req.headers['user-agent'] || 'unknown'
   
   // Mask sensitive data
@@ -18,7 +20,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
   logger.debug(`Incoming ${method} ${originalUrl}`, { 
     ip, 
     userAgent,
-    body: Object.keys(body).length > 0 ? body : undefined 
+    body: Object.keys(body).length > 0 ? safeLogData(body) : undefined
   })
 
   res.on('finish', () => {

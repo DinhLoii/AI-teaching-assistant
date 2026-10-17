@@ -1,5 +1,6 @@
 // @ts-nocheck
 import Docker from 'dockerode';
+import { assertSandboxExecution } from '../../config/sandbox-policy.js';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { SqlExecutionProbeSpec, SqlTestCase } from '../../core/domain/rubric/EvidenceMatcher';
@@ -84,6 +85,7 @@ export class SqlExecutionProbeEngine {
         probeSpec: SqlExecutionProbeSpec,
         submissionId?: string
     ): Promise<SqlExecutionResult> {
+        assertSandboxExecution();
         const caseResults: SqlCaseResult[] = [];
         const overallStart = Date.now();
         let setupMs = 0;

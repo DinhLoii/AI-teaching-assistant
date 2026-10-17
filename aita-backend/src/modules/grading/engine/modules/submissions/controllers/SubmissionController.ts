@@ -1,4 +1,12 @@
 // @ts-nocheck
+import { durableGradingQueue } from '../../../application/queue/durable-grading-queue.js';
+import { gradingLease } from '../../../application/queue/grading-lease.js';
+import { assertAssignmentAccess, staffSubmissionScope } from '../../../assignment/assignment-access.js';
+import { privateSubmissionRoot } from '../../../../../submissions/infrastructure/submission-storage.js';
+import { inspectSourceArchive } from '../../../../../submissions/infrastructure/source-archive.js';
+import { readSubmissionFile } from '../../../../../submissions/infrastructure/submission-storage.js';
+import { publishNotification } from '../../../../../../shared/infrastructure/publish-notification.js'
+
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../../../../../database/prisma.js';
 import { BadRequestError } from '../../../shared/errors/index.js';
@@ -15,12 +23,107 @@ import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { DocumentExtractor } from '../../../assignment/DocumentExtractor.js';
-import { globalSubmissionQueue, continuousSubmissionQueue, SubmissionQueue } from '../../../application/queue/SubmissionQueue.js';
+import { globalSubmissionQueue, SubmissionQueue } from '../../../application/queue/SubmissionQueue.js';
 import { globalJobManager } from '../../../application/queue/SubmissionJobManager.js';
 import { SubmissionHistoryRepository } from '../../../infrastructure/file-system/SubmissionHistoryRepository.js';
 import { calculateLatePenalty } from '../../../../../submissions/domain/utils/late-penalty-calculator.js';
+import { ForbiddenError, NotFoundError } from '../../../../../../shared/application/app.error.js';
+import { memoryCache } from '../../../../../../shared/infrastructure/memory-cache.js';
 
 import { BaseController } from '../../../../../../shared/presentation/base-controller.js';
+
+const parseValidationConfig = (value: unknown): any => {
+    if (!value) return {};
+    if (typeof value === 'object') return value;
+    try { return JSON.parse(String(value)); } catch { return {}; }
+};
+
+const mapDatabaseRubricRule = (rule: any, testCases: any[]) => {
+    const criteria = Array.isArray(rule.RubricCriterion) ? rule.RubricCriterion : [];
+    const validationTypes = criteria.map((criterion: any) => String(criterion.ValidationType || '').toUpperCase());
+    const configs = criteria.map((criterion: any) => parseValidationConfig(criterion.ValidationConfig));
+    const firstHttpProbe = configs.map((config: any) => config.httpProbe || (Array.isArray(config.steps) ? {
+        description: rule.Description || rule.RuleCode || 'HTTP validation',
+        steps: config.steps
+    } : null)).find(Boolean);
+    const firstSqlProbe = configs.map((config: any) => config.sqlProbe).find(Boolean);
+    const staticPatterns = configs.flatMap((config: any) => Array.isArray(config.staticPatterns) ? config.staticPatterns : []);
+
+    let scoringStrategy = 'AICodeReview';
+    let category = 'CodeQuality';
+    let requiredEvidence: any[] = [{
+        evidenceType: 'ai.code.reviewed',
+        minimumConfidence: 0.7,
+        semanticDescription: rule.EvaluationPrompt || rule.Description || rule.RuleCode || 'Review the submitted source code'
+    }];
+
+    if (rule.IsManualOnly) {
+        scoringStrategy = 'Manual';
+        requiredEvidence = [{ evidenceType: 'manual.teacher.reviewed', minimumConfidence: 1 }];
+    } else if (firstSqlProbe) {
+        scoringStrategy = 'SqlExecutionProbe';
+        category = 'Functional';
+        requiredEvidence = [{ evidenceType: 'runtime.sql.probed', minimumConfidence: 1, sqlProbe: firstSqlProbe }];
+    } else if (validationTypes.some((type: string) => ['HTTP', 'HTTPPROBE'].includes(type)) && firstHttpProbe?.steps?.length) {
+        scoringStrategy = 'HTTPProbe';
+        category = 'Functional';
+        requiredEvidence = [{ evidenceType: 'runtime.http.probed', minimumConfidence: 1, httpProbe: firstHttpProbe }];
+    } else if (validationTypes.some((type: string) => ['TEST', 'TESTCASE', 'STDINOUT', 'STDINOUTPROBE'].includes(type)) && testCases.length > 0) {
+        scoringStrategy = 'StdInOutProbe';
+        category = 'Algorithm';
+        requiredEvidence = [{
+            evidenceType: 'runtime.stdio.probed',
+            minimumConfidence: 1,
+            stdInOutProbe: {
+                description: rule.Description || rule.RuleCode || 'Standard input/output tests',
+                testCases: testCases.map((testCase: any) => ({
+                    id: testCase.Id,
+                    input: testCase.Input || '',
+                    expectedOutput: testCase.ExpectedOutput || '',
+                    timeoutMs: testCase.TimeoutMs || 5000
+                }))
+            }
+        }];
+    } else if (validationTypes.some((type: string) => ['STATIC', 'UNIVERSALSTATIC'].includes(type)) && staticPatterns.length > 0) {
+        scoringStrategy = 'UniversalStatic';
+        requiredEvidence = [];
+    } else if (rule.RequireImageEvidence || validationTypes.some((type: string) => ['VISION', 'AIVISION'].includes(type))) {
+        scoringStrategy = 'AIVision';
+        category = 'UI';
+        requiredEvidence = [{
+            evidenceType: 'browser.screenshot.captured',
+            minimumConfidence: 0.7,
+            browserProbe: { description: rule.Description || 'UI evidence', path: '/' }
+        }];
+    } else if (rule.ReferenceAnswer && !rule.RequireCodeEvidence) {
+        scoringStrategy = 'AiTextAnalysis';
+        category = 'Theory';
+        requiredEvidence = [{
+            evidenceType: 'ai.text.analyzed',
+            minimumConfidence: 0.7,
+            semanticDescription: rule.EvaluationPrompt || rule.Description || 'Compare the answer with the reference answer'
+        }];
+    }
+
+    return {
+        id: rule.Id,
+        title: rule.RuleCode || rule.Description || 'Rule',
+        description: rule.Description || rule.EvaluationPrompt || '',
+        category,
+        weight: Number(rule.MaxPoints || 0),
+        scoringStrategy,
+        requiredEvidence,
+        referenceAnswer: rule.ReferenceAnswer || undefined,
+        staticPatterns: staticPatterns.length > 0 ? staticPatterns : undefined,
+        contextHint: rule.EvaluationPrompt || undefined,
+        criteria: criteria.map((criterion: any) => ({
+            id: criterion.Id,
+            description: criterion.Description || '',
+            points: Number(criterion.MaxPoints || 0)
+        }))
+    };
+};
+
 export class SubmissionController extends BaseController {
     private readonly sandboxService: ExecutionSandboxService;
     private readonly playwrightExecutor: PlaywrightExecutor;
@@ -39,130 +142,91 @@ export class SubmissionController extends BaseController {
         this.historyRepo = new SubmissionHistoryRepository();
     }
 
+    private assertSubmissionAccess = async (submissionId: string, user: any, requirePublishedForStudent: boolean) => {
+        const submission = await prisma.submission.findUnique({
+            where: { Id: submissionId },
+            select: {
+                StudentId: true,
+                ReviewStatus: true,
+                Exam: { select: { CreatedBy: true, ExamClass: { select: { Class: { select: { InstructorClass: { select: { UserId: true } } } } } } } },
+                Class: {
+                    select: {
+                        InstructorClass: { select: { UserId: true } }
+                    }
+                }
+            }
+        });
+
+        if (!submission) throw new NotFoundError('Submission not found');
+
+        const role = String(user?.role || '').toUpperCase();
+        const isPublished = submission.ReviewStatus === 'PUBLISHED';
+        if (role === 'ADMIN') return { role, isPublished };
+
+        if (role === 'LECTURER') {
+            const ownsClass = submission.Class?.InstructorClass?.some((item: any) => item.UserId === user.id) || (!submission.StudentId && submission.Exam?.ExamClass?.some((ec: any) => ec.Class?.InstructorClass?.some((ic: any) => ic.UserId === user.id)));
+            const createdExam = submission.Exam?.CreatedBy === user.id;
+            if (!ownsClass && !createdExam) {
+                throw new ForbiddenError('You can only view submissions for exams you created or classes you teach');
+            }
+            return { role, isPublished };
+        }
+
+        if (role === 'STUDENT') {
+            if (submission.StudentId !== user.id) {
+                throw new ForbiddenError('You can only view your own submissions');
+            }
+            if (requirePublishedForStudent && !isPublished) {
+                throw new ForbiddenError('This grade has not been published yet');
+            }
+            return { role, isPublished };
+        }
+
+        throw new ForbiddenError('You do not have permission to view this submission');
+    };
+
     /**
      * POST /api/submissions
      * Accepts a .zip file upload, processes and returns the assessment.
      */
+    private async queueUploadedFile(file: Express.Multer.File, assignmentId: string, user: any) {
+        await assertAssignmentAccess(assignmentId, user, true);
+        if (!file.originalname.toLowerCase().endsWith('.zip')) throw new BadRequestError('Only ZIP files are accepted.');
+        const bytes = file.buffer || await fs.readFile(file.path);
+        inspectSourceArchive(bytes);
+        const id = uuidv4();
+        const dir = path.join(privateSubmissionRoot(), 'manual');
+        await fs.mkdir(dir, { recursive: true });
+        const destination = path.join(dir, id + '.zip');
+        await fs.writeFile(destination, bytes);
+        try {
+            await prisma.submission.create({ data: {
+                Id: id, ExamId: assignmentId, StudentId: null, IsLatest: false,
+                SubmittedAt: new Date(), ReviewStatus: 'DRAFT', GradingStatus: 'Pending',
+                ZipFileUrl: '/private-submissions/manual/' + id + '.zip?filename=' + encodeURIComponent(file.originalname)
+            } });
+        } catch (error) { await fs.unlink(destination).catch(() => {}); throw error; }
+        await durableGradingQueue.enqueue(id, 'batch');
+        return { submissionId: id, fileName: file.originalname, studentName: file.originalname.replace(/\.zip$/i, '') };
+    }
+
     submit = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            if (!req.file) {
-                throw new BadRequestError('No file uploaded. Please upload a .zip file.');
-            }
-
-            if (!req.file.originalname.endsWith('.zip')) {
-                throw new BadRequestError('Only .zip files are accepted.');
-            }
-
-            const submissionId = uuidv4();
-
-            const assignmentIdFromReq = req.body.assignmentId;
-
-            let publishedAssignment = null;
-            if (assignmentIdFromReq) {
-                publishedAssignment = await globalAssignmentRepository.getAsync(assignmentIdFromReq);
-            }
-
-            if (!publishedAssignment) {
-                // Fallback to latest published assignment
-                publishedAssignment = await globalAssignmentRepository.getLatestAsync();
-            }
-
-            if (!publishedAssignment) {
-                throw new BadRequestError('No published assignments found. Please publish an assignment first.');
-            }
-
-            const studentName = req.file.originalname.replace('.zip', '');
-
-            const submission: Submission = {
-                id: submissionId,
-                assignmentId: publishedAssignment.id,
-                studentId: studentName,
-                sourceCodeUri: req.file.path,
-                currentState: SubmissionState.Queued,
-                statusHistory: []
-            };
-
-            // 1. Unzip the file
-            const extractDir = path.join(process.cwd(), 'temp', 'submissions', submissionId);
-            await this.extractOrCopyFile(req.file.path, extractDir, req.file.originalname);
-            await this.extractNestedZips(extractDir);
-
-            // Initialize Job
-            globalJobManager.initJob(submissionId);
-
-            this.enqueueSubmissionJob(submissionId, publishedAssignment, submission, extractDir);
-
-            this.ok(res, { submissionId, statusUrl: `/api/submissions/${submissionId}/stream` }, 'Submission accepted for processing');
-
-        } catch (error: any) {
-            next(error);
-        }
+            if (!req.file) throw new BadRequestError('Please upload a ZIP file.');
+            const result = await this.queueUploadedFile(req.file, req.body.assignmentId, req.user);
+            this.ok(res, { ...result, statusUrl: '/api/grading/submissions/' + result.submissionId + '/stream' }, 'Submission accepted for processing');
+        } catch (error) { next(error); }
     };
 
-    /**
-     * POST /api/submissions/upload-batch
-     * Accepts multiple .zip files, processes them in the queue, and returns an array of submissionIds.
-     */
     submitBatch = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const files = req.files as Express.Multer.File[];
-            if (!files || files.length === 0) {
-                throw new BadRequestError('No files uploaded. Please upload .zip files.');
-            }
-
-            const assignmentIdFromReq = req.body.assignmentId;
-
-            let publishedAssignment = null;
-            if (assignmentIdFromReq) {
-                publishedAssignment = await globalAssignmentRepository.getAsync(assignmentIdFromReq);
-            } else {
-                publishedAssignment = await globalAssignmentRepository.getLatestAsync();
-            }
-
-            if (!publishedAssignment) {
-                throw new BadRequestError('No published assignments found. Please publish an assignment first.');
-            }
-
-            const results = [];
-
-            for (const file of files) {
-                if (!file.originalname.endsWith('.zip')) {
-                    continue; // Skip non-zip files
-                }
-
-                const submissionId = uuidv4();
-
-                // Use original file name without extension as student/submission name for display
-                const studentName = file.originalname.replace('.zip', '');
-
-                const submission: Submission = {
-                    id: submissionId,
-                    assignmentId: publishedAssignment.id,
-                    studentId: studentName, // Using filename as student identifier
-                    sourceCodeUri: file.path,
-                    currentState: SubmissionState.Queued,
-                    statusHistory: []
-                };
-
-                const extractDir = path.join(process.cwd(), 'temp', 'submissions', submissionId);
-                await this.extractOrCopyFile(file.path, extractDir, file.originalname);
-                await this.extractNestedZips(extractDir);
-
-                globalJobManager.initJob(submissionId);
-                this.enqueueSubmissionJob(submissionId, publishedAssignment, submission, extractDir);
-
-                results.push({
-                    fileName: file.originalname,
-                    studentName: studentName,
-                    submissionId: submissionId
-                });
-            }
-
-            this.ok(res, { jobs: results }, `${results.length} submissions accepted for processing`);
-
-        } catch (error: any) {
-            next(error);
-        }
+            if (!files?.length) throw new BadRequestError('Please upload ZIP files.');
+            await assertAssignmentAccess(req.body.assignmentId, req.user!, true);
+            const jobs = [];
+            for (const file of files) jobs.push(await this.queueUploadedFile(file, req.body.assignmentId, req.user));
+            this.ok(res, { jobs }, jobs.length + ' submissions accepted for processing');
+        } catch (error) { next(error); }
     };
 
     private async extractOrCopyFile(sourcePath: string, extractDir: string, originalFileName?: string): Promise<void> {
@@ -184,38 +248,12 @@ export class SubmissionController extends BaseController {
      * Helper to download file from URL (Cloudinary or local) and save to temp path
      */
     private async downloadFile(url: string, destPath: string): Promise<void> {
-        try {
-            if (url.startsWith('http://') || url.startsWith('https://')) {
-                const fetchUrl = url.split('?')[0]; // Remove query params
-                const response = await fetch(fetchUrl);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const buffer = await response.arrayBuffer();
-
-                // Ensure directory exists
-                const dir = path.dirname(destPath);
-                await fs.mkdir(dir, { recursive: true });
-
-                await fs.writeFile(destPath, Buffer.from(buffer));
-            } else {
-                // Local file path
-                let localPath = url.split('?')[0];
-                if (localPath.startsWith('/')) localPath = localPath.substring(1);
-                const sourcePath = path.join(process.cwd(), localPath);
-
-                // Ensure directory exists
-                const dir = path.dirname(destPath);
-                await fs.mkdir(dir, { recursive: true });
-
-                await fs.copyFile(sourcePath, destPath);
-            }
-        } catch (err: any) {
-            throw new Error(`Failed to download file from ${url}: ${err.message}`);
-        }
+        await fs.mkdir(path.dirname(destPath), { recursive: true });
+        await fs.writeFile(destPath, await readSubmissionFile(url));
     }
 
     public executeGradingForSubmission = async (submissionId: string, queue: SubmissionQueue | null = globalSubmissionQueue): Promise<void> => {
+        if (queue !== null) { await durableGradingQueue.enqueue(submissionId, 'batch'); return; }
         const submissionRecord = await prisma.submission.findUnique({
             where: { Id: submissionId },
             include: { User_Submission_StudentIdToUser: true }
@@ -239,6 +277,7 @@ export class SubmissionController extends BaseController {
             const examDb = await prisma.exam.findUnique({
                 where: { Id: assignmentId },
                 include: {
+                    TestCase: { orderBy: { SortOrder: 'asc' } },
                     ExamSection: {
                         include: {
                             RubricRule: {
@@ -263,28 +302,20 @@ export class SubmissionController extends BaseController {
                     rubric: {
                         id: examDb.Id,
                         totalWeight: Number(examDb.TotalPoints || 10),
-                        rules: examDb.ExamSection.flatMap(s => s.RubricRule.map(r => ({
-                            id: r.Id,
-                            title: r.Title || 'Rule',
-                            description: r.Description || '',
-                            weight: Number(r.Weight || 1),
-                            criteria: r.RubricCriterion.map(c => ({
-                                id: c.Id,
-                                description: c.Description || '',
-                                points: Number(c.Points || 1)
-                            }))
-                        })))
+                        rules: examDb.ExamSection.flatMap(s =>
+                            s.RubricRule.map(r => mapDatabaseRubricRule(r, examDb.TestCase))
+                        )
                     }
                 };
             }
         }
 
-        if (!publishedAssignment) {
+        if (!publishedAssignment?.rubric?.rules?.length) {
             throw new BadRequestError('Published assignment not found for this submission');
         }
 
         const studentCode = submissionRecord.User_Submission_StudentIdToUser?.StudentCode ||
-            submissionRecord.User_Submission_StudentIdToUser?.Username ||
+            submissionRecord.User_Submission_StudentIdToUser?.StudentCode ||
             submissionRecord.StudentId;
 
         let originalFileName = 'submission.zip';
@@ -306,7 +337,7 @@ export class SubmissionController extends BaseController {
         await this.downloadFile(submissionRecord.ZipFileUrl, tempZipPath);
 
         // 2. Unzip file or copy
-        const extractDir = path.join(process.cwd(), 'temp', 'submissions', submissionId);
+        const extractDir = path.join(process.cwd(), 'temp', 'submissions', submissionId + '_' + uuidv4());
         await this.extractOrCopyFile(tempZipPath, extractDir, originalFileName);
         await this.extractNestedZips(extractDir);
 
@@ -328,7 +359,6 @@ export class SubmissionController extends BaseController {
             statusHistory: []
         };
 
-        globalJobManager.clearJob(submissionId);
         globalJobManager.initJob(submissionId);
 
         if (queue === null) {
@@ -353,18 +383,8 @@ export class SubmissionController extends BaseController {
      * The status is set to Processing up front, before the slot is awaited, so that a lecturer
      * pressing "grade all" cannot pick the same submission up a second time while it waits.
      */
-    public enqueueContinuousGrading = (submissionId: string): Promise<void> => {
-        globalJobManager.initJob(submissionId);
-
-        const reserve = prisma.submission
-            .update({ where: { Id: submissionId }, data: { GradingStatus: 'Processing' } })
-            .catch(err => {
-                console.error(`[ContinuousQueue] Could not reserve submission ${submissionId}:`, err);
-            });
-
-        return reserve.then(() =>
-            continuousSubmissionQueue.enqueue(() => this.executeGradingForSubmission(submissionId, null))
-        );
+    public enqueueContinuousGrading = async (submissionId: string): Promise<void> => {
+        await durableGradingQueue.enqueue(submissionId, 'continuous');
     };
 
     /**
@@ -378,6 +398,7 @@ export class SubmissionController extends BaseController {
                 throw new BadRequestError('submissionId is required');
             }
 
+            await this.assertSubmissionAccess(submissionId, req.user, false);
             await this.executeGradingForSubmission(submissionId);
 
             this.ok(res, { submissionId, statusUrl: `/api/grading/submissions/${submissionId}/stream` }, 'Submission accepted for grading');
@@ -399,6 +420,7 @@ export class SubmissionController extends BaseController {
                 throw new BadRequestError('assignmentId is required');
             }
 
+            await assertAssignmentAccess(assignmentId, req.user!, false);
             const publishedAssignment = await globalAssignmentRepository.getAsync(assignmentId);
             if (!publishedAssignment) {
                 throw new BadRequestError('Published assignment not found');
@@ -408,8 +430,10 @@ export class SubmissionController extends BaseController {
             const pendingSubmissions = await prisma.submission.findMany({
                 where: {
                     ExamId: assignmentId,
+                    AND: [staffSubmissionScope(req.user!)],
                     OR: [
                         { GradingStatus: { notIn: ['Processing', 'Graded', 'GRADED'] } },
+                        { GradingStatus: 'Processing', GradingTask: { is: null } },
                         { GradingStatus: null }
                     ],
                     IsLatest: true,
@@ -426,65 +450,10 @@ export class SubmissionController extends BaseController {
             }
 
             const results = [];
-
             for (const record of pendingSubmissions) {
-                const submissionId = record.Id;
-                const studentCode = record.User_Submission_StudentIdToUser?.StudentCode ||
-                    record.User_Submission_StudentIdToUser?.Username ||
-                    record.StudentId;
-
-                let fileName = 'submission.zip';
-                if (record.ZipFileUrl) {
-                    try {
-                        const urlObj = new URL(record.ZipFileUrl);
-                        if (urlObj.searchParams.has('filename')) {
-                            fileName = urlObj.searchParams.get('filename')!;
-                        } else {
-                            fileName = urlObj.pathname.split('/').pop() || fileName;
-                        }
-                    } catch (e) {
-                        fileName = record.ZipFileUrl.split('/').pop()?.split('?')[0] || fileName;
-                    }
-                }
-
-                try {
-                    const tempZipPath = path.join(process.cwd(), 'temp', 'uploads', `${submissionId}_${fileName}`);
-                    await this.downloadFile(record.ZipFileUrl!, tempZipPath);
-
-                    const extractDir = path.join(process.cwd(), 'temp', 'submissions', submissionId);
-                    await this.extractOrCopyFile(tempZipPath, extractDir, fileName);
-                    await this.extractNestedZips(extractDir);
-
-                    const engineSubmission: Submission = {
-                        id: submissionId,
-                        assignmentId: assignmentId,
-                        studentId: studentCode!,
-                        sourceCodeUri: tempZipPath,
-                        currentState: SubmissionState.Queued,
-                        statusHistory: []
-                    };
-
-                    globalJobManager.initJob(submissionId);
-                    this.enqueueSubmissionJob(submissionId, publishedAssignment, engineSubmission, extractDir);
-
-                    results.push({
-                        submissionId: submissionId,
-                        studentName: studentCode,
-                        fileName: fileName
-                    });
-                } catch (err: any) {
-                    console.error(`[SubmissionController] Failed to queue batch submission ${submissionId}:`, err);
-                    // Optionally mark as failed in DB here if you want
-                }
-            }
-
-            // Update all successfully queued submissions to 'Processing'
-            if (results.length > 0) {
-                const queuedIds = results.map(r => r.submissionId);
-                await prisma.submission.updateMany({
-                    where: { Id: { in: queuedIds } },
-                    data: { GradingStatus: 'Processing' }
-                });
+                await this.assertSubmissionAccess(record.Id, req.user, false);
+                await durableGradingQueue.enqueue(record.Id, 'batch');
+                results.push({ submissionId: record.Id, studentName: record.User_Submission_StudentIdToUser?.StudentCode || record.StudentId, fileName: path.basename(record.ZipFileUrl!.split('?')[0]) });
             }
 
             this.ok(res, { jobs: results }, `${results.length} submissions accepted for processing`);
@@ -503,10 +472,11 @@ export class SubmissionController extends BaseController {
             if (!assignmentId) {
                 throw new BadRequestError('assignmentId is required');
             }
-            if (!submissionIds || !Array.isArray(submissionIds) || submissionIds.length === 0) {
+            if (!Array.isArray(submissionIds) || submissionIds.length === 0 || submissionIds.length > 100 || submissionIds.some(id => typeof id !== 'string' || !id || id.length > 128)) {
                 throw new BadRequestError('submissionIds array is required');
             }
 
+            await assertAssignmentAccess(assignmentId, req.user!, false);
             const publishedAssignment = await globalAssignmentRepository.getAsync(assignmentId);
             if (!publishedAssignment) {
                 throw new BadRequestError('Published assignment not found');
@@ -517,6 +487,7 @@ export class SubmissionController extends BaseController {
                 where: {
                     Id: { in: submissionIds },
                     ExamId: assignmentId,
+                    AND: [staffSubmissionScope(req.user!)],
                     ZipFileUrl: { not: null }
                 },
                 include: { User_Submission_StudentIdToUser: true }
@@ -528,63 +499,10 @@ export class SubmissionController extends BaseController {
             }
 
             const results = [];
-
             for (const record of pendingSubmissions) {
-                const submissionId = record.Id;
-                const studentCode = record.User_Submission_StudentIdToUser?.StudentCode ||
-                    record.User_Submission_StudentIdToUser?.Username ||
-                    record.StudentId;
-
-                let fileName = 'submission.zip';
-                if (record.ZipFileUrl) {
-                    try {
-                        const urlObj = new URL(record.ZipFileUrl);
-                        if (urlObj.searchParams.has('filename')) {
-                            fileName = urlObj.searchParams.get('filename')!;
-                        } else {
-                            fileName = urlObj.pathname.split('/').pop() || fileName;
-                        }
-                    } catch (e) {
-                        fileName = record.ZipFileUrl.split('/').pop()?.split('?')[0] || fileName;
-                    }
-                }
-
-                try {
-                    const tempZipPath = path.join(process.cwd(), 'temp', 'uploads', `${submissionId}_${fileName}`);
-                    await this.downloadFile(record.ZipFileUrl!, tempZipPath);
-
-                    const extractDir = path.join(process.cwd(), 'temp', 'submissions', submissionId);
-                    await this.extractOrCopyFile(tempZipPath, extractDir, fileName);
-                    await this.extractNestedZips(extractDir);
-
-                    const engineSubmission: Submission = {
-                        id: submissionId,
-                        assignmentId: assignmentId,
-                        studentId: studentCode!,
-                        sourceCodeUri: tempZipPath,
-                        currentState: SubmissionState.Queued,
-                        statusHistory: []
-                    };
-
-                    globalJobManager.initJob(submissionId);
-                    this.enqueueSubmissionJob(submissionId, publishedAssignment, engineSubmission, extractDir);
-
-                    results.push({
-                        submissionId: submissionId,
-                        studentName: studentCode,
-                        fileName: fileName
-                    });
-                } catch (err: any) {
-                    console.error(`[SubmissionController] Failed to queue selected submission ${submissionId}:`, err);
-                }
-            }
-
-            if (results.length > 0) {
-                const queuedIds = results.map(r => r.submissionId);
-                await prisma.submission.updateMany({
-                    where: { Id: { in: queuedIds } },
-                    data: { GradingStatus: 'Processing' }
-                });
+                await this.assertSubmissionAccess(record.Id, req.user, false);
+                await durableGradingQueue.enqueue(record.Id, 'batch');
+                results.push({ submissionId: record.Id, studentName: record.User_Submission_StudentIdToUser?.StudentCode || record.StudentId, fileName: path.basename(record.ZipFileUrl!.split('?')[0]) });
             }
 
             this.ok(res, { jobs: results }, `${results.length} submissions accepted for processing`);
@@ -606,9 +524,11 @@ export class SubmissionController extends BaseController {
             }
 
             const ids = idsString.split(',').filter(id => id.trim().length > 0);
+            if (ids.length > 100) throw new BadRequestError('Maximum 100 submissions per request.');
             const statuses: Record<string, any> = {};
 
             for (const id of ids) {
+                await this.assertSubmissionAccess(id, req.user, false);
                 const job = globalJobManager.getJob(id);
                 if (job) {
                     statuses[id] = {
@@ -619,12 +539,16 @@ export class SubmissionController extends BaseController {
                         score: job.result?.totalScore,
                         maxScore: job.result?.maxPossibleScore
                     };
+                } else {
+                    const saved = await prisma.submission.findUnique({ where: { Id: id }, select: { GradingStatus: true, FinalScore: true, TotalScore: true, GradingTask: true } });
+                    const state = String(saved?.GradingStatus || '').toLowerCase();
+                    statuses[id] = { state: state === 'graded' ? 'completed' : state === 'error' ? 'failed' : saved?.GradingTask?.Status === 'running' ? 'processing' : 'queued', progressPercent: state === 'graded' ? 100 : 0, score: state === 'graded' ? Number(saved.FinalScore) : undefined, maxScore: saved?.TotalScore, error: saved?.GradingTask?.LastError || undefined };
                 }
             }
 
             this.ok(res, { statuses }, 'Batch status fetched successfully');
         } catch (err) {
-            res.status(500).json({ success: false, error: 'Failed to fetch batch status' });
+            throw err;
         }
     };
 
@@ -640,6 +564,7 @@ export class SubmissionController extends BaseController {
     public enqueueSubmissionJob(submissionId: string, publishedAssignment: any, submission: Submission, extractDir: string, queue: SubmissionQueue | null = globalSubmissionQueue) {
         const job = async () => {
             let sandboxHandle: SandboxHandle | null = null;
+            let evaluationTimer: ReturnType<typeof setTimeout> | undefined;
             try {
                 const checkCancelled = () => {
                     const job = globalJobManager.getJob(submissionId);
@@ -651,10 +576,30 @@ export class SubmissionController extends BaseController {
                     globalJobManager.updateProgress(submissionId, 5, 'Initialize the execution environment (Sandbox)...');
                     try {
                         const startSandboxPromise = this.sandboxService.startAsync(extractDir, publishedAssignment.metadata?.projectType as any);
-                        const startTimeoutPromise = new Promise<never>((_, reject) =>
-                            setTimeout(() => reject(new Error('Sandbox initialization timed out (60s). Proceeding to source analysis.')), 60000)
-                        );
-                        sandboxHandle = await Promise.race([startSandboxPromise, startTimeoutPromise]);
+                        let sandboxStartTimer: ReturnType<typeof setTimeout> | undefined;
+                        let sandboxStartTimedOut = false;
+                        const startTimeoutPromise = new Promise<never>((_, reject) => {
+                            sandboxStartTimer = setTimeout(() => {
+                                sandboxStartTimedOut = true;
+                                reject(new Error('Sandbox initialization timed out (60s). Proceeding to source analysis.'));
+                            }, 60000);
+                        });
+
+                        try {
+                            sandboxHandle = await Promise.race([startSandboxPromise, startTimeoutPromise]);
+                        } finally {
+                            if (sandboxStartTimer) clearTimeout(sandboxStartTimer);
+                            if (sandboxStartTimedOut) {
+                                void startSandboxPromise
+                                    .then(async lateHandle => {
+                                        console.warn(`[SubmissionController] Sandbox ${lateHandle.containerId || '(no container)'} became ready after timeout; cleaning it up.`);
+                                        await this.sandboxService.stopAsync(lateHandle);
+                                    })
+                                    .catch(lateError => {
+                                        console.warn('[SubmissionController] Timed-out sandbox eventually failed:', lateError?.message || lateError);
+                                    });
+                            }
+                        }
                     } catch (sandboxErr: any) {
                         console.error(`[SubmissionController] Sandbox start error:`, sandboxErr);
                         sandboxHandle = {
@@ -751,13 +696,13 @@ export class SubmissionController extends BaseController {
                 })();
 
                 const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Global evaluation timeout (15 minutes) exceeded')), 900000)
+                    evaluationTimer = setTimeout(() => reject(new Error('Global evaluation timeout (15 minutes) exceeded')), 900000)
                 );
 
                 const report = await Promise.race([evaluationPromise, timeoutPromise]) as any;
 
-                globalJobManager.completeJob(submissionId, report);
 
+                report.executionSummary = { runtimeStack: sandboxHandle?.runtimeStack || 'unknown', ready: sandboxHandle?.isReady === true, limitation: sandboxHandle?.isReady ? null : sandboxHandle?.crashLogs || 'No executable test environment was available.' };
                 // --- Save to History DB ---
                 try {
                     await this.historyRepo.saveAsync({
@@ -770,8 +715,13 @@ export class SubmissionController extends BaseController {
                         title: publishedAssignment.metadata.title,
                         report: report
                     });
+                    globalJobManager.completeJob(submissionId, report);
+                    memoryCache.invalidatePrefix(`sub_detail_${submissionId}_`);
+                    memoryCache.invalidatePrefix('subs_list_');
+                    memoryCache.invalidatePrefix('subs_recent_');
+                    memoryCache.invalidatePrefix('student_dash_');
 
-                    globalJobManager.emit(`assignment_event:${publishedAssignment.id}`, {
+                    globalJobManager.emitAssignmentEvent(publishedAssignment.id, {
                         type: 'SUBMISSION_GRADED',
                         assignmentId: publishedAssignment.id,
                         submissionId: submissionId,
@@ -779,38 +729,21 @@ export class SubmissionController extends BaseController {
                     });
                 } catch (historyErr) {
                     console.error(`[SubmissionController] Failed to save history for ${submissionId}:`, historyErr);
+                    throw historyErr;
                 }
 
             } catch (err: any) {
                 console.error(`[SubmissionController] Job ${submissionId} failed:`, err);
 
-                if (err.partialReport) {
-                    try {
-                        await this.historyRepo.saveAsync({
-                            id: submissionId,
-                            assignmentId: publishedAssignment.id,
-                            studentId: submission.studentId,
-                            score: err.partialReport.totalScore || 0,
-                            maxScore: err.partialReport.maxPossibleScore || 0,
-                            assessedAt: new Date().toISOString(),
-                            title: publishedAssignment.metadata.title,
-                            report: err.partialReport
-                        });
-                    } catch (historyErr) {
-                        console.error(`[SubmissionController] Failed to save partial history for ${submissionId}:`, historyErr);
-                    }
-                }
                 try {
-                    await prisma.submission.update({
-                        where: { Id: submissionId },
-                        data: { GradingStatus: null }
-                    });
-                } catch (dbErr) {
-                    console.error(`[SubmissionController] Failed to reset GradingStatus for ${submissionId}:`, dbErr);
-                }
+                    await this.historyRepo.saveAsync({ id: submissionId, assignmentId: publishedAssignment.id, studentId: submission.studentId, score: 0, maxScore: publishedAssignment.rubric.totalWeight || 0, assessedAt: new Date().toISOString(), report: { ...(err.partialReport || {}), submissionId, assignmentId: publishedAssignment.id, error: err.message || 'Grading failed' } });
+                    memoryCache.invalidatePrefix('sub_detail_'); memoryCache.invalidatePrefix('subs_list_'); memoryCache.invalidatePrefix('subs_recent_');
+                } catch (dbErr) { console.error('[Grading] Failed to persist error state:', dbErr); }
 
+                if (gradingLease.getStore()) throw err;
                 globalJobManager.failJob(submissionId, err.message || 'Unknown error');
             } finally {
+                if (evaluationTimer) clearTimeout(evaluationTimer);
                 if (sandboxHandle) {
                     await this.sandboxService.stopAsync(sandboxHandle);
                 }
@@ -822,11 +755,17 @@ export class SubmissionController extends BaseController {
 
         return (queue ? queue.enqueue(job) : job()).catch(err => {
             console.error(`[SubmissionController] Queue error for ${submissionId}:`, err);
+            if (gradingLease.getStore()) throw err;
         });
     }
 
     streamProgress = async (req: Request, res: Response) => {
         const id = req.params.id as string;
+        const access = await this.assertSubmissionAccess(id, req.user, false);
+        const hideUnpublishedResult = access.role === 'STUDENT' && !access.isPublished;
+        const visibleJob = (value: any) => hideUnpublishedResult
+            ? { ...value, result: undefined, meta: undefined, ...(value?.error ? { error: 'Không thể hoàn tất lượt chấm. Giảng viên sẽ kiểm tra và chấm lại.' } : {}) }
+            : value;
 
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache, no-transform');
@@ -844,8 +783,7 @@ export class SubmissionController extends BaseController {
                 });
                 if (subRecord) {
                     const statusLower = String(subRecord.GradingStatus || '').toLowerCase();
-                    const isGraded = ['graded', 'completed'].includes(statusLower) || 
-                        ((subRecord.FinalScore !== null || subRecord.TotalScore !== null) && statusLower !== 'processing');
+                    const isGraded = ['graded', 'completed'].includes(statusLower);
 
                     if (isGraded) {
                         const scoreVal = Number(subRecord.FinalScore ?? subRecord.TotalScore ?? subRecord.RawScore ?? 0);
@@ -854,7 +792,7 @@ export class SubmissionController extends BaseController {
                             state: 'completed',
                             progressPercent: 100,
                             currentTask: 'Hoàn tất chấm điểm',
-                            result: { totalScore: scoreVal }
+                            ...(hideUnpublishedResult ? {} : { result: { totalScore: scoreVal } })
                         })}\n\n`);
                         setTimeout(() => {
                             try { res.end(); } catch (e) { }
@@ -875,15 +813,21 @@ export class SubmissionController extends BaseController {
                             return;
                         }
                         // Self-healing: if in DB but memory job missing and in Continuous Queue mode, start grading job immediately
-                        await this.executeGradingForSubmission(id).catch(() => { });
-                        job = globalJobManager.getJob(id);
+                        const task = await prisma.submissionGradingTask.findUnique({ where: { SubmissionId: id } });
+                        job = {
+                            submissionId: id,
+                            state: ['failed', 'cancelled'].includes(task?.Status) || statusLower === 'error' || (!task && statusLower === 'processing') ? 'failed' : task?.Status === 'running' ? 'processing' : 'queued',
+                            progressPercent: 0,
+                            currentTask: task?.Status === 'running' ? 'Đang chấm bài...' : 'Đang chờ trong hàng đợi chấm bài...',
+                            ...(['failed', 'cancelled'].includes(task?.Status) || statusLower === 'error' || (!task && statusLower === 'processing') ? { error: hideUnpublishedResult ? 'Lượt chấm chưa hoàn tất. Giảng viên sẽ kiểm tra và chấm lại.' : task?.LastError || 'Lượt chấm bị gián đoạn. Vui lòng chấm lại.' } : {})
+                        };
                     }
                 }
             } catch (e) { }
         }
 
         if (job) {
-            res.write(`data: ${JSON.stringify(job)}\n\n`);
+            res.write(`data: ${JSON.stringify(visibleJob(job))}\n\n`);
             if (job.state === 'completed' || job.state === 'failed') {
                 setTimeout(() => {
                     try { res.end(); } catch (e) { }
@@ -903,7 +847,7 @@ export class SubmissionController extends BaseController {
 
         const onUpdate = (updatedJob: any) => {
             try {
-                res.write(`data: ${JSON.stringify(updatedJob)}\n\n`);
+                res.write(`data: ${JSON.stringify(visibleJob(updatedJob))}\n\n`);
                 if (updatedJob.state === 'completed' || updatedJob.state === 'failed') {
                     clearInterval(keepAliveInterval);
                     setTimeout(() => {
@@ -927,16 +871,12 @@ export class SubmissionController extends BaseController {
 
     cancel = async (req: Request, res: Response) => {
         const id = req.params.id as string;
+        await this.assertSubmissionAccess(id, req.user, false);
+        await durableGradingQueue.cancel(id);
         const job = globalJobManager.getJob(id);
 
         if (!job) {
-            try {
-                await prisma.submission.update({
-                    where: { Id: id },
-                    data: { GradingStatus: null }
-                });
-            } catch (e) { }
-            this.ok(res, { success: true }, 'Job not found in memory. Database state has been force reset.');
+            this.ok(res, { success: true }, 'Đã ghi nhận yêu cầu hủy lượt chấm.');
             return;
         }
 
@@ -950,29 +890,26 @@ export class SubmissionController extends BaseController {
 
     cancelBatch = async (req: Request, res: Response) => {
         const { ids } = req.body;
-        if (!Array.isArray(ids)) {
+        if (!Array.isArray(ids) || ids.some(id => typeof id !== 'string' || !id || id.length > 128)) {
             throw new BadRequestError('Missing or invalid ids array');
         }
 
+        if (ids.length > 100) throw new BadRequestError('Maximum 100 submissions per request.');
+        for (const id of ids) await this.assertSubmissionAccess(id, req.user, false);
         let cancelledCount = 0;
-        for (const id of ids) {
-            const job = globalJobManager.getJob(id);
-            if (job && job.state !== 'completed') {
-                globalJobManager.cancelJob(id);
-                cancelledCount++;
-            }
-        }
+        for (const id of ids) if (await durableGradingQueue.cancel(id)) cancelledCount++;
 
         this.ok(res, { success: true, cancelledCount }, `Requested cancellation for ${cancelledCount} jobs.`);
     };
 
     getResult = async (req: Request, res: Response) => {
         const id = req.params.id as string;
+        await this.assertSubmissionAccess(id, req.user, true);
         const job = globalJobManager.getJob(id);
 
         let report: any = null;
 
-        if (!job) {
+        if (!job || (job.state === 'completed' && !job.result)) {
             // Fallback to History Database if RAM doesn't have it
             const historyItem = await this.historyRepo.getByIdAsync(id);
             if (historyItem && historyItem.report && Object.keys(historyItem.report).length > 0) {
@@ -984,7 +921,7 @@ export class SubmissionController extends BaseController {
             if (job.state === 'completed') {
                 report = job.result;
                 // Clear job to save memory since we've already saved it to History DB
-                globalJobManager.clearJob(id);
+
             } else if (job.state === 'failed') {
                 // Try to fetch partial report from history db
                 const historyItem = await this.historyRepo.getByIdAsync(id);
@@ -994,9 +931,11 @@ export class SubmissionController extends BaseController {
                     throw new BadRequestError('Job failed and no partial report was generated. Error: ' + job.error);
                 }
                 // Clear job to save memory
-                globalJobManager.clearJob(id);
+
             } else {
-                throw new BadRequestError('Job is not completed yet. Current state: ' + job.state);
+                const saved = await prisma.submission.findUnique({ where: { Id: id }, select: { GradingStatus: true, ReportData: true } });
+                if (['graded', 'error'].includes(String(saved?.GradingStatus || '').toLowerCase()) && saved?.ReportData) report = parseValidationConfig(saved.ReportData);
+                else throw new BadRequestError('Job is not completed yet. Current state: ' + job.state);
             }
         }
 
@@ -1005,7 +944,7 @@ export class SubmissionController extends BaseController {
         let studentFeedback: string | null = null;
         let assignmentId: string | null = null;
         let dueDate: string | null = null;
-        let effectiveScore = report.totalScore !== undefined ? report.totalScore : 0;
+        let effectiveScore = !report.error && report.totalScore != null && Number.isFinite(Number(report.totalScore)) ? Number(report.totalScore) : null;
         let effectiveFeedback = report.overallFeedback || '';
 
         try {
@@ -1027,7 +966,7 @@ export class SubmissionController extends BaseController {
             assignmentId = subRecord?.ExamId || null;
             dueDate = subRecord?.Exam?.DueDate ? new Date(subRecord.Exam.DueDate).toISOString() : null;
 
-            if (subRecord?.FinalScore !== null && subRecord?.FinalScore !== undefined) {
+            if (!report.error && subRecord?.FinalScore !== null && subRecord?.FinalScore !== undefined) {
                 effectiveScore = Number(subRecord.FinalScore);
             }
 
@@ -1044,7 +983,9 @@ export class SubmissionController extends BaseController {
             assignmentId,
             dueDate,
             score: effectiveScore,
-            maxScore: report.maxPossibleScore || 0,
+            maxScore: report.maxPossibleScore ?? null,
+            gradingError: report.error || report.lastGradingError || null,
+            executionSummary: report.executionSummary || null,
             rules: report.passedRules || [],
             failedRules: report.failedRules || [],
             manualReviewNotes: report.manualReviewNotes || [],
@@ -1057,6 +998,7 @@ export class SubmissionController extends BaseController {
 
     updateResult = async (req: Request, res: Response) => {
         const id = req.params.id as string;
+        await this.assertSubmissionAccess(id, req.user, false);
         const { score, rules, failedRules, overallFeedback, ruleScores } = req.body || {};
 
         const historyItem = await this.historyRepo.getByIdAsync(id);
@@ -1110,12 +1052,25 @@ export class SubmissionController extends BaseController {
             });
         }
 
+        memoryCache.invalidatePrefix(`sub_detail_${id}_`);
+        memoryCache.invalidatePrefix('subs_list_');
+        memoryCache.invalidatePrefix('subs_recent_');
+        memoryCache.invalidatePrefix('student_dash_');
         this.ok(res, { success: true }, 'Result updated successfully');
     };
 
     publish = async (req: Request, res: Response) => {
         const id = req.params.id as string;
+        await this.assertSubmissionAccess(id, req.user, false);
         const { score, rules, failedRules, overallFeedback, ruleScores } = req.body || {};
+
+        const savedSubmission = await prisma.submission.findUnique({
+            where: { Id: id }, select: { ReportData: true, GradingStatus: true }
+        });
+        const savedReport = parseValidationConfig(savedSubmission?.ReportData);
+        if (savedReport.error || ['processing', 'pending', 'queued'].includes(String(savedSubmission?.GradingStatus || '').toLowerCase())) {
+            throw new BadRequestError('Lượt chấm chưa hoàn tất. Vui lòng kiểm tra lỗi và chấm lại trước khi công bố điểm.');
+        }
 
         if (rules || failedRules || score !== undefined || overallFeedback !== undefined || ruleScores) {
             const historyItem = await this.historyRepo.getByIdAsync(id);
@@ -1188,22 +1143,32 @@ export class SubmissionController extends BaseController {
                 await prisma.notificationRecipient.create({
                     data: { NotificationId: notif.Id, UserId: submission.StudentId, IsRead: false }
                 });
+                publishNotification([submission.StudentId], notif)
             } catch (notifErr) {
                 console.error('Failed to create grade-published notification:', notifErr);
             }
         }
 
+        memoryCache.invalidatePrefix(`sub_detail_${id}_`);
+        memoryCache.invalidatePrefix('subs_list_');
+        memoryCache.invalidatePrefix('subs_recent_');
+        memoryCache.invalidatePrefix('student_dash_');
         this.ok(res, { success: true, isPublished: true, reviewStatus: 'PUBLISHED' }, 'Đã công bố kết quả cho học sinh thành công!');
     };
 
     unpublish = async (req: Request, res: Response) => {
         const id = req.params.id as string;
+        await this.assertSubmissionAccess(id, req.user, false);
         try {
             await prisma.submission.update({
                 where: { Id: id },
                 data: { ReviewStatus: 'DRAFT' }
             });
         } catch (e) { }
+        memoryCache.invalidatePrefix(`sub_detail_${id}_`);
+        memoryCache.invalidatePrefix('subs_list_');
+        memoryCache.invalidatePrefix('subs_recent_');
+        memoryCache.invalidatePrefix('student_dash_');
         this.ok(res, { success: true, isPublished: false, reviewStatus: 'DRAFT' }, 'Đã chuyển kết quả về trạng thái nháp.');
     };
 
@@ -1220,15 +1185,17 @@ export class SubmissionController extends BaseController {
 
             if (!assignmentId) throw new BadRequestError('Assignment ID is required');
 
+            await assertAssignmentAccess(assignmentId, req.user!, false);
+            const classScope = req.user?.role?.toUpperCase() === 'LECTURER' ? { InstructorClass: { some: { UserId: req.user.id } } } : {};
             // Fetch all classes linked to this assignment
             const examClasses = await prisma.examClass.findMany({
-                where: { ExamId: assignmentId },
+                where: { ExamId: assignmentId, Class: classScope },
                 include: { Class: true }
             });
             const classesList = examClasses
                 .map(ec => ec.Class)
                 .filter(Boolean)
-                .map(c => ({ id: c.Id, className: c.ClassName || c.ClassCode, classCode: c.ClassCode }));
+                .map(c => ({ id: c.Id, className: c.ClassCode, classCode: c.ClassCode }));
 
             const classDueDateMap = new Map(examClasses.map(ec => [ec.ClassId, ec.DueDate]));
 
@@ -1236,6 +1203,7 @@ export class SubmissionController extends BaseController {
             const allStudentClasses = await prisma.studentClass.findMany({
                 where: {
                     Class: {
+                        ...classScope,
                         ExamClass: {
                             some: {
                                 ExamId: assignmentId
@@ -1346,7 +1314,7 @@ export class SubmissionController extends BaseController {
                     lateReason = penaltyCalc.lateReason || '';
 
                     // If already graded and late penalty was not yet deducted in DB, apply auto-sync
-                    if (isGraded && penaltyCalc.isLate && penaltyCalc.latePenaltyAmount > 0 && (submission.LatePenaltyAmount === null || Number(submission.LatePenaltyAmount) === 0)) {
+                    if (submission && isGraded && penaltyCalc.isLate && penaltyCalc.latePenaltyAmount > 0 && (submission.LatePenaltyAmount === null || Number(submission.LatePenaltyAmount) === 0)) {
                         latePenaltyAmount = penaltyCalc.latePenaltyAmount;
                         finalScore = penaltyCalc.finalScore;
 
@@ -1404,7 +1372,7 @@ export class SubmissionController extends BaseController {
                     studentCode: sc.User.StudentCode || sc.UserId,
                     studentAvatar: sc.User.Avatar,
                     classId: sc.ClassId,
-                    className: sc.Class?.ClassName || sc.Class?.ClassCode || 'Chưa phân lớp',
+                    className: sc.Class?.ClassCode || 'Chưa phân lớp',
                     classCode: sc.Class?.ClassCode || '',
                     score,
                     rawScore,
@@ -1475,6 +1443,7 @@ export class SubmissionController extends BaseController {
     };
 
     deleteHistory = async (req: Request, res: Response) => {
+        await this.assertSubmissionAccess(req.params.id, req.user, false);
         try {
             const id = req.params.id as string;
             const deleted = await this.historyRepo.deleteAsync(id);

@@ -19,7 +19,6 @@ const messages: Record<string, string> = {
     'nav.ai_ready': 'AI Engine Ready',
     'nav.account': 'Account',
     'nav.profile': 'User Profile',
-    'nav.back_to_user': 'Back to Main System',
     'nav.user_portal': 'User Portal',
 
     // Pending notes & Calendar
@@ -551,6 +550,11 @@ const messages: Record<string, string> = {
     'notifications.filter_unread': 'Unread',
     'notifications.mark_all_read': 'Mark all as read',
     'notifications.empty_title': 'No notifications!',
+    'notifications.loading': 'Loading notifications...',
+    'notifications.live': 'Updating live',
+    'notifications.reconnecting': 'Reconnecting; notifications will sync automatically',
+    'notifications.load_more': 'Load more notifications',
+    'notifications.more_unread': 'More unread notifications are available. Select Load more notifications to continue.',
     'notifications.badge_new': 'New',
     'notifications.click_to_view': 'Click to view details',
     'lecturer.prompts.header_title': 'AI Prompt Templates Management',

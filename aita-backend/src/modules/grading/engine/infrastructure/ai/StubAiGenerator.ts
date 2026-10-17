@@ -322,17 +322,53 @@ ${improvements}
         explanation = 'Thiếu phần phân tích Time Complexity của các thao tác.';
         percentageComplete = 0.0;
       }
+    // Kiểm tra xem sinh viên có nộp code dở dang / TODO / stub hay không
+    const isTodoOrIncomplete = (code: string, funcPattern?: RegExp): boolean => {
+      if (!code) return true;
+      if (funcPattern) {
+        const match = code.match(funcPattern);
+        if (match) {
+          const body = match[0];
+          if (/TODO|Chưa làm|throw|not implemented|\{\s*\}/i.test(body)) return true;
+          // Thân hàm quá ngắn không có logic
+          if (body.split('\n').length <= 3 && !body.includes('->') && !body.includes('.')) return true;
+        }
+      }
+      return false;
+    };
+
+    if (isComplexityRule) {
+      const readmeFile = files.find(f => f.path.toLowerCase().includes('readme') || f.path.toLowerCase().includes('doc'));
+      if (readmeFile && /complexity|o\(n\)|thời gian/i.test(readmeFile.content)) {
+        bestFile = readmeFile;
+        const compMatch = readmeFile.content.match(/(?:#*\s*Complexity[\s\S]*?)(?=\n#|$)/i);
+        matchedSnippet = compMatch ? compMatch[0].trim().slice(0, 350) : readmeFile.content.slice(0, 300);
+        reasoning = 'Sinh viên đã trình bày phân tích độ phức tạp thời gian (Time Complexity) rõ ràng, chính xác cho các thao tác chính trong file README.md.';
+        explanation = 'Bảng phân tích độ phức tạp thời gian O(n) và O(n²) được cung cấp đầy đủ.';
+        percentageComplete = 1.0;
+      } else {
+        reasoning = 'Không tìm thấy tài liệu phân tích độ phức tạp thời gian trong mã nguồn hoặc tệp tài liệu.';
+        explanation = 'Thiếu phần phân tích Time Complexity của các thao tác.';
+        percentageComplete = 0.0;
+      }
     } else if (isDataStructureRule) {
       const source = files.find(f => /struct|class|node/i.test(f.content)) || bestFile;
       if (source && /student/i.test(source.content) && /node|link/i.test(source.content)) {
         bestFile = source;
         const structMatch = source.content.match(/(?:struct\s+Student[\s\S]*?struct\s+Node[\s\S]*?\{[\s\S]*?\};)/i);
         matchedSnippet = structMatch ? structMatch[0].trim() : source.content.slice(0, 300);
-        reasoning = 'Mã nguồn đã cài đặt chính xác cấu trúc Student (ID, Name, GPA) và cấu trúc Node của danh sách liên kết đơn với đầy đủ con trỏ và cơ chế cấp phát/giải phóng bộ nhớ.';
-        explanation = 'Định nghĩa đúng cấu trúc Student và cấu trúc dữ liệu Linked List.';
-        percentageComplete = 1.0;
+        const hasTodo = isTodoOrIncomplete(source.content, /struct\s+Node[\s\S]*?\}/i);
+        if (hasTodo) {
+          percentageComplete = 0.25;
+          reasoning = 'Mã nguồn có khai báo struct Student/Node nhưng cấu trúc danh sách liên kết chưa hoàn thiện hoặc còn đánh dấu TODO.';
+          explanation = 'Cấu trúc dữ liệu chưa được hoàn thiện đầy đủ.';
+        } else {
+          reasoning = 'Mã nguồn đã cài đặt chính xác cấu trúc Student (ID, Name, GPA) và cấu trúc Node của danh sách liên kết đơn với đầy đủ con trỏ và cơ chế cấp phát/giải phóng bộ nhớ.';
+          explanation = 'Định nghĩa đúng cấu trúc Student và cấu trúc dữ liệu Linked List.';
+          percentageComplete = 1.0;
+        }
       } else {
-        percentageComplete = 0.5;
+        percentageComplete = 0.0;
         reasoning = 'Chưa tìm thấy đầy đủ cấu trúc Student hoặc danh sách liên kết theo đúng đặc tả.';
         explanation = 'Cấu trúc dữ liệu chưa hoàn chỉnh.';
       }
@@ -342,9 +378,16 @@ ${improvements}
         bestFile = source;
         const sortMatch = source.content.match(/(?:void\s+sortBy[\s\S]*?\n\s*\})/i);
         matchedSnippet = sortMatch ? sortMatch[0].trim() : source.content.slice(0, 300);
-        reasoning = 'Đã cài đặt thuật toán sắp xếp (Bubble Sort) trên danh sách liên kết theo GPA giảm dần và thuật toán tìm kiếm tuyến tính chính xác.';
-        explanation = 'Thuật toán sắp xếp và tìm kiếm hoạt động chuẩn xác theo yêu cầu đề bài.';
-        percentageComplete = 1.0;
+        const hasTodo = isTodoOrIncomplete(source.content, /(?:void\s+sortBy[\s\S]*?\n\s*\})/i);
+        if (hasTodo || (sortMatch && /TODO|return/i.test(sortMatch[0]) && !sortMatch[0].includes('while') && !sortMatch[0].includes('for'))) {
+          percentageComplete = 0.25;
+          reasoning = 'Hàm sắp xếp/tìm kiếm mới chỉ khai báo nguyên mẫu hoặc chứa chú thích TODO, chưa triển khai thuật toán sắp xếp (Bubble sort/Selection sort).';
+          explanation = 'Thuật toán chưa được cài đặt nội dung xử lý.';
+        } else {
+          reasoning = 'Đã cài đặt thuật toán sắp xếp (Bubble Sort) trên danh sách liên kết theo GPA giảm dần và thuật toán tìm kiếm tuyến tính chính xác.';
+          explanation = 'Thuật toán sắp xếp và tìm kiếm hoạt động chuẩn xác theo yêu cầu đề bài.';
+          percentageComplete = 1.0;
+        }
       } else {
         percentageComplete = 0.0;
         reasoning = 'Chưa tìm thấy thuật toán sắp xếp hoặc tìm kiếm theo yêu cầu.';
@@ -356,9 +399,16 @@ ${improvements}
         bestFile = source;
         const funcMatch = source.content.match(/(?:bool\s+deleteStudent[\s\S]*?\n\s*\})/i) || source.content.match(/(?:void\s+addStudent[\s\S]*?\n\s*\})/i);
         matchedSnippet = funcMatch ? funcMatch[0].trim() : source.content.slice(0, 300);
-        reasoning = 'Hoàn thành đầy đủ các chức năng quản lý danh sách: Thêm sinh viên, Xóa theo ID, Tìm kiếm theo ID và Hiển thị danh sách sinh viên có định dạng.';
-        explanation = 'Các phương thức chức năng thêm/xóa/tìm kiếm/hiển thị được triển khai hoàn thiện.';
-        percentageComplete = 1.0;
+        const hasTodo = isTodoOrIncomplete(source.content, /(?:void\s+addStudent[\s\S]*?\n\s*\})/i);
+        if (hasTodo || (funcMatch && /TODO/i.test(funcMatch[0]))) {
+          percentageComplete = 0.25;
+          reasoning = 'Các hàm CRUD (thêm, xóa, tìm kiếm) chứa ghi chú TODO hoặc chưa xử lý cập nhật liên kết con trỏ head/tail.';
+          explanation = 'Chức năng chưa được cài đặt đầy đủ.';
+        } else {
+          reasoning = 'Hoàn thành đầy đủ các chức năng quản lý danh sách: Thêm sinh viên, Xóa theo ID, Tìm kiếm theo ID và Hiển thị danh sách sinh viên có định dạng.';
+          explanation = 'Các phương thức chức năng thêm/xóa/tìm kiếm/hiển thị được triển khai hoàn thiện.';
+          percentageComplete = 1.0;
+        }
       } else {
         percentageComplete = 0.0;
         reasoning = 'Chưa cài đặt đủ các chức năng thêm, xóa, tìm kiếm theo yêu cầu.';
@@ -372,7 +422,8 @@ ${improvements}
         matchedSnippet = valMatch ? valMatch[0].trim() : source.content.slice(0, 300);
         reasoning = 'Mã nguồn có cấu trúc rõ ràng, đặt tên biến/hàm theo quy chuẩn, có xử lý lỗi nhập liệu và kiểm tra các trường hợp danh sách rỗng.';
         explanation = 'Code sạch, phân chia hàm hợp lý và có xử lý ngoại lệ.';
-        percentageComplete = 1.0;
+        percentageComplete = 0.75;
+      }
       }
     } else {
       // General Keyword & Semantic Extraction across ALL files for Any Subject (Java, C#, Web, Mobile, etc.)

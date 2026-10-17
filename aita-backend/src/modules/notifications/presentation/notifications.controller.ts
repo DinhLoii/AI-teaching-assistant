@@ -25,10 +25,11 @@ export class NotificationsController extends BaseController {
         const query = req.query as any
         this.logger.debug(`Fetching notifications for user: ${userId}`)
         const result = await this.listUserNotificationsUseCase.execute(userId, {
-            page: Number(query.page || 1),
-            limit: Number(query.limit || 20),
+            page: Math.max(1, Math.floor(Number(query.page) || 1)),
+            limit: Math.max(1, Math.min(100, Math.floor(Number(query.limit) || 20))),
             read: query.read === 'true' ? true : query.read === 'false' ? false : undefined
         })
+        res.setHeader('Cache-Control', 'private, no-store')
         this.ok(res, result, MESSAGES.NOTIFICATIONS_LIST_SUCCESS)
     }
 
@@ -40,6 +41,7 @@ export class NotificationsController extends BaseController {
                 Notification: { Type: { notIn: ['Reminder', 'DEADLINE_WARNING'] } },
             },
         })
+        res.setHeader('Cache-Control', 'private, no-store')
         this.ok(res, { count }, 'Unread notification count')
     }
 
@@ -62,14 +64,24 @@ export class NotificationsController extends BaseController {
         res.flushHeaders()
 
         // Send an initial "connected" event so the client knows the stream is live
-        res.write(`data: ${JSON.stringify({ type: 'CONNECTED', payload: { userId } })}\n\n`)
+        res.write(`data: ${JSON.stringify({ type: 'CONNECTED', payload: { userId, serverTime: new Date().toISOString() } })}\n\n`)
 
         // Register this response with the singleton service
-        const cleanup = sseService.register(userId, res)
+        const cleanup = sseService.register(userId, res, (req as any).user?.role)
+        // Authentication middleware already verified this JWT. End the stream at
+        // token expiry so reconnect goes through authentication and refresh again.
+        let lifetime = 60 * 60 * 1000
+        try {
+            const token = req.headers.authorization?.slice(7) || String(req.query.token || '')
+            const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString())
+            if (Number.isFinite(claims.exp)) lifetime = Math.max(1, Math.min(lifetime, claims.exp * 1000 - Date.now()))
+        } catch { /* Bounded lifetime also applies to non-JWT test tokens. */ }
+        const expiry = setTimeout(() => res.end(), lifetime)
 
         // Clean up when the client closes the connection
-        req.on('close', cleanup)
-        req.on('error', cleanup)
+        const close = () => { clearTimeout(expiry); cleanup() }
+        res.on('close', close)
+        res.on('error', close)
     }
 
     async markAsRead(req: Request, res: Response): Promise<void> {
@@ -77,6 +89,7 @@ export class NotificationsController extends BaseController {
         const notificationId = req.params.id as string
         this.logger.info(`Marking notification ${notificationId} as read for user ${userId}`)
         await this.markNotificationAsReadUseCase.execute(userId, notificationId)
+        sseService.push(userId, { type: 'NOTIFICATION_READ', payload: { notificationId } })
         this.ok(res, null, MESSAGES.NOTIFICATIONS_MARK_READ_SUCCESS)
     }
 
@@ -84,6 +97,7 @@ export class NotificationsController extends BaseController {
         const userId = (req as any).user.id
         this.logger.info(`Marking all notifications as read for user ${userId}`)
         await this.markAllNotificationsAsReadUseCase.execute(userId)
+        sseService.push(userId, { type: 'ALL_READ' })
         this.ok(res, null, 'Marked all notifications as read successfully')
     }
 
@@ -149,6 +163,7 @@ export class NotificationsController extends BaseController {
         const notificationId = req.params.id as string
         this.logger.info(`Deleting notification ${notificationId} for user ${userId}`)
         await this.deleteNotificationUseCase.execute(userId, notificationId)
+        sseService.push(userId, { type: 'NOTIFICATION_DELETED', payload: { notificationId } })
         this.ok(res, null, 'Deleted notification successfully')
     }
 
@@ -156,6 +171,7 @@ export class NotificationsController extends BaseController {
         const userId = (req as any).user.id
         this.logger.info(`Deleting all notifications for user ${userId}`)
         await this.deleteAllNotificationsUseCase.execute(userId)
+        sseService.push(userId, { type: 'ALL_DELETED' })
         this.ok(res, null, 'Deleted all notifications successfully')
     }
 }

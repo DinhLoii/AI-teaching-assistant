@@ -1,3 +1,4 @@
+import { publishNotification } from '../../../../shared/infrastructure/publish-notification.js'
 import type { IUseCase } from '../../../../shared/application/base-use-case.js'
 import type { AuthUser } from '../../../../types/express.js'
 import { NotFoundError, ValidationError } from '../../../../shared/application/app.error.js'
@@ -80,7 +81,7 @@ export class ReopenSubmissionUseCase implements IUseCase<{ dto: ReopenSubmission
       const notif = await prisma.notification.create({
         data: {
           Title: `Gia hạn nộp bài: ${exam.Title}`,
-          Message: `Giảng viên đã mở lại bài nộp "${exam.Title}" cho bạn. Hạn nộp mới: ${parsedDueDate.toLocaleString('vi-VN')}.`,
+          Message: `Giảng viên đã mở lại bài nộp "${exam.Title}" cho bạn. Hạn nộp mới: ${parsedDueDate.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}.`,
           Type: 'ASSIGNMENT_REOPENED',
           ReferenceId: examId,
           ReferenceType: 'EXAM',
@@ -95,6 +96,7 @@ export class ReopenSubmissionUseCase implements IUseCase<{ dto: ReopenSubmission
           IsRead: false,
         }
       })
+      publishNotification([studentId], notif)
     } catch (notifErr) {
       console.error('Failed to create notification for reopened submission:', notifErr)
     }

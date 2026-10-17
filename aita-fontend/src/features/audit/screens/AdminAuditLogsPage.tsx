@@ -1,5 +1,7 @@
 'use client'
 
+import { RefreshAction } from '@/components/actions/RefreshAction'
+
 import * as React from 'react'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { ADMIN_NAV } from '@/config/navigation'
@@ -22,7 +24,6 @@ import {
   AlertCircle,
   Clock,
   Eye,
-  RefreshCw,
   ChevronLeft,
   ChevronRight,
   Code2,
@@ -45,9 +46,9 @@ export default function AdminAuditLogsPage() {
   const [error, setError] = React.useState<string | null>(null)
   const [selectedLog, setSelectedLog] = React.useState<AuditEntry | null>(null)
 
-  const loadLogs = React.useCallback(async () => {
+  const loadLogs = React.useCallback(async (background = false) => {
     if (!isAuthenticated || role !== 'admin') return
-    setLoading(true)
+    if (!background) setLoading(true)
     setError(null)
     try {
       const fetchPage = mode === 'system' ? auditApi.getAuditLogs : auditApi.getAIAuditLogs
@@ -58,6 +59,7 @@ export default function AdminAuditLogsPage() {
       setRows(currentData || [])
       setHasNext((nextData || []).length > 0)
     } catch (cause) {
+      if (background) throw cause
       setError(errorMessage(cause))
     } finally {
       setLoading(false)
@@ -159,16 +161,7 @@ export default function AdminAuditLogsPage() {
               <option value="failure">Có lỗi / Thất bại</option>
             </select>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => void loadLogs()}
-              isLoading={loading}
-              className="text-xs gap-1.5 cursor-pointer rounded-xl font-bold"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Tải lại</span>
-            </Button>
+            <RefreshAction onRefresh={() => loadLogs(true)} disabled={loading} cachePaths={["/audit"]} />
           </div>
         </div>
 

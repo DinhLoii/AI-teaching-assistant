@@ -1,5 +1,7 @@
 // @ts-nocheck
 import { EventEmitter } from 'events';
+import { gradingLease } from './grading-lease.js';
+import { realtimeBus } from '../../../../../shared/infrastructure/realtime-bus.js';
 
 export type JobState = 'queued' | 'processing' | 'completed' | 'failed';
 
@@ -12,24 +14,40 @@ export interface JobProgress {
     error?: string;
     meta?: any;
     isCancelled?: boolean;
+    generation?: string;
+    generationStartedAt?: number;
+    requestVersion?: number;
+    attempt?: number;
 }
 
 class SubmissionJobManager extends EventEmitter {
     private jobs: Map<string, JobProgress> = new Map();
+    private expirations = new Map<string, ReturnType<typeof setTimeout>>();
 
-    public initJob(submissionId: string) {
+    public initJob(submissionId: string, message = 'Waiting in queue...', version?: { requestVersion: number; attempt: number }) {
+        const current = this.jobs.get(submissionId);
+        const lease = gradingLease.getStore();
+        const requestVersion = version?.requestVersion ?? lease?.requestVersion ?? lease?.startedAt ?? Date.now();
+        const attempt = version?.attempt ?? lease?.attempt ?? 0;
+        if (current && ((current.requestVersion || 0) > requestVersion || (current.requestVersion === requestVersion && (current.attempt || 0) > attempt))) return;
+        clearTimeout(this.expirations.get(submissionId));
+        this.expirations.delete(submissionId);
         this.jobs.set(submissionId, {
             submissionId,
             state: 'queued',
+            generation: gradingLease.getStore()?.owner,
+            generationStartedAt: gradingLease.getStore()?.startedAt || Date.now(),
+            requestVersion,
+            attempt,
             progressPercent: 0,
-            currentTask: 'Waiting in queue...'
+            currentTask: message
         });
         this.emitJobUpdate(submissionId);
     }
 
     public updateProgress(submissionId: string, percent: number, task: string, meta?: any) {
         const job = this.jobs.get(submissionId);
-        if (job) {
+        if (job && (!gradingLease.getStore() || job.generation === gradingLease.getStore()?.owner)) {
             job.state = 'processing';
             job.progressPercent = percent;
             job.currentTask = task;
@@ -44,28 +62,30 @@ class SubmissionJobManager extends EventEmitter {
 
     public completeJob(submissionId: string, result: any) {
         const job = this.jobs.get(submissionId);
-        if (job) {
+        if (job && (!gradingLease.getStore() || job.generation === gradingLease.getStore()?.owner)) {
             job.state = 'completed';
             job.progressPercent = 100;
             job.currentTask = 'Evaluation complete';
             job.result = result;
             this.emitJobUpdate(submissionId);
+            this.expireTerminal(submissionId, job);
         }
     }
 
     public failJob(submissionId: string, error: string) {
         const job = this.jobs.get(submissionId);
-        if (job) {
+        if (job && (!gradingLease.getStore() || job.generation === gradingLease.getStore()?.owner)) {
             job.state = 'failed';
             job.error = error;
             job.currentTask = 'Failed';
             this.emitJobUpdate(submissionId);
+            this.expireTerminal(submissionId, job);
         }
     }
 
     public cancelJob(submissionId: string) {
         const job = this.jobs.get(submissionId);
-        if (job) {
+        if (job && (!gradingLease.getStore() || job.generation === gradingLease.getStore()?.owner)) {
             job.isCancelled = true;
             this.emitJobUpdate(submissionId);
         }
@@ -75,18 +95,51 @@ class SubmissionJobManager extends EventEmitter {
         return this.jobs.get(submissionId);
     }
 
+    public receiveProgress(progress: JobProgress) {
+        const current = this.jobs.get(progress.submissionId);
+        if (current && ((current.requestVersion || 0) > (progress.requestVersion || 0) || (current.requestVersion === progress.requestVersion && (current.attempt || 0) > (progress.attempt || 0)))) return;
+        if (current && current.requestVersion === progress.requestVersion && current.attempt === progress.attempt) {
+            if (['completed', 'failed'].includes(current.state) && !['completed', 'failed'].includes(progress.state)) return;
+            if (current.state === 'processing' && progress.state === 'processing' && progress.progressPercent < current.progressPercent) return;
+        }
+        this.jobs.set(progress.submissionId, progress);
+        this.emit(`update:${progress.submissionId}`, progress);
+        if (['completed', 'failed'].includes(progress.state)) this.expireTerminal(progress.submissionId, progress);
+    }
+
     public clearJob(submissionId: string) {
         this.jobs.delete(submissionId);
+        clearTimeout(this.expirations.get(submissionId));
+        this.expirations.delete(submissionId);
+    }
+
+    private expireTerminal(id: string, job: JobProgress) {
+        clearTimeout(this.expirations.get(id));
+        const timer = setTimeout(() => { if (this.jobs.get(id) === job) this.clearJob(id); }, 10 * 60 * 1000);
+        timer.unref?.();
+        this.expirations.set(id, timer);
+    }
+
+    public emitAssignmentEvent(assignmentId: string, event: any) {
+        this.emit(`assignment_event:${assignmentId}`, event);
+        realtimeBus.publish('assignment-event', { assignmentId, event });
     }
 
     private emitJobUpdate(submissionId: string) {
         const job = this.jobs.get(submissionId);
-        if (job) {
+        if (job && (!gradingLease.getStore() || job.generation === gradingLease.getStore()?.owner)) {
             // Emits an event specific to this submission
             this.emit(`update:${submissionId}`, job);
+            // Completed reports are fetched through the authorized result endpoint.
+            const { result: _result, meta: _meta, ...progress } = job;
+            realtimeBus.publish('grading-progress', progress);
         }
     }
 }
 
 export const globalJobManager = new SubmissionJobManager();
+realtimeBus.subscribe('grading-progress', progress => {
+    globalJobManager.receiveProgress(progress);
+});
+realtimeBus.subscribe('assignment-event', ({ assignmentId, event }) => globalJobManager.emit(`assignment_event:${assignmentId}`, event));
 

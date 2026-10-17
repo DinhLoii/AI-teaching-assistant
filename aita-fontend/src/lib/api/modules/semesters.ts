@@ -2,7 +2,7 @@ import { request } from '../client'
 import type { SubjectRow, SemesterRow, CreateSemesterBody, CreateSeasonBody } from '../contracts'
 
 export const semestersApi = {
-  getSemesters: () => request<SemesterRow[]>(`/semesters`),
+  getSemesters: (options: Pick<RequestInit, 'cache'> = {}) => request<SemesterRow[]>(`/semesters`, options),
 
   createSemester: (body: CreateSemesterBody) =>
     request<SemesterRow>('/semesters', { method: 'POST', body: JSON.stringify(body) }),
