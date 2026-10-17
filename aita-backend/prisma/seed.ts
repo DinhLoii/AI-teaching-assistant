@@ -1,4 +1,6 @@
 import 'dotenv/config'
+import { canSeedDemoAccounts } from '../src/database/dev-seed-policy.js'
+if (!canSeedDemoAccounts(process.env)) throw new Error('Demo seed is restricted to explicitly enabled local development databases.')
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { PRF192_SYLLABUS } from './data/syllabi/prf192-syllabus.js'
