@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const rawApiTarget = process.env.API_PROXY_TARGET || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const rawApiTarget = process.env.API_PROXY_TARGET || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
 const apiTarget = rawApiTarget.replace(/\/api\/?$/, '').replace(/\/+$/, '');
 
 const nextConfig: NextConfig = {

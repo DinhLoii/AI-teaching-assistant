@@ -1,17 +1,20 @@
 import { AppProviders } from "@/providers/AppProviders";
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import Script from "next/script";
+import localFont from "next/font/local";
 import "@/styles/globals.css";
 
-const jakartaSans = Plus_Jakarta_Sans({
-  subsets: ["latin", "vietnamese"],
-  weight: ["300", "400", "500", "600", "700", "800"],
+const jakartaSans = localFont({
+  src: "./fonts/PlusJakartaSans-Variable.ttf",
+  weight: "300 800",
+  display: "swap",
   variable: "--font-sans",
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+const jetbrainsMono = localFont({
+  src: "./fonts/JetBrainsMono-Variable.ttf",
+  weight: "400 700",
+  display: "swap",
   variable: "--font-mono",
 });
 
@@ -31,7 +34,9 @@ export default function RootLayout({
   return (
     <html lang="vi" translate="no" data-ms-editor="false" suppressHydrationWarning className={`light ${jakartaSans.variable} ${jetbrainsMono.variable}`}>
       <head>
-        <script
+        <Script
+          id="theme-initializer"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               try {
@@ -39,9 +44,6 @@ export default function RootLayout({
                 if (stored === 'dark') {
                   document.documentElement.classList.add('dark');
                   document.documentElement.classList.remove('light');
-                } else if (stored === 'light') {
-                  document.documentElement.classList.remove('dark');
-                  document.documentElement.classList.add('light');
                 } else {
                   document.documentElement.classList.remove('dark');
                   document.documentElement.classList.add('light');
