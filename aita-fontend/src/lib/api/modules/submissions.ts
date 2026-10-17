@@ -3,8 +3,10 @@ import type { SubmissionListQuery } from '../contracts'
 import { normalizeSubmissionRow } from '../normalizers/submission'
 
 export const submissionsApi = {
+  getSource: (id: string, signal?: AbortSignal) => request<{ archiveSha256: string; files: { path: string; content: string }[]; skipped: number }>(`/submissions/${encodeURIComponent(id)}/source`, { cache: 'no-store', signal }),
+  getAttempts: (id: string, signal?: AbortSignal) => request<any[]>(`/submissions/${encodeURIComponent(id)}/history`, { cache: 'no-store', signal }),
   getSubmissionHistory: async (params?: SubmissionListQuery) => {
-    const q = new URLSearchParams(params as Record<string, string>).toString()
+    const q = new URLSearchParams({ ...params, includeHistory: 'true' } as Record<string, string>).toString()
     const rows = await request<any[]>(`/submissions${q ? `?${q}` : ''}`)
     return (rows || []).map(normalizeSubmissionRow)
   },
@@ -21,7 +23,7 @@ export const submissionsApi = {
   },
 
   async getSubmission(id: string) {
-    const row = await request<any>(`/submissions/${id}`)
+    const row = await request<any>(`/submissions/${id}`, { cache: 'no-store' })
     return normalizeSubmissionRow(row)
   },
 

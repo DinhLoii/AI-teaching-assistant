@@ -19,9 +19,10 @@ export function normalizeSubmissionRow(raw: any): SubmissionRow {
     }
   } catch (e) { }
 
-  const fallbackScore = parsedReport?.totalScore !== undefined ? toNullableNumber(parsedReport.totalScore) : null
-  const normalizedAiScore = toNullableNumber(raw?.aiScore ?? raw?.rawScore ?? raw?.totalScore) ?? fallbackScore
-  const normalizedScore = toNullableNumber(raw?.score ?? raw?.finalScore ?? raw?.totalScore) ?? fallbackScore
+  const failedReport = !!parsedReport?.error
+  const fallbackScore = !failedReport && parsedReport?.totalScore != null ? toNullableNumber(parsedReport.totalScore) : null
+  const normalizedAiScore = failedReport ? null : toNullableNumber(raw?.aiScore ?? raw?.rawScore) ?? fallbackScore
+  const normalizedScore = failedReport ? null : toNullableNumber(raw?.score ?? raw?.finalScore ?? raw?.rawScore) ?? fallbackScore
   const studentName = typeof raw?.student === 'string'
     ? raw.student
     : (studentObj?.fullName || studentObj?.name || raw?.studentName || studentObj?.studentCode || raw?.studentId || 'Sinh viên')
@@ -35,32 +36,53 @@ export function normalizeSubmissionRow(raw: any): SubmissionRow {
     : (examObj?.title || raw?.assignment?.title || raw?.assignmentTitle || null)
 
 
+  let filename = raw?.filename ?? fileObj?.filename ?? fileObj?.fileName ?? undefined
+  if (!filename && (raw?.zipFileUrl || raw?.downloadUrl || raw?.ZipFileUrl)) {
+    const targetUrl = String(raw?.zipFileUrl || raw?.downloadUrl || raw?.ZipFileUrl || '')
+    try {
+      const match = targetUrl.match(/filename=([^&]+)/i)
+      if (match && match[1]) {
+        filename = decodeURIComponent(match[1])
+      } else {
+        const cleanUrl = targetUrl.split('?')[0]
+        const segments = cleanUrl.split('/')
+        const last = segments[segments.length - 1]
+        if (last && (last.includes('.') || last.toLowerCase().includes('zip'))) {
+          filename = decodeURIComponent(last)
+        }
+      }
+    } catch {}
+  }
+
   return {
-    id: String(raw?.id ?? ''),
-    assignmentId: raw?.assignmentId ?? raw?.examId ?? raw?.exam?.id ?? '',
-    examId: raw?.examId ?? raw?.assignmentId ?? raw?.exam?.id ?? null,
+    id: String(raw?.id ?? raw?.Id ?? ''),
+    assignmentId: raw?.assignmentId ?? raw?.examId ?? raw?.ExamId ?? raw?.exam?.id ?? '',
+    examId: raw?.examId ?? raw?.ExamId ?? raw?.assignmentId ?? raw?.exam?.id ?? null,
     assignment: assignmentTitle,
-    classId: raw?.classId ?? classObj?.id ?? null,
+    classId: raw?.classId ?? raw?.ClassId ?? classObj?.id ?? null,
     studentId: String(studentCode),
     student: String(studentName),
-    status: raw?.status ?? raw?.gradingStatus ?? 'pending',
-    gradingStatus: raw?.gradingStatus ?? raw?.status ?? null,
-    reviewStatus: raw?.reviewStatus ?? null,
-    isPublished: raw?.isPublished === true || String(raw?.reviewStatus).toUpperCase() === 'PUBLISHED',
-    submittedAt: raw?.submittedAt ?? null,
-    gradedAt: raw?.gradedAt ?? null,
-    reviewedAt: raw?.reviewedAt ?? null,
-    content: raw?.content ?? null,
-    language: raw?.language ?? null,
-    zipFileUrl: raw?.zipFileUrl ?? undefined,
-    downloadUrl: raw?.downloadUrl ?? fileObj?.downloadUrl ?? raw?.zipFileUrl ?? undefined,
-    filename: raw?.filename ?? fileObj?.filename ?? fileObj?.fileName ?? undefined,
+    status: raw?.status ?? raw?.gradingStatus ?? raw?.GradingStatus ?? 'pending',
+    gradingStatus: raw?.gradingStatus ?? raw?.GradingStatus ?? raw?.status ?? null,
+    gradingError: raw?.gradingError ?? null,
+    reviewStatus: raw?.reviewStatus ?? raw?.ReviewStatus ?? null,
+    isPublished: raw?.isPublished === true || String(raw?.reviewStatus ?? raw?.ReviewStatus).toUpperCase() === 'PUBLISHED',
+    attemptNumber: raw?.attemptNumber ?? raw?.AttemptNumber ?? 1,
+    submittedAt: raw?.submittedAt ?? raw?.SubmittedAt ?? null,
+    gradedAt: raw?.gradedAt ?? raw?.GradedAt ?? null,
+    reviewedAt: raw?.reviewedAt ?? raw?.ReviewedAt ?? null,
+    content: raw?.content ?? raw?.Content ?? null,
+    language: raw?.language ?? raw?.Language ?? null,
+    zipFileUrl: raw?.zipFileUrl ?? raw?.ZipFileUrl ?? undefined,
+    downloadUrl: raw?.downloadUrl ?? fileObj?.downloadUrl ?? raw?.zipFileUrl ?? raw?.ZipFileUrl ?? undefined,
+    filename: filename,
     score: normalizedScore,
+    maxScore: toNullableNumber(raw?.maxScore ?? parsedReport?.maxPossibleScore ?? examObj?.totalPoints),
     aiScore: normalizedAiScore,
-    totalScore: toNullableNumber(raw?.totalScore) ?? fallbackScore,
-    finalScore: toNullableNumber(raw?.finalScore) ?? fallbackScore,
-    rawScore: raw?.score ?? raw?.finalScore ?? raw?.totalScore ?? fallbackScore,
-    rawAiScore: raw?.aiScore ?? raw?.totalScore ?? fallbackScore,
+    totalScore: failedReport ? null : toNullableNumber(raw?.totalScore) ?? fallbackScore,
+    finalScore: failedReport ? null : toNullableNumber(raw?.finalScore) ?? fallbackScore,
+    rawScore: failedReport ? null : raw?.rawScore ?? raw?.score ?? raw?.finalScore ?? fallbackScore,
+    rawAiScore: failedReport ? null : raw?.aiScore ?? raw?.rawScore ?? fallbackScore,
     reportData: parsedReport,
     latePenaltyAmount: toNullableNumber(raw?.latePenaltyAmount),
     isReopened: raw?.isReopened ?? false,

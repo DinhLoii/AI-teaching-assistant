@@ -2,9 +2,10 @@ import { request } from '../client'
 import type { AssignmentRow } from '../contracts'
 
 export const assignmentsApi = {
-  getAssignments: (params?: Record<string, string>) => {
+  getDocumentFile: (attachmentId: string) => request<Blob>(`/assignments/attachments/${encodeURIComponent(attachmentId)}/download`, { cache: 'no-store' }, 'blob'),
+  getAssignments: (params?: Record<string, string>, fresh = false) => {
     const q = new URLSearchParams(params).toString()
-    return request<AssignmentRow[]>(`/assignments${q ? `?${q}` : ''}`)
+    return request<AssignmentRow[]>(`/assignments${q ? `?${q}` : ''}`, fresh ? { cache: 'no-store' } : undefined)
   },
 
   getAssignment: (id: string) => request<AssignmentRow>(`/assignments/${id}`),
@@ -19,15 +20,10 @@ export const assignmentsApi = {
   updateAssignment: (id: string, body: unknown) =>
     request<AssignmentRow>(`/assignments/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
 
-  deleteAssignment: async (id: string) => {
-    try {
-      await request<void>(`/grading/assignments/${id}`, { method: 'DELETE' })
-    } catch {
-      await request<void>(`/assignments/${id}`, { method: 'DELETE' })
-    }
-  },
+  deleteAssignment: (id: string) =>
+    request<void>(`/grading/assignments/${id}`, { method: 'DELETE' }),
 
-  getTrashAssignments: () => request<any[]>('/grading/assignments/trash'),
+  getTrashAssignments: () => request<any[]>('/grading/assignments/trash', { cache: 'no-store' }),
 
   restoreAssignment: (id: string) =>
     request<void>(`/grading/assignments/${id}/restore`, { method: 'POST' }),

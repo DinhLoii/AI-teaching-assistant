@@ -16,7 +16,7 @@ import { auditApi } from './modules/audit'
 import { reportsApi } from './modules/reports'
 import { notesApi } from './modules/notes'
 
-export { ApiError } from './client'
+export { ApiError, clearClientApiCache, peekClientApiCache, setClientApiCache } from './client'
 export { AUTH_STORAGE_KEYS, getStoredItem, setStoredItem, removeStoredItem } from './storage'
 export type * from './contracts'
 export { gradingApi } from './modules/grading'
