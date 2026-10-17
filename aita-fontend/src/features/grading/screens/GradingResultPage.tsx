@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { LECTURER_NAV } from '@/config/navigation'
 import { EvaluationReportViewer } from '@/features/submissions/components/EvaluationReportViewer'
+import { LiveGradingRunnerModal } from '@/features/grading/components/LiveGradingRunnerModal'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -28,6 +29,7 @@ import {
   Sparkles,
   MessageSquare,
   ShieldAlert,
+  Terminal,
 } from 'lucide-react'
 import { useLanguage } from '@/providers/language-provider'
 
@@ -41,6 +43,7 @@ export default function GradingResultPage() {
   const [loading, setLoading] = React.useState(true)
   const [actionLoading, setActionLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [showLiveRunner, setShowLiveRunner] = React.useState(false)
 
   // Edit score modal
   const [editModal, setEditModal] = React.useState({
@@ -58,9 +61,9 @@ export default function GradingResultPage() {
     resolutionNote: '',
   })
 
-  const loadData = React.useCallback(async () => {
+  const loadData = React.useCallback(async (quiet = false) => {
     try {
-      setLoading(true)
+      if (!quiet) setLoading(true)
       const data = await submissionsApi.getSubmission(submissionId)
       setSubmission(data)
       setEditModal({
@@ -72,18 +75,25 @@ export default function GradingResultPage() {
     } catch (err) {
       setError(errorMessage(err))
     } finally {
-      setLoading(false)
+      if (!quiet) setLoading(false)
     }
   }, [submissionId])
 
   React.useEffect(() => {
     loadData()
   }, [loadData])
+  React.useEffect(() => {
+    const state = String(submission?.gradingStatus || submission?.status || '').toLowerCase()
+    if (!['pending', 'queued', 'processing', 'grading'].includes(state) || submission?.reportData?.error) return
+    const timer = setInterval(() => { void loadData(true) }, 5000)
+    return () => clearInterval(timer)
+  }, [submission?.gradingStatus, submission?.status, submission?.reportData?.error, loadData])
 
   // Single publish / unpublish
   const handleTogglePublish = async () => {
     if (!submission) return
     const willPublish = !submission.isPublished
+    if (willPublish && (submission.score == null || submission.reportData?.error)) { alert('Lượt chấm chưa có kết quả hợp lệ. Cần chấm lại hoặc đánh giá thủ công trước khi công bố.'); return }
     setActionLoading(true)
     try {
       if (willPublish) {
@@ -99,18 +109,13 @@ export default function GradingResultPage() {
     }
   }
 
-  // Trigger re-grade
-  const handleRegrade = async () => {
+  // Trigger re-grade with live in-place runner
+  const handleRegrade = () => {
     if (!submission) return
-    if (!confirm('Bạn có chắc chắn muốn chạy lại phiên chấm Rubric AI cho bài nộp này không?')) return
-    setActionLoading(true)
-    try {
-      await gradingApi.gradeExistingSubmission(submission.id)
-      router.push(`/lecturer/grading/live/${submission.id}?assignmentId=${submission.assignmentId || ''}`)
-    } catch (err) {
-      alert(errorMessage(err))
-      setActionLoading(false)
-    }
+    setShowLiveRunner(true)
+    gradingApi.gradeExistingSubmission(submission.id).catch((err) => {
+      console.warn('Backend grade trigger error:', err)
+    })
   }
 
   // Download submission file
@@ -203,6 +208,7 @@ export default function GradingResultPage() {
     : (submission?.studentId || 'HE170000')
 
   const rawScore = Number(submission?.rawScore ?? submission?.rawAiScore ?? submission?.score ?? 0)
+  const hasScore = submission?.score != null && !submission?.reportData?.error
   const latePenalty = Number(submission?.latePenaltyAmount ?? 0)
   const finalScore = Number(submission?.finalScore ?? submission?.score ?? Math.max(0, rawScore - latePenalty))
 
@@ -262,6 +268,17 @@ export default function GradingResultPage() {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => setShowLiveRunner(true)}
+              className="text-xs gap-1.5 font-mono text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800/60 bg-amber-50/60 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+              title="Xem chi tiết phiên thực thi Docker Sandbox & AI Rubric (>_ logs)"
+            >
+              <Terminal className="w-3.5 h-3.5 text-orange-500" />
+              <span>&gt;_ Logs Sandbox & AI</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setEditModal({
                 open: true,
                 score: finalScore,
@@ -307,7 +324,7 @@ export default function GradingResultPage() {
               Điểm AI / Barem
             </span>
             <div className="text-2xl font-black text-slate-900 dark:text-white font-mono">
-              {rawScore.toFixed(2)}
+              {hasScore ? rawScore.toFixed(2) : 'Chưa có điểm'}
               <span className="text-xs text-slate-400 font-normal"> / 10</span>
             </div>
             <span className="text-[11px] text-slate-400">Điểm thô tự động tính từ Rubric</span>
@@ -330,7 +347,7 @@ export default function GradingResultPage() {
               Điểm chính thức
             </span>
             <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
-              {finalScore.toFixed(2)}
+              {hasScore ? finalScore.toFixed(2) : 'Chưa có điểm'}
               <span className="text-xs text-slate-400 font-normal"> / 10</span>
             </div>
             <span className="text-[11px] text-slate-500 dark:text-slate-400">Điểm sau cùng hiển thị cho sinh viên</span>
@@ -539,6 +556,26 @@ export default function GradingResultPage() {
             </div>
           </div>
         </Modal>
+
+        {/* Dynamic Sandbox & AI Live Runner Modal */}
+        {showLiveRunner && submission && (
+          <LiveGradingRunnerModal
+            isOpen={showLiveRunner}
+            onClose={() => {
+              setShowLiveRunner(false)
+              void loadData()
+            }}
+            submissionId={submission.id}
+            assignmentTitle={submission.assignment?.title || submission.assignmentTitle || 'Bài tập'}
+            subjectCode={submission.assignment?.subjectCode || submission.subjectCode || 'CNTT'}
+            role="lecturer"
+            studentName={typeof submission.student === 'object' ? (submission.student?.fullName || submission.student?.name) : submission.student}
+            studentCode={typeof submission.student === 'object' ? (submission.student?.studentCode || submission.student?.studentId) : undefined}
+            onFinished={() => {
+              void loadData()
+            }}
+          />
+        )}
       </div>
     </DashboardLayout>
   )
