@@ -9,8 +9,10 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
 import { studentPortalApi } from '@/lib/api/modules/student-portal'
-import { notificationsApi } from '@/lib/api/modules/notifications'
+import { useNotifications } from '@/providers/notification-provider'
+import { notificationTime } from '@/lib/notifications/presentation'
 import { aiApi } from '@/lib/api/modules/ai'
+import { peekClientApiCache } from '@/lib/api/client'
 import { FrogChatbotLauncher } from '@/components/chatbot/FrogChatbotLauncher'
 import { cn } from '@/lib/utils'
 import {
@@ -155,17 +157,8 @@ function getAssignmentStatusBadge(status: string | undefined, score: number | nu
   }
 }
 
-function formatRelativeTime(dateStr: string | Date | null | undefined, isVi: boolean): string {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  if (isNaN(date.getTime())) return ''
-  const now = new Date()
-  const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000)
-  if (diffSec < 60) return isVi ? 'Vừa xong' : 'Just now'
-  if (diffSec < 3600) return isVi ? `${Math.floor(diffSec / 60)} phút trước` : `${Math.floor(diffSec / 60)}m ago`
-  if (diffSec < 86400) return isVi ? `${Math.floor(diffSec / 3600)} giờ trước` : `${Math.floor(diffSec / 3600)}h ago`
-  if (diffSec < 604800) return isVi ? `${Math.floor(diffSec / 86400)} ngày trước` : `${Math.floor(diffSec / 86400)}d ago`
-  return date.toLocaleDateString(isVi ? 'vi-VN' : 'en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })
+function formatRelativeTime(date: string | Date | null | undefined, isVi = true, offset = 0) {
+  return notificationTime(date instanceof Date ? date.toISOString() : date || null, Date.now() + offset, isVi ? 'vi' : 'en')
 }
 
 export default function StudentOverviewPage() {
@@ -173,7 +166,7 @@ export default function StudentOverviewPage() {
   const isVi = language === 'vi'
 
   const [dashboard, setDashboard] = React.useState<any>(null)
-  const [notifications, setNotifications] = React.useState<any[]>([])
+  const { notifications, unreadCount, markAllAsRead, clockOffset } = useNotifications()
   const [loading, setLoading] = React.useState(true)
 
   // Status Filter for Active Assignments
@@ -194,18 +187,22 @@ export default function StudentOverviewPage() {
   const [tutorThinking, setTutorThinking] = React.useState(false)
 
   React.useEffect(() => {
-    Promise.allSettled([
-      studentPortalApi.getStudentDashboard(),
-      notificationsApi.getMyNotifications({ limit: 10 }).catch(() => notificationsApi.getNotifications(1, 10)),
-    ]).then(([dashRes, notifRes]) => {
-      if (dashRes.status === 'fulfilled') {
-        setDashboard(dashRes.value)
+    try {
+      if (typeof peekClientApiCache === 'function') {
+        const cachedDash = peekClientApiCache<any>('/student-portal/dashboard')
+        if (cachedDash) {
+          setDashboard(cachedDash)
+          setLoading(false)
+        }
       }
-      if (notifRes.status === 'fulfilled') {
-        const data = notifRes.value
-        setNotifications(Array.isArray(data) ? data : data?.items || data?.data || [])
-      }
-    }).finally(() => setLoading(false))
+    } catch {}
+
+    let active = true
+    void studentPortalApi.getStudentDashboard()
+      .then(data => { if (active) setDashboard(data) })
+      .catch(() => {})
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
   }, [])
 
   // Raw upcoming assignments from API
@@ -318,20 +315,8 @@ export default function StudentOverviewPage() {
       })
   }, [assignmentsList, isVi])
 
-  const unreadCount = dashboard?.unreadNotifications ?? notifications.filter((n) => !n.read && !n.isRead).length
+  const handleMarkAllRead = () => { void markAllAsRead().catch(() => {}) }
 
-  // Quick mark all read
-  const handleMarkAllRead = async () => {
-    try {
-      await notificationsApi.markAllNotificationsAsRead()
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true, isRead: true })))
-      if (dashboard) {
-        setDashboard((d: any) => ({ ...d, unreadNotifications: 0 }))
-      }
-    } catch (err) {
-      console.error('Failed to mark all as read:', err)
-    }
-  }
 
   // Handle AI Tutor Query with RAG
   const handleAskTutor = async (prompt?: string) => {
@@ -1086,7 +1071,7 @@ export default function StudentOverviewPage() {
                             </span>
                             <div className="flex items-center gap-1.5">
                               <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-                                {formatRelativeTime(notif.createdAt, isVi)}
+                                {formatRelativeTime(notif.createdAt, isVi, clockOffset)}
                               </span>
                               {isUnread && (
                                 <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />
