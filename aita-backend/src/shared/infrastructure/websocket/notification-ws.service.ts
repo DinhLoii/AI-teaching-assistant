@@ -1,6 +1,5 @@
 import { WebSocketServer, WebSocket } from 'ws'
 import type { Server as HttpServer, IncomingMessage } from 'http'
-import { URL } from 'url'
 import { JwtTokenService } from '../jwt-token-service.js'
 import { prisma } from '../../../database/prisma.js'
 import { logger } from '../logger.js'
@@ -27,6 +26,7 @@ export class NotificationWsService {
     this.wss = new WebSocketServer({
       noServer: false,
       server,
+      maxPayload: 16 * 1024,
       // Handle both /ws/notifications and /ws paths
       verifyClient: (_info, done) => {
         done(true)
@@ -34,7 +34,11 @@ export class NotificationWsService {
     })
 
     this.wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
-      this.handleConnection(ws, req)
+      void this.handleConnection(ws, req).catch(err => {
+        logger.warn(`[WebSocket] Connection initialization failed: ${err.message}`)
+        this.unregisterSocket(ws)
+        ws.close(1011, 'Unable to initialize notifications')
+      })
     })
 
     // Heartbeat every 30 seconds to clean up dead connections
@@ -49,22 +53,13 @@ export class NotificationWsService {
   private async handleConnection(ws: WebSocket, req: IncomingMessage): Promise<void> {
     const rawUrl = req.url || '/'
     // Only accept paths starting with /ws
-    if (!rawUrl.startsWith('/ws')) {
+    if (!['/ws', '/ws/notifications'].includes(rawUrl.split('?')[0])) {
       ws.close(1008, 'Invalid WebSocket path')
       return
     }
 
-    let token: string | null = null
-    try {
-      const parsedUrl = new URL(rawUrl, 'http://localhost')
-      token = parsedUrl.searchParams.get('token')
-    } catch {
-      // Fallback url parsing
-    }
-
-    if (!token && req.headers['sec-websocket-protocol']) {
-      token = req.headers['sec-websocket-protocol']
-    }
+    // Browser clients authenticate with an AUTH message; never put JWTs in URLs.
+    const token = req.headers['sec-websocket-protocol'] || null
 
     let authUser: { userId: string; role?: string } | null = null
 
@@ -130,6 +125,7 @@ export class NotificationWsService {
   }
 
   private async registerUserSocket(userId: string, role: string | undefined, ws: WebSocket): Promise<void> {
+    this.unregisterSocket(ws)
     if (!this.clients.has(userId)) {
       this.clients.set(userId, new Set())
     }
@@ -306,6 +302,7 @@ export class NotificationWsService {
    * Push a newly created notification in real-time
    */
   async notifyNewNotification(userId: string, notif: any): Promise<void> {
+    if (!this.clients.get(userId)?.size) return
     const unreadCount = await this.getUnreadCount(userId)
     const payload = {
       id: notif.Id || notif.id,
@@ -314,7 +311,7 @@ export class NotificationWsService {
       notificationType: notif.Type || notif.type || notif.notificationType,
       referenceId: notif.ReferenceId || notif.referenceId || null,
       referenceType: notif.ReferenceType || notif.referenceType || null,
-      createdAt: notif.CreatedAt instanceof Date ? notif.CreatedAt.toISOString() : (notif.CreatedAt || new Date().toISOString()),
+      createdAt: notif.CreatedAt instanceof Date ? notif.CreatedAt.toISOString() : (notif.CreatedAt || notif.createdAt || null),
       isRead: false,
       unreadCount,
     }
@@ -337,8 +334,9 @@ export class NotificationWsService {
           Notification: { Type: { notIn: ['Reminder', 'DEADLINE_WARNING'] } },
         },
       })
-    } catch {
-      return 0
+    } catch (error) {
+      logger.warn('[WebSocket] Unread count query failed')
+      throw error
     }
   }
 
