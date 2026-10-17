@@ -72,6 +72,7 @@ model Class {
 }
 
 model Submission {
+  GradingTask                      SubmissionGradingTask?
   Id                               String               @id @default(uuid())
   ExamId                           String?
   StudentId                        String?
@@ -113,6 +114,31 @@ model Submission {
   @@index([ReviewStatus])
   @@index([StudentId, ReviewStatus])
   @@index([ClassId, ReviewStatus])
+}
+
+model SubmissionGradingTask {
+  SubmissionId String @id
+  Status String @default("pending")
+  Lane String @default("continuous")
+  Attempts Int @default(0)
+  RequestedAt DateTime @default(now()) @db.Timestamptz(3)
+  AvailableAt DateTime @default(now()) @db.Timestamptz(3)
+  LeaseOwner String?
+  LeaseUntil DateTime? @db.Timestamptz(3)
+  LastError String? @db.Text
+  Submission Submission @relation(fields: [SubmissionId], references: [Id], onDelete: Cascade)
+
+  @@index([Status, AvailableAt])
+}
+
+model RealtimeEvent {
+  Id String @id @default(uuid())
+  Sender String
+  Topic String
+  Payload String @db.Text
+  CreatedAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([CreatedAt])
 }
 
 model Subject {
