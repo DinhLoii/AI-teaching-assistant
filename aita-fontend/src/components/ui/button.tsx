@@ -11,7 +11,7 @@ export interface ButtonProps
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", isLoading = false, children, disabled, ...props }, ref) => {
-    const baseStyles = "inline-flex items-center justify-center font-bold transition-all duration-150 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none select-none active:scale-[0.98] cursor-pointer"
+    const baseStyles = "inline-flex items-center justify-center whitespace-nowrap font-bold transition-all duration-150 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none select-none active:scale-[0.98] cursor-pointer"
     
     const variants = {
       primary: "bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 hover:from-orange-600 hover:via-amber-500 hover:to-orange-500 text-white shadow-md shadow-orange-500/20",
