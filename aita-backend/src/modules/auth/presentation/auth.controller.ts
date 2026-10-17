@@ -14,6 +14,8 @@ import { DismissPasswordChangeUseCase } from '../application/use-cases/dismiss-p
 import { LoginRequestDto, RegisterStudentRequestDto, RefreshTokenRequestDto, LogoutRequestDto, ChangePasswordRequestDto, UpdateProfileRequestDto, ForgotPasswordRequestDto, ResetPasswordRequestDto } from '../application/dtos/auth.dto.js'
 import type { ILogger } from '../../../shared/application/ports/logger.interface.js'
 
+import { memoryCache } from '../../../shared/infrastructure/memory-cache.js'
+
 export class AuthController extends BaseController {
   constructor(
     private readonly loginUseCase: LoginUseCase,
@@ -46,13 +48,27 @@ export class AuthController extends BaseController {
   }
 
   async getMe(req: Request, res: Response): Promise<void> {
-    this.logger.info(`Received getMe request for user: ${req.user?.id}`)
+    const userId = req.user?.id
+    if (userId) {
+      const cached = memoryCache.get(`user_me_${userId}`)
+      if (cached) {
+        this.ok(res, cached, MESSAGES.AUTH_GET_ME_SUCCESS)
+        return
+      }
+    }
+    this.logger.info(`Received getMe request for user: ${userId}`)
     const result = await this.getMeUseCase.execute(req.user!.id)
+    if (userId) {
+      memoryCache.set(`user_me_${userId}`, result, 60)
+    }
     this.ok(res, result, MESSAGES.AUTH_GET_ME_SUCCESS)
   }
 
   async logout(req: Request, res: Response): Promise<void> {
     this.logger.info('Received logout request')
+    if (req.user?.id) {
+      memoryCache.del(`user_me_${req.user.id}`)
+    }
     const dto = LogoutRequestDto.from(req.body)
     await this.logoutUseCase.execute({ dto })
     this.ok(res, null, MESSAGES.AUTH_LOGOUT_SUCCESS)
@@ -67,6 +83,9 @@ export class AuthController extends BaseController {
 
   async changePassword(req: Request, res: Response): Promise<void> {
     this.logger.info(`Received change password request for user: ${req.user?.id}`)
+    if (req.user?.id) {
+      memoryCache.del(`user_me_${req.user.id}`)
+    }
     const dto = ChangePasswordRequestDto.from(req.body)
     await this.changePasswordUseCase.execute({ userId: req.user!.id, dto })
     this.ok(res, null, MESSAGES.AUTH_PASSWORD_CHANGED_SUCCESS)
@@ -74,6 +93,9 @@ export class AuthController extends BaseController {
 
   async updateProfile(req: Request, res: Response): Promise<void> {
     this.logger.info(`Received update profile request for user: ${req.user?.id}`)
+    if (req.user?.id) {
+      memoryCache.del(`user_me_${req.user.id}`)
+    }
     const dto = UpdateProfileRequestDto.from(req.body)
     
     // If an avatar was uploaded, req.file will be populated
@@ -95,6 +117,9 @@ export class AuthController extends BaseController {
 
   async dismissPasswordChange(req: Request, res: Response): Promise<void> {
     this.logger.info(`Received dismiss password change request for user: ${req.user?.id}`)
+    if (req.user?.id) {
+      memoryCache.del(`user_me_${req.user.id}`)
+    }
     await this.dismissPasswordChangeUseCase.execute(req.user!.id)
     this.ok(res, null, 'Bỏ qua đổi mật khẩu thành công')
   }

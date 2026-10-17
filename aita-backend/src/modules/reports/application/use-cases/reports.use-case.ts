@@ -1,23 +1,15 @@
 import { IReportsRepository } from '../../domain/repositories/reports-repository.interface.js'
 import { prisma } from '../../../../database/prisma.js'
+import { reportRange } from '../report-range.js'
 
 export class GetAdminReportUseCase {
     constructor(private readonly reportsRepo: IReportsRepository) { }
 
-    async execute(period: string = '30d') {
-        const days = period === '7d' ? 7 : period === 'semester' ? 120 : 30
-        const since = new Date(Date.now() - days * 86400000)
-
-        const summary = await this.reportsRepo.getAdminSummary(since)
-
-        return {
-            period,
-            summary,
-            chart: {
-                labels: ['Users', 'Classes', 'Exams', 'Submissions'],
-                values: [summary.users, summary.classes, summary.exams, summary.submissions],
-            },
-        }
+    async execute(period: string = '30d', startDate?: string, endDate?: string) {
+        const semester = period === 'semester' ? await this.reportsRepo.getActiveSemester() : null
+        const range = reportRange(period, new Date(), startDate, endDate, semester)
+        const data = await this.reportsRepo.getAnalytics(range.start, range.end)
+        return { ...data, period, range: { from: range.from, to: range.to, timezone: range.timezone }, generatedAt: new Date().toISOString() }
     }
 }
 
@@ -29,7 +21,7 @@ export class GetSystemHealthUseCase {
         let database: { status: string; latencyMs?: number; poolStatus?: string } = { status: 'down' }
         try {
             await prisma.$queryRaw`SELECT 1`
-            database = { status: 'up', latencyMs: Date.now() - started, poolStatus: 'Healthy' }
+            database = { status: 'up', latencyMs: Date.now() - started }
         } catch { /* Report the failed probe without exposing connection credentials. */ }
 
         const totalMem = Math.round(os.totalmem() / (1024 * 1024))
@@ -41,9 +33,15 @@ export class GetSystemHealthUseCase {
         const cpuCores = cpus.length
         const cpuModel = cpus[0]?.model || 'Generic Processor'
         
-        // Compute pseudo-load or loadavg
-        const loadAvg = os.loadavg()
-        const cpuUsagePercent = Math.min(100, Math.max(8, Math.round((loadAvg[0] / Math.max(1, cpuCores)) * 100) || 18))
+        const cpuSample = () => os.cpus().reduce((total, cpu) => {
+            total.idle += cpu.times.idle
+            total.all += Object.values(cpu.times).reduce((sum, time) => sum + time, 0)
+            return total
+        }, { idle: 0, all: 0 })
+        const before = cpuSample()
+        await new Promise(resolve => setTimeout(resolve, 100))
+        const after = cpuSample()
+        const cpuUsagePercent = after.all > before.all ? Math.round(100 * (1 - (after.idle - before.idle) / (after.all - before.all))) : null
 
         const uptimeSec = Math.floor(process.uptime())
         const hours = Math.floor(uptimeSec / 3600)
@@ -65,10 +63,9 @@ export class GetSystemHealthUseCase {
                 nodeVersion: process.version,
             },
             aiEngine: {
-                status: 'up',
-                mode: process.env.AI_STUB_MODE !== 'false' ? 'stub' : 'live',
+                status: 'unknown',
+                mode: process.env.AI_STUB_MODE === 'true' || process.env.AI_STUB_MODE === '1' ? 'stub' : 'live',
                 provider: process.env.GEMINI_API_KEY ? 'Google Gemini' : 'Mock Engine',
-                queueWorkers: 4,
             },
             checkedAt: new Date().toISOString(),
         }

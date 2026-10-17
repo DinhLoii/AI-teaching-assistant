@@ -1,3 +1,5 @@
+import { publishNotification } from '../../../shared/infrastructure/publish-notification.js'
+import { sseService } from '../../../shared/infrastructure/sse-service.js'
 import type { Request, Response } from 'express'
 import { CreateClassRequestDto, EnrollStudentRequestDto, UpdateClassNoteDto, UpdateClassRequestDto } from '../application/dtos/class.dto.js'
 import { ListClassesUseCase } from '../application/use-cases/list-classes.use-case.js'
@@ -18,6 +20,13 @@ import { ValidationError, NotFoundError, ForbiddenError } from '../../../shared/
 import { memoryCache } from '../../../shared/infrastructure/memory-cache.js'
 
 export class ClassesController extends BaseController {
+  private async assertCanManageAnnouncement(user: { id: string; role: string }, classId?: string | null, creatorId?: string | null) {
+    if (user.role.toUpperCase() === 'ADMIN' || creatorId === user.id) return
+    const assignment = classId && user.role.toUpperCase() === 'LECTURER'
+      ? await prisma.instructorClass.findFirst({ where: { UserId: user.id, ClassId: classId }, select: { UserId: true } })
+      : null
+    if (!assignment) throw new ForbiddenError('Bạn chỉ được quản lý thông báo của lớp mình phụ trách')
+  }
   constructor(
     private readonly listClassesUseCase: ListClassesUseCase,
     private readonly createClassUseCase: CreateClassUseCase,
@@ -43,7 +52,7 @@ export class ClassesController extends BaseController {
       return
     }
     const result = await this.listClassesUseCase.execute({ user: req.user!, page, limit })
-    memoryCache.set(cacheKey, result, 20)
+    memoryCache.set(cacheKey, result, 60)
     this.ok(res, result, MESSAGES.CLASS_LIST_SUCCESS)
   }
 
@@ -143,6 +152,13 @@ export class ClassesController extends BaseController {
     const semesterCode = req.query.semesterCode as string | undefined
     const subjectCode = req.query.subjectCode as string | undefined
 
+    const cacheKey = `class_codes_${semesterCode || 'all'}_${subjectCode || 'all'}`
+    const cached = memoryCache.get(cacheKey)
+    if (cached) {
+      this.ok(res, cached, MESSAGES.SUCCESS)
+      return
+    }
+
     this.logger.info(`Fetching class codes for semester=${semesterCode}, subject=${subjectCode}`)
 
     const where: any = {}
@@ -181,6 +197,7 @@ export class ClassesController extends BaseController {
         studentCount: c._count?.StudentClass || 0
       }))
 
+    memoryCache.set(cacheKey, result, 90)
     this.ok(res, result, MESSAGES.SUCCESS)
   }
 
@@ -388,9 +405,10 @@ export class ClassesController extends BaseController {
     const { targetRefIds, classCode, subjectCode, cls, subject } = await this.resolveTargetRefIds(classId)
 
     const notifTitle = title?.trim() || `Thông báo lớp ${classCode || 'học'}`
+    await this.assertCanManageAnnouncement(req.user!, cls?.Id)
 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    const validReferenceId = uuidRegex.test(classId) ? classId : (cls?.Id || null)
+    const validReferenceId = cls?.Id || (uuidRegex.test(classId) ? classId : null)
 
     const notif = await prisma.notification.create({
       data: {
@@ -416,13 +434,10 @@ export class ClassesController extends BaseController {
 
     // Find student recipients
     let studentUsers = (cls?.StudentClass || []).map((sc: any) => sc.User).filter(Boolean)
-    if (studentUsers.length === 0) {
+    if (studentUsers.length === 0 && !cls && subject?.Id) {
       studentUsers = await prisma.user.findMany({
         where: {
-          OR: [
-            { UserRole: { some: { Role: { RoleName: { in: ['STUDENT', 'Student', 'student'] } } } } },
-            { StudentCode: { not: null } }
-          ]
+          StudentClass: { some: { Class: { SubjectId: subject.Id } } }
         },
         select: { Id: true, Email: true, FullName: true }
       })
@@ -440,6 +455,7 @@ export class ClassesController extends BaseController {
             IsRead: false
           }))
         })
+        publishNotification(studentUserIds as string[], notif)
       } catch (recipErr) {
         this.logger.warn(`[createAnnouncement] Failed creating recipients: ${recipErr}`)
       }
@@ -556,10 +572,10 @@ export class ClassesController extends BaseController {
     }
 
     const isOwner = notif.CreatedBy && userId && notif.CreatedBy.toLowerCase() === userId.toLowerCase()
-    const isPrivileged = userRole === 'ADMIN' || userRole === 'LECTURER'
+    const isPrivileged = userRole === 'ADMIN'
 
     if (!isPrivileged && !isOwner) {
-      throw new ForbiddenError('Bạn không có quyền chỉnh sửa thông báo này')
+      await this.assertCanManageAnnouncement(req.user!, notif.ReferenceId, notif.CreatedBy)
     }
 
     const updated = await prisma.notification.update({
@@ -580,17 +596,14 @@ export class ClassesController extends BaseController {
       }
     })
 
-    const { targetRefIds, classCode, subjectCode, cls, subject } = await this.resolveTargetRefIds(classId)
+    const { targetRefIds, classCode, subjectCode, cls, subject } = await this.resolveTargetRefIds(notif.ReferenceId || classId)
 
     // 1. Find student recipients for system notifications & email
     let studentUsers = (cls?.StudentClass || []).map((sc: any) => sc.User).filter(Boolean)
-    if (studentUsers.length === 0) {
+    if (studentUsers.length === 0 && !cls && subject?.Id) {
       studentUsers = await prisma.user.findMany({
         where: {
-          OR: [
-            { UserRole: { some: { Role: { RoleName: { in: ['STUDENT', 'Student', 'student'] } } } } },
-            { StudentCode: { not: null } }
-          ]
+          StudentClass: { some: { Class: { SubjectId: subject.Id } } }
         },
         select: { Id: true, Email: true, FullName: true }
       })
@@ -603,7 +616,7 @@ export class ClassesController extends BaseController {
     if (studentUserIds.length > 0) {
       try {
         await prisma.notificationRecipient.updateMany({
-          where: { NotificationId: announcementId },
+          where: { NotificationId: announcementId, UserId: { in: studentUserIds as string[] } },
           data: { IsRead: false, ReadAt: null }
         })
 
@@ -623,6 +636,7 @@ export class ClassesController extends BaseController {
             }))
           })
         }
+        publishNotification(studentUserIds as string[], updated, true)
       } catch (recipErr) {
         this.logger.warn(`[updateAnnouncement] Failed updating notification recipients: ${recipErr}`)
       }
@@ -735,32 +749,19 @@ export class ClassesController extends BaseController {
 
     // Role check: ADMIN and LECTURER managing this class or the creator can delete
     const isOwner = notif.CreatedBy && userId && notif.CreatedBy.toLowerCase() === userId.toLowerCase()
-    const isPrivileged = userRole === 'ADMIN' || userRole === 'LECTURER'
+    const isPrivileged = userRole === 'ADMIN'
 
     if (!isPrivileged && !isOwner) {
-      throw new ForbiddenError('Bạn không có quyền xoá thông báo này')
+      await this.assertCanManageAnnouncement(req.user!, notif.ReferenceId, notif.CreatedBy)
     }
 
-    // 1. Delete all recipient references first (cascade cleanup)
-    try {
-      await prisma.notificationRecipient.deleteMany({
-        where: { NotificationId: announcementId }
-      })
-    } catch (err) {
-      this.logger.warn(`[deleteAnnouncement] Failed to delete NotificationRecipient: ${err}`)
-    }
-
-    // 2. Delete notification record
-    try {
-      await prisma.notification.delete({
-        where: { Id: announcementId }
-      })
-    } catch (err: any) {
-      // If already deleted or not found, proceed smoothly
-      if (err.code !== 'P2025') {
-        this.logger.error(`[deleteAnnouncement] Error deleting notification ${announcementId}: ${err instanceof Error ? err.message : String(err)}`)
-        throw err
-      }
+    const recipients = await prisma.notificationRecipient.findMany({ where: { NotificationId: announcementId }, select: { UserId: true } })
+    await prisma.$transaction([
+      prisma.notificationRecipient.deleteMany({ where: { NotificationId: announcementId } }),
+      prisma.notification.delete({ where: { Id: announcementId } }),
+    ])
+    for (const recipient of recipients) {
+      if (recipient.UserId) sseService.push(recipient.UserId, { type: 'NOTIFICATION_DELETED', payload: { notificationId: announcementId } })
     }
 
     // 3. Emit realtime event

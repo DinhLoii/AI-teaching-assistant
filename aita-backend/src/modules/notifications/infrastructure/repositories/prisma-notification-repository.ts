@@ -7,7 +7,8 @@ export class PrismaNotificationRepository implements INotificationRepository {
     async findForUser(userId: string, params: { limit?: number; offset?: number; read?: boolean }): Promise<Notification[]> {
         const recipientWhere: any = { UserId: userId }
         if (typeof params.read === 'boolean') {
-            recipientWhere.IsRead = params.read
+            if (params.read) recipientWhere.IsRead = true
+            else recipientWhere.OR = [{ IsRead: false }, { IsRead: null }]
         }
 
         const list = await (this.prisma as any).notification.findMany({
@@ -21,7 +22,7 @@ export class PrismaNotificationRepository implements INotificationRepository {
             },
             take: params.limit ?? 50,
             skip: params.offset ?? 0,
-            orderBy: { CreatedAt: 'desc' },
+            orderBy: [{ CreatedAt: 'desc' }, { Id: 'desc' }],
             include: {
                 NotificationRecipient: {
                     where: { UserId: userId },
@@ -177,14 +178,14 @@ export class PrismaNotificationRepository implements INotificationRepository {
 
     async markAsRead(userId: string, notificationId: string): Promise<void> {
         await (this.prisma as any).notificationRecipient.updateMany({
-            where: { UserId: userId, NotificationId: notificationId, IsRead: false },
+            where: { UserId: userId, NotificationId: notificationId, OR: [{ IsRead: false }, { IsRead: null }] },
             data: { IsRead: true, ReadAt: new Date() }
         })
     }
 
     async markAllAsRead(userId: string): Promise<void> {
         await (this.prisma as any).notificationRecipient.updateMany({
-            where: { UserId: userId, IsRead: false },
+            where: { UserId: userId, OR: [{ IsRead: false }, { IsRead: null }] },
             data: { IsRead: true, ReadAt: new Date() }
         })
     }

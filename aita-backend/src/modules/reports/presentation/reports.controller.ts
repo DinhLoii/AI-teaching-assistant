@@ -18,15 +18,14 @@ export class ReportsController extends BaseController {
     async adminReport(req: Request, res: Response): Promise<void> {
         const period = String(req.query.period ?? '30d')
         this.logger.debug(`Fetching admin report for period: ${period}`)
-        const cacheKey = `reports_admin_${period}`
-        const cached = memoryCache.get(cacheKey)
-        if (cached) {
-            this.ok(res, cached, MESSAGES.REPORTS_ADMIN_SUCCESS)
-            return
+        res.setHeader('Cache-Control', 'no-store')
+        try {
+            const result = await this.getAdminReportUseCase.execute(period, req.query.start as string | undefined, req.query.end as string | undefined)
+            this.ok(res, result, MESSAGES.REPORTS_ADMIN_SUCCESS)
+        } catch (error) {
+            if (error instanceof RangeError) { res.status(400).json({ success: false, message: error.message }); return }
+            throw error
         }
-        const result = await this.getAdminReportUseCase.execute(period)
-        memoryCache.set(cacheKey, result, 30)
-        this.ok(res, result, MESSAGES.REPORTS_ADMIN_SUCCESS)
     }
 
     async systemHealth(_req: Request, res: Response): Promise<void> {
