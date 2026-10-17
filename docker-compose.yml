@@ -1,57 +1,72 @@
-version: '3.8'
-
 services:
-  mssql:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: aita-mssql
-    user: root
+  postgres:
+    image: pgvector/pgvector:0.8.7-pg16
     environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=YourPassword123!
-      - MSSQL_PID=Developer
-    ports:
-      - "14333:1433"
+      POSTGRES_DB: aita
+      POSTGRES_USER: aita
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
     volumes:
-      - mssql_data:/var/opt/mssql/data
-    restart: always
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aita -d aita"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
 
   backend:
-    build:
-      context: ./aita-backend
-      dockerfile: Dockerfile
-    container_name: aita-backend
-    ports:
-      - "3002:3001"
-    env_file:
-      - ./aita-backend/.env
+    build: ./aita-backend
+    env_file: ./aita-backend/.env
     environment:
-      - PORT=3001
-      - NODE_ENV=production
-      - DATABASE_URL=sqlserver://mssql:1433;database=AITA_DB;user=sa;password=YourPassword123!;encrypt=true;trustServerCertificate=true
-      - JWT_SECRET=aita_super_secret_key_production_2026!
-      # ✅ ĐÃ ĐỔI SANG FEAITA:
-      - CORS_ORIGIN=https://feaita.edubridge.edu.vn,https://apiaita.edubridge.edu.vn,https://api.edubridge.edu.vn
-      - FRONTEND_URL=https://feaita.edubridge.edu.vn
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: ${DATABASE_URL:?Set a PostgreSQL DATABASE_URL}
+      DIRECT_URL: ${DIRECT_URL:?Set a PostgreSQL DIRECT_URL}
+      JWT_SECRET: ${JWT_SECRET:?Set a random JWT_SECRET of at least 32 characters}
+      CORS_ORIGIN: ${FRONTEND_URL:?Set FRONTEND_URL}
+      FRONTEND_URL: ${FRONTEND_URL}
+      ENABLE_DEV_SEED: "false"
+      AI_STUB_MODE: "false"
+      PRIVATE_SUBMISSION_DIR: /app/storage/submissions
+      SANDBOX_ENABLED: ${SANDBOX_ENABLED:-false}
+      DOCKER_HOST: ${DOCKER_HOST:-}
     depends_on:
-      - mssql
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3002:3001"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /app/temp:/app/temp
-      - /app/uploads:/app/uploads
-    restart: always
+      - submission_storage:/app/storage
+      - public_uploads:/app/uploads
+    tmpfs:
+      - /app/temp:uid=1000,gid=1000,mode=0700,size=2G
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/api/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    init: true
+    stop_grace_period: 30s
+    restart: unless-stopped
 
   frontend:
     build:
       context: ./aita-fontend
-      dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=https://apiaita.edubridge.edu.vn/api
-    container_name: aita-frontend
-    ports:
-      - "8088:3000"
+        NEXT_PUBLIC_API_URL: /api
+        API_PROXY_TARGET: http://backend:3001
+    environment:
+      API_PROXY_TARGET: http://backend:3001
     depends_on:
-      - backend
-    restart: always
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8088:3000"
+    init: true
+    restart: unless-stopped
 
 volumes:
-  mssql_data:
+  postgres_data:
+  submission_storage:
+  public_uploads:
