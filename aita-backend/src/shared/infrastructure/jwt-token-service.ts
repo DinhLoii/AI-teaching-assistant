@@ -21,6 +21,7 @@ export class JwtTokenService implements ITokenService {
       role: string
       fullName: string
     }
+    if (typeof decoded.sub !== 'string' || !decoded.sub || typeof decoded.role !== 'string' || !decoded.role) throw new Error('Invalid access token claims')
     return {
       userId: decoded.sub,
       email: decoded.email,

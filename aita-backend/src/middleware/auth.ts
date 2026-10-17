@@ -17,8 +17,6 @@ export function authenticate(req: Request, _res: Response, next: NextFunction) {
 
   if (req.headers.authorization?.startsWith('Bearer ')) {
     token = req.headers.authorization.slice(7);
-  } else if (req.query.token && typeof req.query.token === 'string') {
-    token = req.query.token;
   }
 
   if (!token) {
