@@ -13,21 +13,27 @@ export class RuntimeStrategyResolver {
         // Example logic:
         // if environment is 'docker-compose', return DockerComposeStrategy
         // if manifest is 'csharp' and environment is 'local', return DotnetRuntimeStrategy
-        
+
         // For Sprint 2, we just find a strategy matching the language name (e.g., 'csharp' -> 'DotnetRuntimeStrategy')
         // In a full implementation, strategies would declare their capabilities similar to Plugins.
-        
+
         const strategy = this.availableStrategies.find(s => {
             const sid = s.strategyId.toLowerCase();
-            const lang = manifest.language.toLowerCase();
-            return sid.includes(lang) || (lang === 'csharp' && sid.includes('dotnet'));
+            const lang = (manifest.language || '').toLowerCase();
+            return sid.includes(lang) ||
+                (lang === 'csharp' && sid.includes('dotnet')) ||
+                ((lang === 'cpp' || lang === 'c++' || lang === 'c') && (sid.includes('docker') || sid.includes('dotnet') || sid.includes('native'))) ||
+                (lang === 'java' && (sid.includes('docker') || sid.includes('dotnet') || sid.includes('java'))) ||
+                (lang === 'python' && (sid.includes('docker') || sid.includes('dotnet') || sid.includes('python')));
         });
-        
+
         if (!strategy) {
+            if (this.availableStrategies.length > 0) {
+                return this.availableStrategies[0];
+            }
             throw new Error(`No RuntimeStrategy found for language: ${manifest.language}`);
         }
-        
+
         return strategy;
     }
 }
-

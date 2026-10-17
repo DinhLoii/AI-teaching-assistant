@@ -1,11 +1,13 @@
 // @ts-nocheck
 import { IDatabaseProvisioner, DatabaseProvisionResult } from '../../core/contracts/IDatabaseProvisioner';
+import { assertSandboxExecution } from '../../config/sandbox-policy.js';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 
 export class PostgresProvisioner implements IDatabaseProvisioner {
     private containers: Map<string, StartedPostgreSqlContainer> = new Map();
 
     public async provisionDatabaseAsync(config: any): Promise<DatabaseProvisionResult> {
+        assertSandboxExecution();
         console.log(`[PostgresProvisioner] Starting PostgreSQL container via testcontainers...`);
         try {
             const container = await new PostgreSqlContainer("postgres:15-alpine")

@@ -19,7 +19,7 @@ export class GradingRouter {
         const ctrl = container.get<GradingController>(TOKENS.GradingController)
 
         // ── AITA Clean Architecture routes ──
-        this.router.get('/sessions/:sessionId', authenticate, asyncHandler((req, res) => ctrl.getSessionStatus(req, res)))
+        this.router.get('/sessions/:sessionId', authenticate, requireRoles('ADMIN', 'LECTURER'), asyncHandler((req, res) => ctrl.getSessionStatus(req, res)))
         this.router.post('/start', authenticate, requireRoles('ADMIN', 'LECTURER'), asyncHandler((req, res) => ctrl.startGrading(req, res)))
 
         // ── Engine adapter routes (submissions & assignments) ──

@@ -1,5 +1,6 @@
 // @ts-nocheck
 import Docker from 'dockerode';
+import { assertSandboxExecution } from '../../config/sandbox-policy.js';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { StdInOutProbeSpec, StdInOutTestCase } from '../../core/domain/rubric/EvidenceMatcher';
@@ -52,6 +53,7 @@ export class StdInOutProbeEngine {
     probeSpec: StdInOutProbeSpec,
     contextHint?: string
   ): Promise<StdInOutResult> {
+    assertSandboxExecution();
     // Auto-detect language if build/run commands not specified
     const detection = await this.detectLanguage(submissionPath);
     const dockerImage = detection.dockerImage;

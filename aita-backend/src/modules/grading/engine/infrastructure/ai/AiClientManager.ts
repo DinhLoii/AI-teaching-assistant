@@ -53,6 +53,7 @@ class Semaphore {
 const globalAiSemaphore = new Semaphore(3);
 
 export class AiClientManager {
+    public static lastFailureDiagnostic: { kind: string; status: number; name: string } | null = null;
     private static currentKeyIndex = 0;
     private static rateLimitExpiry = new Map<string, number>();
 
@@ -107,11 +108,14 @@ export class AiClientManager {
         }
 
         const hasConfiguredKeys = (config.ai.geminiKeys && config.ai.geminiKeys.length > 0) || Boolean(config.ai.githubToken) || Boolean((config.ai as any).groqKey || process.env.GROQ_API_KEY);
-        const isStubMode = (config.ai as any)?.stubMode ?? (process.env.AI_STUB_MODE !== 'false' && process.env.AI_STUB_MODE !== '0');
+        const isStubMode = (config.ai as any)?.stubMode ?? (process.env.AI_STUB_MODE === 'true' || process.env.AI_STUB_MODE === '1');
 
-        if (isStubMode || !hasConfiguredKeys) {
+        if (isStubMode) {
             console.log(`[AiClientManager] Executing in AI Stub Mode (isStubMode: ${isStubMode}, hasConfiguredKeys: ${hasConfiguredKeys})`);
             return await AiClientManager.executeStub(apiCall, cacheKey);
+        }
+        if (!hasConfiguredKeys) {
+            throw new AppError('AI_NOT_CONFIGURED', 'Chưa cấu hình dịch vụ AI. Không tạo kết quả giả lập thay cho kết quả chấm bài.', 503);
         }
 
         let lastError: any;
@@ -224,7 +228,7 @@ export class AiClientManager {
                         client = {
                             chat: {
                                 completions: {
-                                    create: async (params: any) => {
+                                    create: async (params: any, options?: any) => {
                                         const systemMsg = params.messages?.find((m: any) => m.role === 'system')?.content || '';
                                         const userMsgs = params.messages?.filter((m: any) => m.role !== 'system') || [];
 
@@ -256,12 +260,15 @@ export class AiClientManager {
                                             }
                                         }
 
-                                        const targetModel = config.ai.geminiModel || 'gemini-3.5-flash-lite';
+                                        const targetModel = model || config.ai.geminiModel || 'gemini-3.5-flash-lite';
                                         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent`;
 
                                         const generationConfig: any = {};
                                         if (params.temperature !== undefined) {
                                             generationConfig.temperature = params.temperature;
+                                        }
+                                        if (params.response_format?.type === 'json_object') {
+                                            generationConfig.responseMimeType = 'application/json';
                                         }
 
                                         const bodyPayload: any = {
@@ -277,7 +284,8 @@ export class AiClientManager {
                                                 'Content-Type': 'application/json',
                                                 'x-goog-api-key': key
                                             },
-                                            body: JSON.stringify(bodyPayload)
+                                            body: JSON.stringify(bodyPayload),
+                                            signal: options?.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(config.ai.timeoutMs)]) : AbortSignal.timeout(config.ai.timeoutMs)
                                         });
 
                                         if (!res.ok) {
@@ -299,7 +307,7 @@ export class AiClientManager {
                         client = {
                             chat: {
                                 completions: {
-                                    create: async (params: any) => {
+                                    create: async (params: any, options?: any) => {
                                         const systemMsg = params.messages?.find((m: any) => m.role === 'system')?.content || '';
                                         const userMsgs = params.messages?.filter((m: any) => m.role !== 'system') || [];
 
@@ -334,13 +342,17 @@ export class AiClientManager {
                                             systemInstruction: systemMsg ? systemMsg : undefined
                                         });
 
+                                        const genConfig: any = {
+                                            temperature: params.temperature ?? 0.7
+                                        };
+                                        if (params.response_format?.type === 'json_object') {
+                                            genConfig.responseMimeType = 'application/json';
+                                        }
+
                                         const genResult = await genModel.generateContent({
                                             contents: contents.length > 0 ? contents : [{ role: 'user', parts: [{ text: '' }] }],
-                                            generationConfig: {
-                                                temperature: params.temperature ?? 0.7
-                                            }
-                                        });
-
+                                            generationConfig: genConfig
+                                        }, { timeout: config.ai.timeoutMs, signal: options?.signal });
                                         const text = genResult.response.text();
                                         return { choices: [{ message: { content: text } }] };
                                     }
@@ -448,7 +460,7 @@ export class AiClientManager {
                 }
             }
 
-            const isTimeoutOrRateLimit = lastError && (lastError.status === 429 || lastError.message?.includes('429') || lastError.message?.includes('AI_TIMEOUT'));
+            const isTimeoutOrRateLimit = lastError && ([429, 500, 502, 503, 504].includes(Number(lastError.status || lastError.statusCode)) || lastError.message?.includes('429') || /AI_TIMEOUT|timed? out|timeout|abort|fetch failed|ECONN/i.test(lastError.message || ''));
             if (globalAttempt < maxGlobalAttempts && isTimeoutOrRateLimit) {
                 console.warn(`[AiClientManager] Global Pool Exhausted (Attempt ${globalAttempt}/${maxGlobalAttempts}). Cooling down for 3 seconds...`);
                 AiClientManager.rateLimitExpiry.clear(); // Reset cooldowns on retry attempt
@@ -459,6 +471,12 @@ export class AiClientManager {
         }
 
         const errMsg = lastError?.message || String(lastError || 'All AI providers failed');
+        const failureKind = /timed? out|timeout|abort/i.test(errMsg) ? 'TIMEOUT'
+            : /MAX_TOKENS|token limit/i.test(errMsg) ? 'TOKEN_LIMIT'
+            : /SAFETY|RECITATION|PROHIBITED_CONTENT|BLOCKLIST/i.test(errMsg) ? 'CONTENT_BLOCKED'
+            : /fetch failed|ECONN|network/i.test(errMsg) ? 'NETWORK'
+            : 'PROVIDER_RESPONSE';
+        AiClientManager.lastFailureDiagnostic = { kind: failureKind, status: Number(lastError?.status || lastError?.statusCode || 0), name: String(lastError?.name || 'Error') };
         if (errMsg.includes('429') || lastError?.status === 429) {
             throw new AppError(
                 'AI_RATE_LIMIT',
@@ -481,8 +499,11 @@ export class AiClientManager {
             );
         }
 
-        console.warn(`[AiClientManager] All external AI providers failed (${lastError?.message || 'unknown'}). Falling back to AI Stub Mode.`);
-        return await AiClientManager.executeStub(apiCall, cacheKey);
+        // Preserve response-validation errors for the evaluator's bounded repair loop.
+        // They are not provider outages and must never enter the success cache.
+        if (lastError instanceof SyntaxError || /^AI_(CODE_EVIDENCE_MISSING|REVIEW_INVALID):/.test(errMsg)) throw lastError;
+        if (failureKind === 'TIMEOUT' || failureKind === 'NETWORK') throw new AppError('AI_TIMEOUT', 'AI_TIMEOUT: Dịch vụ AI chưa hoàn tất trong thời gian cho phép.', 504);
+        throw new AppError('AI_UNAVAILABLE', 'Dịch vụ AI chưa trả được kết quả. Vui lòng thử chấm lại; hệ thống không thay bằng kết quả giả lập.', 503);
     }
 }
 

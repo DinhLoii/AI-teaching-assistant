@@ -5,6 +5,7 @@ import Docker from 'dockerode';
 import * as net from 'net';
 import { execSync } from 'child_process';
 import * as os from 'os';
+import { sandboxExecutionAllowed } from '../../config/sandbox-policy.js';
 
 /**
  * Teacher-facing project category. This is what the teacher selects when creating an assignment.
@@ -16,7 +17,7 @@ export type ProjectType = "algorithm" | "backend" | "frontend" | "fullstack" | "
  * Internal runtime stack auto-detected from the student's submitted code.
  * This determines DOCKER IMAGE + BUILD/RUN COMMANDS.
  */
-export type RuntimeStack = "aspnet" | "blazor" | "nodejs" | "java" | "python" | "php" | "golang" | "dotnet_console" | "dotnet_desktop" | "unity_engine" | "fullstack_dotnet_node" | "flutter" | "unknown";
+export type RuntimeStack = "aspnet" | "blazor" | "nodejs" | "java" | "python" | "php" | "golang" | "dotnet_console" | "dotnet_desktop" | "unity_engine" | "fullstack_dotnet_node" | "flutter" | "android" | "unknown";
 
 export interface SandboxHandle {
   containerId: string | null;
@@ -49,6 +50,10 @@ export class ExecutionSandboxService {
     // Auto-detect what runtime stack the student's code actually uses
     const runtimeStack = await this.detectRuntimeStack(submissionPath);
     console.log(`[Sandbox] ProjectType: ${projectType}, RuntimeStack: ${runtimeStack}`);
+
+    if (runtimeStack === 'android' || !sandboxExecutionAllowed()) {
+      return { containerId: null, baseUrl: null, projectType: runtimeStack === 'android' ? 'mobile' : projectType, runtimeStack, isReady: false, crashLogs: runtimeStack === 'android' ? 'Android build/emulator runner is not configured. Source analysis is available; interactive acceptance tests have not been executed.' : 'Sandbox execution is disabled. Only source analysis is available.' };
+    }
 
     if (!this.isServerRuntime(runtimeStack) || projectType === "desktop" || runtimeStack === "dotnet_desktop") {
       return { containerId: null, baseUrl: null, projectType, runtimeStack, isReady: false };
@@ -938,6 +943,11 @@ try {
 
   private async detectRuntimeStack(submissionPath: string): Promise<RuntimeStack> {
     try {
+      if (await this.findFile(submissionPath, 'AndroidManifest.xml')) return 'android';
+      for (const name of ['build.gradle', 'build.gradle.kts']) {
+        const file = await this.findFile(submissionPath, name);
+        if (file && /com\.android\.|android\s*\{/i.test(await fs.readFile(file, 'utf8'))) return 'android';
+      }
       // Unity detection (must come before generic C# detection)
       if (await this.findFile(submissionPath, 'ProjectSettings') ||
         await this.findFile(submissionPath, 'Assembly-CSharp.csproj') ||
