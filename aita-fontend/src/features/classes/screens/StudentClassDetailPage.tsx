@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import dynamic from 'next/dynamic'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
@@ -34,6 +35,8 @@ import {
   Calendar
 } from 'lucide-react'
 
+const StudentSyllabus = dynamic(() => import('@/features/subjects/components/StudentSyllabus'))
+
 export default function StudentClassDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -41,7 +44,7 @@ export default function StudentClassDetailPage() {
   const classId = (params?.id as string) || ''
   const [classData, setClassData] = React.useState<any>(null)
   const [loading, setLoading] = React.useState(true)
-  const [activeTab, setActiveTab] = React.useState<'assignments' | 'students'>('assignments')
+  const [activeTab, setActiveTab] = React.useState<'assignments' | 'students' | 'syllabus'>('assignments')
   const [studentSearch, setStudentSearch] = React.useState('')
   const [assignmentSearch, setAssignmentSearch] = React.useState('')
   const [assignmentFilter, setAssignmentFilter] = React.useState<'all' | 'pending' | 'submitted' | 'graded'>('all')
@@ -300,7 +303,7 @@ export default function StudentClassDetailPage() {
         </div>
 
         {/* Tab Controls Bar */}
-        <div className="inline-flex p-1.5 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 rounded-2xl border border-orange-100/90 dark:border-orange-900/30 shadow-xs gap-1">
+        <div className="inline-flex flex-wrap p-1.5 bg-gradient-to-br from-orange-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 rounded-2xl border border-orange-100/90 dark:border-orange-900/30 shadow-xs gap-1">
           <button
             onClick={() => setActiveTab('assignments')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
@@ -334,7 +337,23 @@ export default function StudentClassDetailPage() {
               {students.length}
             </span>
           </button>
+          <button
+            onClick={() => setActiveTab('syllabus')}
+            aria-pressed={activeTab === 'syllabus'}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              activeTab === 'syllabus'
+                ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-400 text-white shadow-md shadow-orange-500/20'
+                : 'text-slate-600 hover:text-orange-600 dark:text-slate-300 dark:hover:text-white hover:bg-orange-50/60'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>{isVi ? 'Đề cương môn học (Syllabus)' : 'Course Syllabus'}</span>
+          </button>
         </div>
+
+        {activeTab === 'syllabus' && (
+          <StudentSyllabus key={classData.subject?.id} subjectId={classData.subject?.id} />
+        )}
 
         {/* ============================================================ */}
         {/* TAB 1: ASSIGNMENTS (MODERN DATA TABLE)                      */}
@@ -410,7 +429,7 @@ export default function StudentClassDetailPage() {
                       <th className="px-4 py-3.5 w-24 text-center">{isVi ? 'Thang điểm' : 'Max Points'}</th>
                       <th className="px-4 py-3.5 w-36 text-center">{isVi ? 'Trạng thái' : 'Status'}</th>
                       <th className="px-4 py-3.5 w-28 text-center">{isVi ? 'Điểm số' : 'Score'}</th>
-                      <th className="px-4 py-3.5 w-36 text-right pr-5">{isVi ? 'Thao tác' : 'Actions'}</th>
+                      <th className="px-4 py-3.5 min-w-[200px] w-52 text-right pr-5 whitespace-nowrap">{isVi ? 'Thao tác' : 'Actions'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
@@ -523,31 +542,43 @@ export default function StudentClassDetailPage() {
                             </td>
 
                             {/* Action Button */}
-                            <td className="px-4 py-3.5 text-right pr-5">
-                              <div className="flex items-center justify-end gap-1.5">
+                            <td className="px-4 py-3.5 text-right pr-5 whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-2 shrink-0 whitespace-nowrap">
                                 {isGraded && (
-                                  <Link href="/student/results">
+                                  <Link href="/student/results" className="shrink-0">
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-7 px-2 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 gap-1"
+                                      className="h-8 px-2.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80 gap-1.5 shrink-0 whitespace-nowrap cursor-pointer"
                                       title={isVi ? 'Xem đánh giá AI chi tiết' : 'View AI review'}
                                     >
-                                      <Sparkles className="w-3 h-3" />
-                                      <span className="hidden md:inline">{isVi ? 'Xem AI' : 'AI'}</span>
+                                      <Sparkles className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                      <span>{isVi ? 'Xem AI' : 'AI Review'}</span>
                                     </Button>
                                   </Link>
                                 )}
 
-                                <Link href={`/student/assignments/${a.id}`}>
+                                <Link href={`/student/assignments/${a.id}`} className="shrink-0">
                                   <Button
                                     variant={a.isSubmitted ? 'outline' : 'primary'}
                                     size="sm"
-                                    className="h-7 px-3 text-xs font-bold"
+                                    className={`h-8 px-3 text-xs font-bold shrink-0 whitespace-nowrap cursor-pointer shadow-xs ${
+                                      a.isSubmitted
+                                        ? 'border-orange-200/90 dark:border-orange-800/60 text-orange-600 dark:text-orange-400 hover:bg-orange-50/60 dark:hover:bg-slate-800'
+                                        : ''
+                                    }`}
                                   >
-                                    {a.isSubmitted
-                                      ? (isVi ? 'Xem bài nộp' : 'View')
-                                      : (isVi ? 'Nộp bài' : 'Submit')}
+                                    {a.isSubmitted ? (
+                                      <span className="flex items-center gap-1.5">
+                                        <FileText className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                                        <span>{isVi ? 'Xem bài nộp' : 'View'}</span>
+                                      </span>
+                                    ) : (
+                                      <span className="flex items-center gap-1.5">
+                                        <Send className="w-3.5 h-3.5 shrink-0" />
+                                        <span>{isVi ? 'Nộp bài' : 'Submit'}</span>
+                                      </span>
+                                    )}
                                   </Button>
                                 </Link>
                               </div>

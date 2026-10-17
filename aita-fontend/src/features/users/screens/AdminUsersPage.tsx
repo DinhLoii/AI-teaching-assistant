@@ -1,10 +1,13 @@
 'use client'
 
+import { RefreshAction } from '@/components/actions/RefreshAction'
+
 import * as React from 'react'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { ADMIN_NAV } from '@/config/navigation'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { AnchoredMenu } from '@/components/ui/anchored-menu'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
@@ -143,6 +146,7 @@ export default function AdminUsersPage() {
 
   // 3-Dots Action Menu & Center Confirmation Modals State
   const [activeActionMenuId, setActiveActionMenuId] = React.useState<string | null>(null)
+  const [actionMenuAnchor, setActionMenuAnchor] = React.useState<HTMLButtonElement | null>(null)
   const [lockTargetUser, setLockTargetUser] = React.useState<any | null>(null)
   const [lockingUser, setLockingUser] = React.useState(false)
   const [deleteTargetUser, setDeleteTargetUser] = React.useState<any | null>(null)
@@ -312,15 +316,16 @@ export default function AdminUsersPage() {
   const [assignUserSuccess, setAssignUserSuccess] = React.useState<string | null>(null)
   const [loadError, setLoadError] = React.useState<string | null>(null)
 
-  const loadUsers = React.useCallback(async () => {
+  const loadUsers = React.useCallback(async (background = false) => {
     if (authLoading || !isAuthenticated || role !== 'admin') return
-    setLoading(true)
+    if (!background) setLoading(true)
     setLoadError(null)
     try {
       const res = await usersApi.getUsers(roleFilter, page, 50, search)
       const data = Array.isArray(res) ? res : (res as any)?.data || (res as any)?.items || []
       setUsers(data)
     } catch (err: any) {
+      if (background) throw err
       console.error('Failed to load users:', err)
       setLoadError(err?.message || t('admin.users.load_error', 'Không thể kết nối máy chủ để tải danh sách người dùng.'))
       setUsers([])
@@ -1226,15 +1231,7 @@ export default function AdminUsersPage() {
               <span>{isLecturerView ? 'Thêm Giảng viên' : isStudentView ? 'Thêm Sinh viên' : 'Tạo mới'}</span>
             </Button>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadUsers}
-              className="text-xs gap-1.5 cursor-pointer rounded-2xl h-10 px-4 font-semibold shadow-xs border border-orange-200/80 dark:border-orange-900/40 bg-gradient-to-br from-orange-50/60 via-white to-amber-50/30 dark:from-slate-900 dark:to-slate-800 text-slate-700 dark:text-slate-200 hover:border-orange-300"
-            >
-              <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} />
-              <span>Làm mới</span>
-            </Button>
+            <RefreshAction onRefresh={() => loadUsers(true)} disabled={loading} cachePaths={["/users"]} />
           </div>
         </div>
 
@@ -1619,6 +1616,7 @@ export default function AdminUsersPage() {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation()
+                                setActionMenuAnchor(e.currentTarget)
                                 setActiveActionMenuId(activeActionMenuId === u.id ? null : u.id)
                               }}
                               className={cn(
@@ -1628,28 +1626,26 @@ export default function AdminUsersPage() {
                                   : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
                               )}
                               title="Tùy chọn thao tác"
+                              aria-label={`Thao tác với ${fullName}`}
+                              aria-haspopup="menu"
+                              aria-expanded={activeActionMenuId === u.id}
+                              aria-controls={activeActionMenuId === u.id ? `user-actions-${u.id}` : undefined}
                             >
                               <MoreVertical className="w-4 h-4" />
                             </button>
 
                             {/* Options Dropdown Menu */}
                             {activeActionMenuId === u.id && (
-                              <>
-                                <div
-                                  className="fixed inset-0 z-30"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setActiveActionMenuId(null)
-                                  }}
-                                />
-
-                                <div
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="absolute right-0 bottom-full mb-1 sm:bottom-auto sm:top-full sm:mt-1.5 w-60 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-2xl shadow-slate-950/25 z-40 p-1.5 divide-y divide-slate-100 dark:divide-slate-800"
+                                <AnchoredMenu
+                                  anchor={actionMenuAnchor}
+                                  id={`user-actions-${u.id}`}
+                                  label={`Thao tác với ${fullName}`}
+                                  onClose={() => setActiveActionMenuId(null)}
                                 >
                                   {/* Nhóm 1: Xem & Quản lý */}
                                   <div className="p-1 space-y-0.5">
                                     <button
+                                      role="menuitem"
                                       type="button"
                                       onClick={() => {
                                         setActiveActionMenuId(null)
@@ -1667,6 +1663,7 @@ export default function AdminUsersPage() {
                                     </button>
 
                                     <button
+                                      role="menuitem"
                                       type="button"
                                       onClick={() => {
                                         setActiveActionMenuId(null)
@@ -1684,6 +1681,7 @@ export default function AdminUsersPage() {
                                     </button>
 
                                     <button
+                                      role="menuitem"
                                       type="button"
                                       onClick={() => {
                                         setActiveActionMenuId(null)
@@ -1704,6 +1702,7 @@ export default function AdminUsersPage() {
                                   {/* Nhóm 2: Khóa & Xóa */}
                                   <div className="p-1 space-y-0.5">
                                     <button
+                                      role="menuitem"
                                       type="button"
                                       onClick={() => {
                                         setActiveActionMenuId(null)
@@ -1721,6 +1720,7 @@ export default function AdminUsersPage() {
                                     </button>
 
                                     <button
+                                      role="menuitem"
                                       type="button"
                                       onClick={() => {
                                         setActiveActionMenuId(null)
@@ -1737,8 +1737,7 @@ export default function AdminUsersPage() {
                                       </div>
                                     </button>
                                   </div>
-                                </div>
-                              </>
+                                </AnchoredMenu>
                             )}
                           </div>
                         </td>

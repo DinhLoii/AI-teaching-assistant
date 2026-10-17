@@ -1,5 +1,7 @@
 'use client'
 
+import { RefreshAction } from '@/components/actions/RefreshAction'
+
 import * as React from 'react'
 import Link from 'next/link'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
@@ -159,6 +161,7 @@ export default function AdminSeasonsPage() {
       setSemesters(data || [])
       setError(null)
     } catch (cause) {
+      if (silently) throw cause
       setError(errorMessage(cause))
     } finally {
       setLoading(false)
@@ -657,16 +660,7 @@ export default function AdminSeasonsPage() {
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap w-full sm:w-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => void loadSemesters(true)}
-              disabled={refreshing}
-              className="gap-1.5 text-xs rounded-xl border-slate-200 dark:border-slate-800"
-            >
-              <RefreshCw className={cn("w-3.5 h-3.5", refreshing && "animate-spin")} />
-              <span>{refreshing ? 'Đang tải...' : 'Làm mới'}</span>
-            </Button>
+            <RefreshAction onRefresh={() => loadSemesters(true)} disabled={loading} busy={refreshing} cachePaths={["/semesters"]} />
 
             <Button
               variant="outline"
