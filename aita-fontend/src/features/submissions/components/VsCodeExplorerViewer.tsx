@@ -50,266 +50,6 @@ interface VsCodeExplorerViewerProps {
 }
 
 // Sample realistic project files with explicit AI error markers
-const DEFAULT_FILES: VirtualFile[] = [
-  {
-    id: 'task-repo',
-    path: 'src/main/java/com/example/todo/data/TaskRepository.kt',
-    name: 'TaskRepository.kt',
-    language: 'kotlin',
-    errorAnnotations: [
-      {
-        line: 36,
-        title: 'Lỗi phát hiện bởi AI Teaching Assistant (-0.5đ)',
-        message: 'Khối try-catch bắt ngoại lệ chung (Exception) và âm thầm return null khi truy vấn Room DB thất bại (Silent Failure). Bắt buộc phải bắt cụ thể SQLException hoặc throw Custom Domain Exception để ViewModel thông báo lỗi trực quan lên UI.',
-        severity: 'error',
-        deduction: '-0.5đ'
-      }
-    ],
-    content: `package com.example.todo.data
-
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.sql.SQLException
-
-/**
- * TaskRepository handles data operations from Room DB.
- * Implements Repository pattern for clean architecture separation.
- */
-class TaskRepository(
-    private val taskDao: TaskDao
-) {
-    // Expose reactive flow of all tasks
-    val allTasks: Flow<List<TaskEntity>> = taskDao.getAllTasks()
-
-    suspend fun insertTask(task: TaskEntity) = withContext(Dispatchers.IO) {
-        taskDao.insert(task)
-    }
-
-    suspend fun updateTask(task: TaskEntity) = withContext(Dispatchers.IO) {
-        taskDao.update(task)
-    }
-
-    suspend fun deleteTask(taskId: Long) = withContext(Dispatchers.IO) {
-        taskDao.deleteById(taskId)
-    }
-
-    suspend fun getTaskById(taskId: Long): TaskEntity? = withContext(Dispatchers.IO) {
-        try {
-            return@withContext taskDao.getById(taskId)
-        } catch (e: Exception) {
-            // [AI FLAGGED CODE]: Nuốt lỗi âm thầm, không log và không throw exception
-            return@withContext null
-        }
-    }
-}`
-  },
-  {
-    id: 'task-viewmodel',
-    path: 'src/main/java/com/example/todo/viewmodel/TaskViewModel.kt',
-    name: 'TaskViewModel.kt',
-    language: 'kotlin',
-    errorAnnotations: [
-      {
-        line: 32,
-        title: 'Cảnh báo rò rỉ bộ nhớ (Memory Leak) (-0.5đ)',
-        message: 'Sử dụng GlobalScope.launch để khởi chạy tác vụ bất đồng bộ. GlobalScope không gắn liền với vòng đời ViewModel, dẫn đến rò rỉ bộ nhớ (Memory Leak) khi người dùng thoát màn hình. Bắt buộc thay bằng viewModelScope.launch.',
-        severity: 'error',
-        deduction: '-0.5đ'
-      }
-    ],
-    content: `package com.example.todo.viewmodel
-
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.example.todo.data.TaskEntity
-import com.example.todo.data.TaskRepository
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-
-sealed class TaskUiState {
-    object Loading : TaskUiState()
-    data class Success(val tasks: List<TaskEntity>) : TaskUiState()
-    data class Error(val message: String) : TaskUiState()
-}
-
-class TaskViewModel(
-    private val repository: TaskRepository
-) : ViewModel() {
-
-    private val _uiState = MutableStateFlow<TaskUiState>(TaskUiState.Loading)
-    val uiState: StateFlow<TaskUiState> = _uiState.asStateFlow()
-
-    init {
-        loadTasks()
-    }
-
-    fun loadTasks() {
-        // [AI FLAGGED CODE]: Sử dụng GlobalScope gây rò rỉ bộ nhớ
-        GlobalScope.launch {
-            try {
-                repository.allTasks.collect { tasks ->
-                    _uiState.value = TaskUiState.Success(tasks)
-                }
-            } catch (e: Throwable) {
-                _uiState.value = TaskUiState.Error(e.message ?: "Unknown error")
-            }
-        }
-    }
-
-    fun completeTask(task: TaskEntity) {
-        viewModelScope.launch {
-            repository.updateTask(task.copy(isCompleted = true))
-        }
-    }
-}`
-  },
-  {
-    id: 'task-dao',
-    path: 'src/main/java/com/example/todo/data/TaskDao.kt',
-    name: 'TaskDao.kt',
-    language: 'kotlin',
-    content: `package com.example.todo.data
-
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
-import androidx.room.Update
-import kotlinx.coroutines.flow.Flow
-
-@Dao
-interface TaskDao {
-    @Query("SELECT * FROM tasks ORDER BY createdAt DESC")
-    fun getAllTasks(): Flow<List<TaskEntity>>
-
-    @Query("SELECT * FROM tasks WHERE id = :id LIMIT 1")
-    suspend fun getById(id: Long): TaskEntity?
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(task: TaskEntity): Long
-
-    @Update
-    suspend fun update(task: TaskEntity)
-
-    @Query("DELETE FROM tasks WHERE id = :id")
-    suspend fun deleteById(id: Long)
-}`
-  },
-  {
-    id: 'task-entity',
-    path: 'src/main/java/com/example/todo/data/TaskEntity.kt',
-    name: 'TaskEntity.kt',
-    language: 'kotlin',
-    content: `package com.example.todo.data
-
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-
-@Entity(tableName = "tasks")
-data class TaskEntity(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
-    val title: String,
-    val description: String = "",
-    val isCompleted: Boolean = false,
-    val priority: Int = 1,
-    val createdAt: Long = System.currentTimeMillis()
-)`
-  },
-  {
-    id: 'main-activity',
-    path: 'src/main/java/com/example/todo/ui/MainActivity.kt',
-    name: 'MainActivity.kt',
-    language: 'kotlin',
-    content: `package com.example.todo.ui
-
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import com.example.todo.ui.theme.TodoTheme
-
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            TodoTheme {
-                Surface(color = MaterialTheme.colorScheme.background) {
-                    TaskScreen()
-                }
-            }
-        }
-    }
-}`
-  },
-  {
-    id: 'manifest',
-    path: 'src/main/AndroidManifest.xml',
-    name: 'AndroidManifest.xml',
-    language: 'xml',
-    content: `<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application
-        android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.TodoApp">
-        <activity
-            android:name=".ui.MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-    </application>
-</manifest>`
-  },
-  {
-    id: 'build-gradle',
-    path: 'build.gradle.kts',
-    name: 'build.gradle.kts',
-    language: 'gradle',
-    content: `plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.ksp)
-}
-
-android {
-    namespace = "com.example.todo"
-    compileSdk = 34
-
-    defaultConfig {
-        applicationId = "com.example.todo"
-        minSdk = 26
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
-    }
-
-    buildFeatures {
-        compose = true
-    }
-}
-
-dependencies {
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.compose)
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
-}`
-  }
-]
-
 interface TreeNode {
   name: string
   path: string
@@ -371,8 +111,8 @@ function buildTree(files: VirtualFile[]): TreeNode {
 
 export function VsCodeExplorerViewer({
   initialFiles,
-  activeFileName = 'TaskRepository.kt',
-  archiveName = 'app-submission.zip',
+  activeFileName = '',
+  archiveName = 'ZIP bài nộp',
   sourceCode,
   filename,
   height = 'h-[560px]',
@@ -381,20 +121,26 @@ export function VsCodeExplorerViewer({
   const files = React.useMemo(() => {
     if (initialFiles && initialFiles.length > 0) return initialFiles
     if (sourceCode) {
-      const targetName = filename && !filename.endsWith('.zip') && !filename.endsWith('.tar.gz')
+      const targetName = filename && !filename.endsWith('.zip') && !filename.endsWith('.tar.gz') && !filename.endsWith('.rar')
         ? filename
-        : 'TaskRepository.kt'
-      return DEFAULT_FILES.map(f => {
-        if (f.name === targetName || f.path.endsWith(targetName)) {
-          return {
-            ...f,
-            content: sourceCode
-          }
+        : 'source.txt'
+      const ext = targetName.split('.').pop()?.toLowerCase() || 'text'
+      const langMap: Record<string, string> = {
+        cpp: 'cpp', c: 'c', h: 'cpp', hpp: 'cpp', java: 'java', py: 'python',
+        cs: 'csharp', kt: 'kotlin', kts: 'kotlin', js: 'javascript', ts: 'typescript', sql: 'sql'
+      }
+      return [
+        {
+          id: 'submitted-code',
+          path: targetName,
+          name: targetName,
+          language: langMap[ext] || 'text',
+          content: sourceCode,
+          errorAnnotations: []
         }
-        return f
-      })
+      ]
     }
-    return DEFAULT_FILES
+    return []
   }, [initialFiles, sourceCode, filename])
 
   const initialSelected = React.useMemo(() => {
@@ -533,6 +279,8 @@ export function VsCodeExplorerViewer({
     return map
   }, [selectedFile])
 
+  if (!selectedFile) return <div className="p-8 text-sm text-slate-500">Chưa có mã nguồn được cung cấp.</div>
+
   return (
     <div className={`rounded-lg overflow-hidden border border-slate-800 bg-[#1e1e1e] text-slate-200 shadow-md font-sans text-xs ${className}`}>
       
@@ -573,11 +321,11 @@ export function VsCodeExplorerViewer({
       </div>
 
       {/* ── MAIN WORKSPACE: EXPLORER (LEFT) + CODE EDITOR (RIGHT) ── */}
-      <div className={`flex ${height} overflow-hidden`}>
+      <div className={`flex flex-col sm:flex-row ${height} overflow-hidden`}>
         
         {/* Left Pane: VS Code Explorer */}
         {showExplorer && (
-          <div className="w-60 shrink-0 bg-[#252526] border-r border-slate-800 flex flex-col overflow-hidden">
+          <div className="w-full h-36 sm:h-auto sm:w-60 shrink-0 bg-[#252526] border-r border-slate-800 flex flex-col overflow-hidden">
             {/* Explorer Title */}
             <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800/80 flex items-center justify-between select-none">
               <span>EXPLORER</span>
@@ -592,8 +340,8 @@ export function VsCodeExplorerViewer({
             {/* AI Problems Summary in Explorer footer */}
             <div className="p-2 border-t border-slate-800 bg-[#1e1e1e] text-[11px] select-none">
               <div className="flex items-center justify-between text-slate-400 font-semibold mb-1">
-                <span>PROBLEMS</span>
-                <span className="font-mono text-rose-400">{totalErrors} errors</span>
+                <span>CHÚ THÍCH ĐÁNH GIÁ</span>
+                <span className="font-mono text-rose-400">{totalErrors} chú thích</span>
               </div>
               <div className="text-[10px] text-slate-500 leading-tight">
                 Các dòng code tô đỏ là vị trí AI trừ điểm. Nhấp vào file để xem chi tiết.
@@ -603,7 +351,7 @@ export function VsCodeExplorerViewer({
         )}
 
         {/* Right Pane: Code Editor Area */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-[#1e1e1e]">
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden bg-[#1e1e1e]">
           
           {/* Editor Tab Bar */}
           <div className="flex items-center bg-[#181818] border-b border-slate-800 overflow-x-auto select-none">
@@ -696,16 +444,12 @@ export function VsCodeExplorerViewer({
           <div className="flex items-center justify-between px-3 py-1 bg-[#007acc] text-white text-[11px] font-mono select-none">
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1">
-                <GitBranch className="w-3 h-3" />
-                <span>main</span>
+                <FileCode className="w-3 h-3" />
+                <span>ZIP source</span>
               </span>
               <span className="flex items-center gap-1 font-bold">
                 <XCircle className="w-3 h-3" />
                 <span>{selectedFile.errorAnnotations?.length || 0}</span>
-              </span>
-              <span className="flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" />
-                <span>0</span>
               </span>
             </div>
 
