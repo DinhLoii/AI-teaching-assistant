@@ -7,6 +7,7 @@ export interface SubmissionFilter {
   classId?: string
   instructorId?: string
   status?: GradingStatusValue
+  latestOnly?: boolean
 }
 
 export interface ISubmissionRepository {
@@ -15,6 +16,7 @@ export interface ISubmissionRepository {
   findById(id: string): Promise<Submission | null>
   findByIdForInstructor(id: string, instructorId: string): Promise<Submission | null>
   create(submission: Submission): Promise<void>
+  createAttempt(submission: Submission): Promise<void>
   update(submission: Submission): Promise<void>
   save(submission: Submission): Promise<void>
 }

@@ -33,7 +33,8 @@ export class SubmissionMapper {
     if (raw.Exam) {
       (submission as any).exam = {
         title: raw.Exam.Title,
-        description: raw.Exam.Description
+        description: raw.Exam.Description,
+        totalPoints: raw.Exam.TotalPoints
       }
     }
     if (raw.Class) {
@@ -52,6 +53,7 @@ export class SubmissionMapper {
     if (raw.ReportData) {
       (submission as any).reportData = raw.ReportData
     }
+    ;(submission as any).rawScore = raw.RawScore ?? null
     if (raw.IsReopened !== undefined || raw.isReopened !== undefined) {
       (submission as any).isReopened = Boolean(raw.IsReopened ?? raw.isReopened)
     }

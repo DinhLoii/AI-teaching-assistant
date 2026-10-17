@@ -1,5 +1,7 @@
+import { readSubmissionFile } from '../infrastructure/submission-storage.js'
 import path from 'path'
-import fs from 'fs'
+import { readSubmissionArchive } from '../infrastructure/source-archive.js'
+import { prisma } from '../../../database/prisma.js'
 import { MESSAGES } from '../../../shared/constants/messages.js'
 import type { Request, Response } from 'express'
 import { BaseController } from '../../../shared/presentation/base-controller.js'
@@ -64,15 +66,40 @@ export class SubmissionsController extends BaseController {
     async getOne(req: Request, res: Response): Promise<void> {
         const id = String(req.params.id)
         this.logger.debug(`Received request to get submission: ${id}`)
-        const cacheKey = `sub_detail_${id}`
+        const cacheKey = `sub_detail_${id}_${req.user!.id}_${String(req.user!.role).toUpperCase()}`
         const cached = memoryCache.get(cacheKey)
         if (cached) {
             this.ok(res, cached, MESSAGES.SUBMISSION_GET_SUCCESS)
             return
         }
         const result = await this.getOneUseCase.execute({ id, user: req.user! })
-        memoryCache.set(cacheKey, result, 20)
+        if (String(result.gradingStatus).toLowerCase() === 'graded') memoryCache.set(cacheKey, result, 20)
         this.ok(res, result, MESSAGES.SUBMISSION_GET_SUCCESS)
+    }
+
+    async source(req: Request, res: Response): Promise<void> {
+        const submission = await this.getOneUseCase.execute({ id: String(req.params.id), user: req.user! })
+        res.setHeader('Cache-Control', 'no-store')
+        if (!submission.zipFileUrl) { res.status(404).json({ success: false, message: 'Bài nộp chưa có ZIP để đọc.' }); return }
+        try { this.ok(res, await readSubmissionArchive(submission.zipFileUrl)) }
+        catch { res.status(422).json({ success: false, message: 'Không thể đọc mã nguồn từ ZIP đã lưu. Tệp có thể không hợp lệ, vượt giới hạn hoặc không còn trên kho lưu trữ.' }) }
+    }
+
+    async history(req: Request, res: Response): Promise<void> {
+        const current = await this.getOneUseCase.execute({ id: String(req.params.id), user: req.user! })
+        const rows = await prisma.submission.findMany({
+            where: current.studentId && current.examId ? { StudentId: current.studentId, ExamId: current.examId, ClassId: current.classId ?? null } : { Id: current.id },
+            orderBy: [{ AttemptNumber: 'desc' }, { SubmittedAt: 'desc' }],
+            select: { Id: true, AttemptNumber: true, SubmittedAt: true, GradedAt: true, ZipFileUrl: true, GradingStatus: true, ReviewStatus: true, FinalScore: true, RawScore: true, Exam: { select: { TotalPoints: true } } },
+        })
+        res.setHeader('Cache-Control', 'no-store')
+        this.ok(res, rows.map(row => ({
+            id: row.Id, attemptNumber: row.AttemptNumber, submittedAt: row.SubmittedAt, gradedAt: row.GradedAt,
+            filename: row.ZipFileUrl ? new URL(row.ZipFileUrl, 'http://local').searchParams.get('filename') || path.basename(row.ZipFileUrl.split('?')[0]) : null,
+            gradingStatus: row.GradingStatus, isPublished: row.ReviewStatus === 'PUBLISHED',
+            score: String(req.user!.role).toUpperCase() === 'STUDENT' && row.ReviewStatus !== 'PUBLISHED' ? null : row.FinalScore ?? row.RawScore,
+            maxScore: row.Exam?.TotalPoints ?? null,
+        })))
     }
 
     async submit(req: Request, res: Response): Promise<void> {
@@ -114,42 +141,10 @@ export class SubmissionsController extends BaseController {
             fileName = fileUrl.split('/').pop()?.split('?')[0] || 'submission.zip'
         }
 
-        if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
-            try {
-                const fetchUrl = fileUrl.split('?')[0]
-                
-                const response = await fetch(fetchUrl);
-                if (!response.ok) {
-                    this.logger.error(`Failed to fetch submission from cloud: ${response.status} ${response.statusText}`);
-                    res.status(500).json({ success: false, Message: 'Failed to download file from cloud storage' });
-                    return;
-                }
-
-                res.attachment(fileName);
-                res.setHeader('Content-Type', 'application/octet-stream');
-
-                if (response.body) {
-                    const arrayBuffer = await response.arrayBuffer();
-                    const buffer = Buffer.from(arrayBuffer);
-                    res.end(buffer);
-                } else {
-                    res.status(500).json({ success: false, Message: 'Empty file from cloud storage' });
-                }
-            } catch (err: any) {
-                this.logger.error(`Error streaming submission: ${err.message}`);
-                if (!res.headersSent) {
-                    res.status(500).json({ success: false, Message: 'Error streaming file' });
-                }
-            }
-            return;
-        }
-
-        const filePath = path.join(process.cwd(), fileUrl.split('?')[0])
-        if (!fs.existsSync(filePath)) {
-            res.status(404).json({ success: false, Message: 'Local file not found' })
-            return
-        }
-        res.download(filePath, fileName)
+        res.setHeader('Cache-Control', 'private, no-store')
+        res.attachment(path.basename(fileName))
+        res.type('application/zip')
+        res.end(await readSubmissionFile(fileUrl))
     }
 
 
@@ -157,7 +152,7 @@ export class SubmissionsController extends BaseController {
         const id = String(req.params.id)
         this.logger.debug(`Received request to publish grade for submission: ${id}`)
         const result = await this.publishGradeUseCase.execute({ id, dto: { data: req.body } as any, user: req.user! })
-        memoryCache.del(`sub_detail_${id}`)
+        memoryCache.invalidatePrefix(`sub_detail_${id}_`)
         memoryCache.invalidatePrefix('subs_list_')
         memoryCache.invalidatePrefix('subs_recent_')
         memoryCache.invalidatePrefix('student_dash_')
@@ -179,7 +174,7 @@ export class SubmissionsController extends BaseController {
         const id = String(req.params.id)
         this.logger.debug(`Received request to submit feedback for submission: ${id}`)
         const result = await this.submitFeedbackUseCase.execute({ id, user: req.user!, feedback: req.body.feedback })
-        memoryCache.del(`sub_detail_${id}`)
+        memoryCache.invalidatePrefix(`sub_detail_${id}_`)
         this.ok(res, result, 'Feedback submitted successfully')
     }
 

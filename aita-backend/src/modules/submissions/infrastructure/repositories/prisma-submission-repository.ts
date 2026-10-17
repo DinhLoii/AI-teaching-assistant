@@ -15,6 +15,7 @@ const includeDefault = {
       Id: true,
       Title: true,
       Description: true,
+      TotalPoints: true,
     }
   },
   Class: {
@@ -35,6 +36,7 @@ export class PrismaSubmissionRepository implements ISubmissionRepository {
     if (filter?.studentId) where.StudentId = filter.studentId
     if (filter?.classId) where.ClassId = filter.classId
     if (filter?.status) where.GradingStatus = filter.status
+    if (filter?.latestOnly) where.OR = [{ IsLatest: true }, { IsLatest: null }]
     if (filter?.instructorId) {
       where.Class = {
         InstructorClass: {
@@ -82,13 +84,18 @@ export class PrismaSubmissionRepository implements ISubmissionRepository {
     const raw = await this.client.submission.findFirst({
       where: {
         Id: id,
-        Class: {
-          InstructorClass: {
-            some: {
-              UserId: instructorId,
+        OR: [
+          {
+            Class: {
+              InstructorClass: {
+                some: {
+                  UserId: instructorId,
+                },
+              },
             },
           },
-        },
+          { Exam: { CreatedBy: instructorId } },
+        ],
       },
       include: includeDefault,
     })
@@ -98,6 +105,28 @@ export class PrismaSubmissionRepository implements ISubmissionRepository {
   async create(submission: Submission): Promise<void> {
     const data = SubmissionMapper.toPersistence(submission)
     await this.client.submission.create({ data })
+  }
+
+  async createAttempt(submission: Submission): Promise<void> {
+    const persist = async (tx: any) => {
+      // Serialize the attempt sequence, including the first upload (no existing row to lock).
+      const scope = `${submission.studentId}:${submission.examId}:${submission.classId}`
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${scope}, 0))`
+      const where = { StudentId: submission.studentId, ExamId: submission.examId, ClassId: submission.classId }
+      const previous = await tx.submission.aggregate({ where, _max: { AttemptNumber: true } })
+      submission.attemptNumber = (previous._max.AttemptNumber || 0) + 1
+      submission.isLatest = true
+      await tx.submission.updateMany({ where, data: { IsLatest: false } })
+      const exam = await tx.exam.findUnique({ where: { Id: submission.examId }, select: { GradingStrategy: true } })
+      const continuous = submission.zipFileUrl && exam?.GradingStrategy !== 'BATCH_POST_DEADLINE'
+      await tx.submission.create({ data: { ...SubmissionMapper.toPersistence(submission), ...(continuous ? { GradingStatus: 'Processing' } : {}) } })
+      if (continuous) await tx.$executeRaw`INSERT INTO "SubmissionGradingTask" ("SubmissionId", "Lane") VALUES (${submission.id}, 'continuous') ON CONFLICT ("SubmissionId") DO NOTHING`
+    }
+    if (typeof this.client.$transaction === 'function') {
+      await this.client.$transaction(persist, { timeout: 15000 })
+    } else {
+      await persist(this.client)
+    }
   }
 
   async update(submission: Submission): Promise<void> {

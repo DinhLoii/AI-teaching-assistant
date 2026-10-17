@@ -4,6 +4,7 @@ export const ListSubmissionsQuerySchema = z.object({
   assignmentId: z.string().optional(),
   examId: z.string().optional(),
   status: z.string().optional(),
+  includeHistory: z.enum(['true', 'false']).optional(),
 })
 
 export const CreateSubmissionSchema = z.object({
@@ -91,20 +92,22 @@ export class SubmissionResponseDto {
     let rawScoreValue = submission.rawScore !== undefined && submission.rawScore !== null ? Number(submission.rawScore) : (submission.RawScore !== undefined && submission.RawScore !== null ? Number(submission.RawScore) : null);
     let latePenaltyValue = submission.latePenaltyAmount !== undefined && submission.latePenaltyAmount !== null ? Number(submission.latePenaltyAmount) : (submission.LatePenaltyAmount !== undefined && submission.LatePenaltyAmount !== null ? Number(submission.LatePenaltyAmount) : null);
 
-    const calculatedAiScore = rawFinalScore ?? rawScoreValue ?? (reportData?.totalScore !== undefined ? Number(reportData.totalScore) : null) ?? rawTotalScore ?? null;
+    const calculatedAiScore = rawScoreValue ?? (reportData?.totalScore != null ? Number(reportData.totalScore) : null);
 
     // Student privacy: Only show score, reportData & feedback if published by lecturer!
     // Lecturer & Admin always see scores and reportData to review before publishing.
-    const isStudent = requestingUserRole === 'STUDENT';
-    const shouldHideScores = isStudent && !isPublished;
+    const isStudent = String(requestingUserRole || '').toUpperCase() === 'STUDENT';
+    const failedReport = typeof reportData?.error === 'string' && !!reportData.error;
+    const hideStudentReport = isStudent && !isPublished;
+    const shouldHideScores = hideStudentReport || failedReport;
 
     const visibleTotalScore = shouldHideScores ? null : (rawTotalScore ?? (reportData?.totalScore !== undefined ? Number(reportData.totalScore) : null));
-    const visibleRawScore = shouldHideScores ? null : (rawScoreValue ?? (reportData?.totalScore !== undefined ? Number(reportData.totalScore) : rawTotalScore));
-    const visibleFinalScore = shouldHideScores ? null : (rawFinalScore ?? (reportData?.totalScore !== undefined ? Number(reportData.totalScore) : null));
-    const visibleScore = shouldHideScores ? null : (rawFinalScore ?? rawScoreValue ?? (reportData?.totalScore !== undefined ? Number(reportData.totalScore) : rawTotalScore));
+    const visibleRawScore = shouldHideScores ? null : (rawScoreValue ?? (reportData?.totalScore != null ? Number(reportData.totalScore) : null));
+    const visibleFinalScore = shouldHideScores ? null : (rawFinalScore ?? (reportData?.totalScore != null ? Number(reportData.totalScore) : null));
+    const visibleScore = shouldHideScores ? null : (rawFinalScore ?? rawScoreValue ?? (reportData?.totalScore != null ? Number(reportData.totalScore) : null));
     const visibleAiScore = shouldHideScores ? null : calculatedAiScore;
-    const visibleReportData = shouldHideScores ? null : reportData;
-    const visibleAiFeedback = shouldHideScores ? null : aiFeedback;
+    const visibleReportData = hideStudentReport ? null : reportData;
+    const visibleAiFeedback = hideStudentReport ? null : aiFeedback;
 
     const submittedAtDate = (submission.submittedAt || submission.SubmittedAt) ? new Date(submission.submittedAt || submission.SubmittedAt) : null;
     const dueDate = submission.Exam?.DueDate ? new Date(submission.Exam.DueDate) : null;
@@ -136,7 +139,8 @@ export class SubmissionResponseDto {
       isLatest: submission.isLatest ?? submission.IsLatest,
       submittedAt: submission.submittedAt || submission.SubmittedAt,
       zipFileUrl: submission.zipFileUrl || submission.ZipFileUrl,
-      gradingStatus: submission.gradingStatus || submission.GradingStatus,
+      gradingStatus: failedReport ? 'Error' : submission.gradingStatus || submission.GradingStatus,
+      gradingError: reportData?.error || reportData?.lastGradingError ? (isStudent ? 'Chưa chấm được bài nộp. Giảng viên cần kiểm tra và chấm lại.' : reportData.error || reportData.lastGradingError) : null,
       reviewStatus: revStatus,
       isPublished: isPublished,
       totalScore: visibleTotalScore,
@@ -144,6 +148,7 @@ export class SubmissionResponseDto {
       latePenaltyAmount: latePenaltyValue,
       finalScore: visibleFinalScore,
       score: visibleScore,
+      maxScore: reportData?.maxPossibleScore ?? submission.exam?.totalPoints ?? submission.Exam?.TotalPoints ?? rawTotalScore,
       aiScore: visibleAiScore,
       reportData: visibleReportData,
       isLate: isLate,

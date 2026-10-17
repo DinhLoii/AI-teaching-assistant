@@ -1,6 +1,5 @@
+import { readSubmissionFile } from '../../infrastructure/submission-storage.js'
 import { createHash } from 'crypto'
-import path from 'path'
-import fs from 'fs'
 import type { IUseCase } from '../../../../shared/application/base-use-case.js'
 import type { AuthUser } from '../../../../types/express.js'
 import { NotFoundError, ValidationError, ForbiddenError } from '../../../../shared/application/app.error.js'
@@ -365,18 +364,7 @@ export class DetectDuplicateSubmissionsUseCase implements IUseCase<{ assignmentI
   /** Hash of the stored bytes plus structural fingerprints. Null when the file cannot be read. */
   private async analyse(fileUrl: string): Promise<{ exactHash: string; prints: Set<number> | null } | null> {
     try {
-      let buffer: Buffer
-      if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
-        // Same convention as SubmissionsController.download: the query string
-        // only carries the display filename, the file lives at the bare URL.
-        const response = await fetch(fileUrl.split('?')[0])
-        if (!response.ok) return null
-        buffer = Buffer.from(await response.arrayBuffer())
-      } else {
-        const filePath = path.join(process.cwd(), fileUrl.split('?')[0])
-        if (!fs.existsSync(filePath)) return null
-        buffer = await fs.promises.readFile(filePath)
-      }
+      const buffer = await readSubmissionFile(fileUrl)
 
       const exactHash = createHash('sha256').update(buffer).digest('hex')
       const corpus = await extractCorpus(buffer, fileUrl)

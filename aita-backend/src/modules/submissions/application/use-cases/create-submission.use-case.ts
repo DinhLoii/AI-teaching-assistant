@@ -1,3 +1,4 @@
+import { publishNotification } from '../../../../shared/infrastructure/publish-notification.js'
 import { randomUUID } from 'crypto'
 import type { IUseCase } from '../../../../shared/application/base-use-case.js'
 import type { ISubmissionRepository } from '../../domain/repositories/submission-repository.interface.js'
@@ -7,10 +8,11 @@ import { NotFoundError, ValidationError, ForbiddenError } from '../../../../shar
 import { CreateSubmissionRequestDto, SubmissionResponseDto } from '../dtos/submission.dto.js'
 import { Submission } from '../../domain/entities/submission.entity.js'
 import { MESSAGES } from '../../../../shared/constants/messages.js'
-import { CloudinaryService } from '../../../../shared/infrastructure/services/cloudinary.service.js'
-import { buildCloudinaryFolder, sanitizeCloudinaryPathSegment } from '../../../../shared/utils/cloudinary-path.util.js'
+import { sanitizeCloudinaryPathSegment } from '../../../../shared/utils/cloudinary-path.util.js'
 import path from 'path'
 import fs from 'fs'
+import { privateSubmissionRoot } from '../../infrastructure/submission-storage.js'
+import { inspectSourceArchive } from '../../infrastructure/source-archive.js'
 
 export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmissionRequestDto; file?: Express.Multer.File; user: AuthUser }, ReturnType<typeof SubmissionResponseDto.from>> {
   constructor(
@@ -90,6 +92,7 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
     const existingSubmissionList = await this.submissionRepo.findMany({
       examId,
       studentId: user.id,
+      classId,
     })
     const existingSubmission = existingSubmissionList && existingSubmissionList.length > 0 ? existingSubmissionList[0] : null
 
@@ -173,46 +176,31 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
       }
     }
 
-    let fileUrl = dto.data.zipFileUrl ?? ''
-    let uploadedPublicId: string | undefined;
+    if (dto.data.zipFileUrl) throw new ValidationError('Vui lòng tải ZIP lên trực tiếp; không chấp nhận đường dẫn bài nộp bên ngoài.')
+    let fileUrl = ''
     let localFilePath: string | undefined;
 
     if (file) {
+      if (path.extname(file.originalname).toLowerCase() !== '.zip') throw new ValidationError('Bài nộp phải là tệp ZIP.')
+      try { inspectSourceArchive(file.buffer) } catch { throw new ValidationError('Tệp ZIP không hợp lệ hoặc vượt giới hạn đọc an toàn.') }
       // Sanitized here, not at the call sites: these also become a local directory
       // path in the >10MB fallback below, so a stray "/" or ".." must never survive.
       const subjectCode = sanitizeCloudinaryPathSegment(subjectInfo.subjectCode || subjectInfo.Code, 'UnknownSubject')
       const classCode = sanitizeCloudinaryPathSegment(classInfo.classCode || classInfo.Code, 'UnknownClass')
       const studentNameSafe = ((user as any).name || (user as any).email || user.id).replace(/[^a-zA-Z0-9]/g, '_')
 
-      if (file.size > 10485760) {
-        // Fallback to local storage for files > 10MB
-        const uploadDir = path.join(process.cwd(), 'uploads', 'submissions', subjectCode, classCode);
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
+      // Ultra-fast local write (takes < 5ms, eliminating long upload waits)
+      const uploadDir = path.join(privateSubmissionRoot(), subjectCode, classCode);
+      await fs.promises.mkdir(uploadDir, { recursive: true });
 
-        const fileName = `${studentNameSafe}_${Date.now()}${path.extname(file.originalname) || '.zip'}`;
-        localFilePath = path.join(uploadDir, fileName);
-        fs.writeFileSync(localFilePath, file.buffer);
+      const fileName = `${studentNameSafe}_${randomUUID()}${path.extname(file.originalname) || '.zip'}`;
+      localFilePath = path.join(uploadDir, fileName);
+      await fs.promises.writeFile(localFilePath, file.buffer);
 
-        // Use relative URL so frontend/API can serve it
-        fileUrl = `/uploads/submissions/${subjectCode}/${classCode}/${fileName}?filename=${encodeURIComponent(file.originalname)}`;
-      } else {
-        // Every segment must be sanitized — Cloudinary rejects ? & # \ % < > + in a
-        // public_id, and exam titles routinely contain "&" or ":".
-        const folderPath = buildCloudinaryFolder('AITA', subjectCode, classCode, exam.title || examId)
-        try {
-          const uploadResult = await CloudinaryService.uploadStream(file.buffer, {
-            folder: folderPath,
-            public_id: `${studentNameSafe}_${Date.now()}`,
-            resource_type: 'raw', // Use raw for zip/pdf/docx files
-          });
-          fileUrl = uploadResult.secure_url + `?filename=${encodeURIComponent(file.originalname)}`;
-          uploadedPublicId = uploadResult.public_id;
-        } catch (uploadError: any) {
-          throw new ValidationError(`Lỗi khi tải file lên Cloudinary: ${uploadError.message || 'Unknown error'}`);
-        }
-      }
+      // Relative URL so frontend and engine access it immediately
+      fileUrl = `/private-submissions/${subjectCode}/${classCode}/${fileName}?filename=${encodeURIComponent(file.originalname)}`;
+
+
     } else if (fileUrl && !this.isValidFileUrl(fileUrl)) {
       throw new ValidationError(MESSAGES.SUBMISSION_INVALID_URL)
     }
@@ -220,15 +208,8 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
     let targetSubmission: Submission
     const isResubmission = !!existingSubmission
 
-    if (existingSubmission) {
-      // RESUBMISSION LOGIC:
-      // Reset scores, feedback, and grading status to 'Pending' so the teacher MUST regrade it.
-      existingSubmission.resubmit(fileUrl, dto.data.content)
-      ;(existingSubmission as any).reportData = null
-      ;(existingSubmission as any).latePenaltyAmount = 0
-      targetSubmission = existingSubmission
-    } else {
-      // NEW SUBMISSION LOGIC:
+    {
+      // Every upload has its own immutable file/report identity; never overwrite history.
       targetSubmission = Submission.create(
         randomUUID(),
         user.id,
@@ -242,8 +223,10 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
       }
     }
 
+    let persisted = false
     try {
-      await this.submissionRepo.save(targetSubmission)
+      await this.submissionRepo.createAttempt(targetSubmission)
+      persisted = true
 
       // Invalidate student dashboard cache
       try {
@@ -253,7 +236,7 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
 
       try {
         const { globalJobManager } = await import('../../../grading/engine/application/queue/SubmissionJobManager.js');
-        globalJobManager.emit(`assignment_event:${examId}`, {
+        globalJobManager.emitAssignmentEvent(examId, {
           type: 'SUBMISSION_CREATED',
           assignmentId: examId,
           submissionId: targetSubmission.id
@@ -261,7 +244,7 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
       } catch (e) { }
 
       // Gửi thông báo đến Giảng viên khi sinh viên nộp lại bài
-      if (isResubmission) {
+      if (examId) {
         try {
           const { prisma } = await import('../../../../database/prisma.js');
           const studentUser = await prisma.user.findUnique({
@@ -301,11 +284,11 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
           const examTitle = (exam as any).title || examRecord?.Title || 'Bài tập';
 
           for (const targetUserId of recipientUserIds) {
-            await prisma.notification.create({
+            const notification = await prisma.notification.create({
               data: {
-                Title: 'Sinh viên nộp lại bài tập',
-                Message: `Sinh viên ${studentName} đã nộp lại bài làm cho bài tập "${examTitle}".`,
-                Type: 'RESUBMISSION',
+                Title: isResubmission ? 'Sinh viên nộp lại bài tập' : 'Sinh viên nộp bài tập',
+                Message: `Sinh viên ${studentName} đã ${isResubmission ? 'nộp lại' : 'nộp'} bài làm cho bài tập "${examTitle}".`,
+                Type: isResubmission ? 'RESUBMISSION' : 'NEW_SUBMISSION',
                 ReferenceId: examId,
                 ReferenceType: 'ASSIGNMENT_GRADING',
                 CreatedBy: user.id,
@@ -317,6 +300,7 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
                 }
               }
             });
+            publishNotification([targetUserId], notification)
           }
         } catch (resubmitNotifErr) {
           console.error('Lỗi tạo thông báo nộp lại bài cho giảng viên:', resubmitNotifErr);
@@ -368,12 +352,9 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
         console.log(`[BatchPostDeadline] Submission ${targetSubmission.id} held in pending status until lecturer triggers batch grading.`);
       }
     } catch (dbError: any) {
-      if (uploadedPublicId) {
-        try {
-          await CloudinaryService.deleteFile(uploadedPublicId, 'raw')
-        } catch (cleanupError) {
-          console.error('Failed to cleanup Cloudinary file after DB save failure:', cleanupError)
-        }
+      if (persisted) {
+        console.error('Post-submit side effect failed; the saved archive and durable grading task are retained.')
+        return SubmissionResponseDto.from(targetSubmission as any, user.role)
       }
       if (localFilePath) {
         try {

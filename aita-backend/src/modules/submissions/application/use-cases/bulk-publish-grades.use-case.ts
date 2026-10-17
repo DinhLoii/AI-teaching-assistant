@@ -1,3 +1,4 @@
+import { publishNotification } from '../../../../shared/infrastructure/publish-notification.js'
 import type { IUseCase } from '../../../../shared/application/base-use-case.js'
 import type { ISubmissionRepository } from '../../domain/repositories/submission-repository.interface.js'
 import type { AuthUser } from '../../../../types/express.js'
@@ -9,7 +10,7 @@ export class BulkPublishGradesUseCase implements IUseCase<{ assignmentId: string
 
   async execute({ assignmentId, user }: { assignmentId: string; user: AuthUser }) {
     // Find all submissions for this assignment
-    const submissions = await this.submissionRepo.findMany({ examId: assignmentId })
+    const submissions = await this.submissionRepo.findMany({ examId: assignmentId, latestOnly: true })
     
     let count = 0
     const publishedStudentIds = new Set<string>()
@@ -46,7 +47,7 @@ export class BulkPublishGradesUseCase implements IUseCase<{ assignmentId: string
         const examTitle = examRecord?.Title || 'Bài tập'
 
         const notifId = uuidv4()
-        await prisma.notification.create({
+        const notification = await prisma.notification.create({
           data: {
             Id: notifId,
             Title: `Điểm số đã được công bố: ${examTitle}`,
@@ -64,6 +65,7 @@ export class BulkPublishGradesUseCase implements IUseCase<{ assignmentId: string
             }
           }
         })
+        publishNotification(publishedStudentIds, notification)
       } catch (err) {
         console.error('[BulkPublishGrades] Failed to create grade published notification:', err)
       }
