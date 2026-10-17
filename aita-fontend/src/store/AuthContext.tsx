@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStoredItem(AUTH_STORAGE_KEYS.user, JSON.stringify(profile), remember)
   }, [])
 
-  // Initialize from storage on mount
+  // Initialize from storage on mount (guarantees 100% SSR hydration match)
   useEffect(() => {
     const storedToken = getStoredItem(AUTH_STORAGE_KEYS.token)
     const storedUser = readStoredUser()
@@ -77,6 +77,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(storedUser)
 
     if (storedToken) {
+      // If user profile is already in local storage, unlock loading immediately on mount (0ms perceived lag)
+      if (storedUser) {
+        setLoading(false)
+      }
       authApi.me()
         .then((u) => {
           if (u.role) u.role = u.role.toLowerCase() as any
