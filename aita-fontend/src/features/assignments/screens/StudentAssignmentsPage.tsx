@@ -1,5 +1,7 @@
 'use client'
 
+import { RefreshAction } from '@/components/actions/RefreshAction'
+
 import * as React from 'react'
 import Link from 'next/link'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
@@ -25,7 +27,6 @@ import {
   Award,
   History,
   Layers,
-  RefreshCw,
   FileCode,
   Check,
   GraduationCap,
@@ -197,13 +198,13 @@ export default function StudentAssignmentsPage() {
     URL.revokeObjectURL(url)
   }, [])
 
-  const loadData = React.useCallback(async () => {
-    setLoading((prev) => (tasks.length === 0 ? true : prev))
+  const loadData = React.useCallback(async (background = false) => {
+    if (!background) setLoading(true)
     try {
       const [dashboard, subs, allAssignments] = await Promise.all([
-        studentPortalApi.getStudentDashboard().catch(() => null),
-        submissionsApi.getSubmissions().catch(() => []),
-        assignmentsApi.getAssignments().catch(() => []),
+        studentPortalApi.getStudentDashboard().catch((err) => { if (background) throw err; return null }),
+        submissionsApi.getSubmissions().catch((err) => { if (background) throw err; return [] }),
+        assignmentsApi.getAssignments().catch((err) => { if (background) throw err; return [] }),
       ])
 
       const validSubs = subs || []
@@ -249,6 +250,7 @@ export default function StudentAssignmentsPage() {
       const loadedTasks = Array.from(taskMap.values())
       setTasks(loadedTasks)
     } catch (err) {
+      if (background) throw err
       console.error('Failed to load student assignments:', err)
       setTasks([])
     } finally {
@@ -566,15 +568,7 @@ export default function StudentAssignmentsPage() {
             <span>{isVi ? 'Lịch sử nộp bài' : 'History'}</span>
           </button>
 
-          <button
-            type="button"
-            onClick={loadData}
-            disabled={loading}
-            className="border border-orange-200/80 dark:border-orange-900/40 bg-gradient-to-br from-orange-50/60 via-white to-amber-50/30 dark:from-slate-900 dark:to-slate-800 text-slate-700 dark:text-slate-200 hover:border-orange-300 rounded-xl h-9 px-3 text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-orange-500 ${loading ? 'animate-spin' : ''}`} />
-            <span>{isVi ? 'Làm mới' : 'Refresh'}</span>
-          </button>
+          <RefreshAction onRefresh={() => loadData(true)} disabled={loading} cachePaths={["/student-portal/dashboard","/submissions","/assignments","/exams"]} />
         </div>
 
         {/* ── CẢNH BÁO BÀI TẬP CẦN NỘP GẤP TRONG 48H (NHỎ GỌN, DỊU MẮT, CÓ NÚT TẮT) ── */}

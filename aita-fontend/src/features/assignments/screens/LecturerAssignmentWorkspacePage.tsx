@@ -17,7 +17,10 @@ import {
   ArrowLeft, Settings, Users, ShieldAlert, Sparkles, Loader2,
   Save, Plus, Trash2, AlertCircle, Clock, Zap, BarChart2,
   FileCode, CheckCircle, RefreshCw, ChevronDown, CheckCircle2,
-  Sliders, Filter, AlertTriangle, Database, Send
+  Sliders, Filter, AlertTriangle, Database, Send,
+  FileText, Eye, Edit3, Code2, BookOpen, Check, Copy,
+  Calendar, Layers, Table, List, ListOrdered, Quote, Hash,
+  ExternalLink, Download, HelpCircle, AlignLeft
 } from 'lucide-react'
 import type { AssignmentRow } from '@/lib/api/contracts'
 
@@ -34,10 +37,316 @@ function toLocalDatetimeInputString(isoOrDateStr?: string | null): string {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Settings Tab
+// FPT Course Assignment Templates
+// ──────────────────────────────────────────────────────────────────────────────
+const FPT_ASSIGNMENT_TEMPLATES: Record<string, { label: string; subject: string; content: string }> = {
+  PRJ301: {
+    label: 'Java Web MVC & JDBC (PRJ301)',
+    subject: 'PRJ301',
+    content: `## I. MỤC TIÊU ĐỀ BÀI (OBJECTIVES)
+- Áp dụng kiến trúc Model-View-Controller (MVC) chuẩn trên nền tảng Java EE (Servlet & JSP).
+- Thao tác cơ sở dữ liệu qua JDBC an toàn với PreparedStatement (phòng chống triệt để SQL Injection).
+- Quản lý trạng thái phiên làm việc (Session/Cookie) và phân quyền người dùng (Role-based Filter).
+
+## II. BÀI TOÁN NGHIỆP VỤ (BUSINESS SCENARIO)
+Xây dựng phân hệ quản trị và người dùng cho hệ thống với các chức năng cốt lõi:
+1. **Đăng nhập & Xác thực**: Phân quyền vai trò (Admin / Member / Guest).
+2. **Quản lý dữ liệu chính**: Hiển thị danh sách có phân trang, tìm kiếm đa điều kiện và sắp xếp.
+3. **Thao tác dữ liệu (CRUD)**: Thêm mới, chỉnh sửa và xóa an toàn với thông báo kết quả trực quan.
+4. **Kiểm tra nghiệp vụ**: Xác thực dữ liệu đầu vào (Validation) trước khi lưu vào CSDL.
+
+## III. YÊU CẦU KỸ THUẬT & KIẾN TRÚC MÃ NGUỒN
+- **Cấu trúc phân tầng MVC**:
+  - \`controller\`: Các Servlet điều hướng request/response, áp dụng CharacterEncodingFilter UTF-8.
+  - \`model / dao\`: Các lớp DAO thao tác CSDL, giải phóng Connection trong \`finally\` hoặc \`try-with-resources\`.
+  - \`model / dto\`: Các Java Beans (POJO) đóng gói dữ liệu thực thể.
+  - \`view\`: Các trang \`.jsp\` sử dụng JSTL core tags (\`<c:forEach>\`, \`<c:if>\`), tuyệt đối không viết Scriptlet \`<% ... %>\`.
+
+## IV. QUY CÁCH ĐÓNG GÓI & CẤU TRÚC NỘP BÀI (.ZIP)
+Sinh viên nén và nộp 01 file \`.zip\` duy nhất với cấu trúc thư mục như sau:
+\`\`\`
+[MSSV]_[TenMon]_Assignment.zip
+├── src/                    # Toàn bộ mã nguồn Java
+├── web/ (hoặc WebContent/) # Các trang JSP, file tĩnh CSS/JS/Images, WEB-INF/web.xml
+├── database/               # File script SQL tạo bảng và nạp dữ liệu mẫu Setup.sql
+└── README.md               # Hướng dẫn chạy và tài khoản đăng nhập kiểm thử
+\`\`\`
+
+## V. RÀNG BUỘC & TIÊU CHUẨN NGHIỆM THU
+- Dự án phải biên dịch và triển khai (deploy) thành công trên Apache Tomcat 9/10.
+- Không sử dụng các framework cấp cao (Spring, Hibernate...) trừ khi đề bài có quy định khác.
+- Nghiêm cấm sao chép mã nguồn; hệ thống tự động quét đạo văn qua thuật toán Winnowing AST.`,
+  },
+  PRN212: {
+    label: 'C# .NET Web API & EF Core (PRN212)',
+    subject: 'PRN212',
+    content: `## I. MỤC TIÊU ĐỀ BÀI (OBJECTIVES)
+- Xây dựng ứng dụng hoàn chỉnh trên nền tảng .NET Core và Entity Framework Core.
+- Thiết kế mô hình dữ liệu quan hệ, DbContext và cấu hình Fluent API / Data Annotations chuẩn mực.
+- Áp dụng mô hình Repository Pattern và Dependency Injection (DI) theo chuẩn Clean Architecture.
+
+## II. YÊU CẦU NGHIỆP VỤ (FUNCTIONAL REQUIREMENTS)
+1. **CRUD Quản lý thực thể**: Đầy đủ các thao tác với kiểm tra tính hợp lệ dữ liệu (Model Validation).
+2. **Xác thực & Phân quyền**: Áp dụng JWT Bearer Authentication và Authorization theo Role.
+3. **Tìm kiếm & Lọc dữ liệu**: Sử dụng LINQ to Entities với tối ưu truy vấn (AsNoTracking khi đọc).
+4. **Tích hợp API Documentation**: Cấu hình Swagger/OpenAPI rõ ràng cho các endpoints.
+
+## III. YÊU CẦU KIẾN TRÚC MÃ NGUỒN
+- Tách biệt rõ các tầng dự án: \`Entities\`, \`Repositories\`, \`Services\`, \`Controllers / API\`.
+- Xử lý ngoại lệ toàn cục (Global Exception Handling Middleware) và logging chi tiết.
+- Tuân thủ quy chuẩn đặt tên và phong cách lập trình chuẩn C# Microsoft.
+
+## IV. CẤU TRÚC NỘP BÀI (.ZIP)
+File nén \`.zip\` chứa Solution (.sln), các dự án mã nguồn và script database \`Setup.sql\`.
+*Lưu ý: Xóa sạch thư mục \`bin/\` và \`obj/\` trước khi nén để giảm dung lượng.*`,
+  },
+  CSD201: {
+    label: 'Cấu trúc dữ liệu & Thuật toán (CSD201)',
+    subject: 'CSD201',
+    content: `## I. MỤC TIÊU ĐỀ BÀI (OBJECTIVES)
+- Cài đặt và thao tác trên cấu trúc dữ liệu tuyến tính và phi tuyến (Singly Linked List, Binary Search Tree, Graph, Heap).
+- Phân tích và tối ưu độ phức tạp thuật toán về thời gian O(n) và không gian bộ nhớ.
+- Xử lý toàn diện các trường hợp biên (edge cases) như danh sách rỗng, 1 phần tử, giá trị trùng lặp.
+
+## II. YÊU CẦU CÀI ĐẶT
+1. Triển khai cấu trúc dữ liệu theo đúng chuẩn interface được giao.
+2. Cài đặt các thuật toán tìm kiếm, sắp xếp, duyệt (In-order, Pre-order, Post-order, BFS, DFS).
+3. Đọc dữ liệu đầu vào từ file text chuẩn và ghi kết quả xử lý ra file output theo định dạng bài thi.
+
+## III. RÀNG BUỘC KIỂM THỬ
+- Mã nguồn chạy qua bộ test case tự động: Functional tests, Performance tests, Boundary tests.
+- Thời gian thực thi mỗi test case không vượt quá 2.0 giây.
+- Đảm bảo giải phóng bộ nhớ và không phát sinh rò rỉ (memory leak).`,
+  },
+  PRM392: {
+    label: 'Lập trình Di động Android (PRM392)',
+    subject: 'PRM392',
+    content: `## I. MỤC TIÊU ĐỀ BÀI (OBJECTIVES)
+- Xây dựng ứng dụng Android Native theo kiến trúc MVVM (Model-View-ViewModel).
+- Tương tác cơ sở dữ liệu cục bộ với Room Database và đồng bộ REST API qua Retrofit.
+- Tối ưu vòng đời Activity / Fragment và xử lý bất đồng bộ Coroutines / Flow.
+
+## II. YÊU CẦU TÍNH NĂNG & TRẢI NGHIỆM
+1. Giao diện trực quan tuân thủ Google Material Design 3.
+2. Điều hướng mượt mà với Jetpack Navigation Component.
+3. Lưu trữ dữ liệu an toàn và xử lý trạng thái mất kết nối mạng (Offline Mode).
+4. Phân quyền người dùng tại thời điểm chạy (Runtime Permissions).
+
+## III. QUY CÁCH NỘP BÀI (.ZIP)
+Nén toàn bộ thư mục project Android Studio (đã loại bỏ \`.gradle/\`, \`.idea/\` và các thư mục \`build/\`).`,
+  },
+  DBI202: {
+    label: 'Cơ sở dữ liệu & Truy vấn SQL (DBI202)',
+    subject: 'DBI202',
+    content: `## I. MỤC TIÊU ĐỀ BÀI (OBJECTIVES)
+- Thiết kế lược đồ CSDL quan hệ chuẩn hóa (1NF, 2NF, 3NF).
+- Viết các truy vấn SQL nâng cao: Multi-table JOINs, Subqueries, Aggregate functions, Window functions.
+- Cài đặt Stored Procedures, Functions, Triggers và cơ chế Transaction an toàn.
+
+## II. YÊU CẦU ĐẶC TẢ TRUY VẤN
+1. **Kịch bản DDL**: Tạo bảng, khóa chính, khóa ngoại, ràng buộc CHECK và DEFAULT.
+2. **Kịch bản DML**: Nạp dữ liệu mẫu nhất quán và phong phú để kiểm thử các trường hợp.
+3. **Yêu cầu nghiệp vụ**: Thực hiện các câu hỏi truy vấn báo cáo và trigger ràng buộc toàn vẹn.
+
+## III. TỆP ĐÍNH KÈM & BÀI NỘP
+Nộp file kịch bản \`Assignment_Database.sql\` có thể chạy mượt mà từ đầu đến cuối trên Microsoft SQL Server.`,
+  },
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Markdown Live Preview Renderer
+// ──────────────────────────────────────────────────────────────────────────────
+function MarkdownPreview({ content }: { content: string }) {
+  if (!content || !content.trim()) {
+    return (
+      <div className="p-8 text-center text-slate-400 dark:text-slate-500 rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-dashed border-slate-200 dark:border-slate-800">
+        <FileText className="w-8 h-8 mx-auto mb-2 opacity-40 text-orange-500" />
+        <p className="text-xs font-semibold">Chưa có nội dung mô tả đề bài</p>
+        <p className="text-[11px] text-slate-400 mt-1">
+          Chuyển sang tab &ldquo;Soạn thảo&rdquo; hoặc chọn &ldquo;Khung mẫu FPT&rdquo; để tạo đề bài chuyên nghiệp.
+        </p>
+      </div>
+    )
+  }
+
+  const lines = content.split('\n')
+  const rendered: React.ReactNode[] = []
+  let i = 0
+
+  while (i < lines.length) {
+    const line = lines[i]
+
+    // Code block
+    if (line.trim().startsWith('```')) {
+      const lang = line.trim().slice(3).trim() || 'code'
+      const codeLines: string[] = []
+      i++
+      while (i < lines.length && !lines[i].trim().startsWith('```')) {
+        codeLines.push(lines[i])
+        i++
+      }
+      i++ // skip closing ```
+      const fullCode = codeLines.join('\n')
+      rendered.push(
+        <div key={`code-${i}`} className="my-3 rounded-xl overflow-hidden border border-slate-800 bg-slate-950 text-slate-200 text-xs font-mono shadow-xs">
+          <div className="px-3.5 py-1.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+            <span className="font-bold uppercase tracking-wider text-orange-400">{lang}</span>
+            <button
+              type="button"
+              onClick={() => navigator.clipboard.writeText(fullCode)}
+              className="hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+            >
+              <Copy className="w-3 h-3" />
+              <span>Copy</span>
+            </button>
+          </div>
+          <pre className="p-3.5 overflow-x-auto leading-relaxed">{fullCode}</pre>
+        </div>
+      )
+      continue
+    }
+
+    // Headers
+    if (line.startsWith('# ')) {
+      rendered.push(
+        <h1 key={`h1-${i}`} className="text-lg font-black text-slate-900 dark:text-white mt-5 mb-2 pb-1.5 border-b border-orange-100 dark:border-slate-800">
+          {line.slice(2)}
+        </h1>
+      )
+      i++
+      continue
+    }
+    if (line.startsWith('## ')) {
+      rendered.push(
+        <h2 key={`h2-${i}`} className="text-sm font-bold text-orange-600 dark:text-orange-400 mt-4 mb-2 flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />
+          <span>{line.slice(3)}</span>
+        </h2>
+      )
+      i++
+      continue
+    }
+    if (line.startsWith('### ')) {
+      rendered.push(
+        <h3 key={`h3-${i}`} className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-3 mb-1">
+          {line.slice(4)}
+        </h3>
+      )
+      i++
+      continue
+    }
+
+    // Blockquote / Callout
+    if (line.startsWith('> ')) {
+      const quoteLines: string[] = []
+      while (i < lines.length && lines[i].startsWith('> ')) {
+        quoteLines.push(lines[i].slice(2))
+        i++
+      }
+      rendered.push(
+        <div key={`quote-${i}`} className="my-2.5 p-3 rounded-xl bg-orange-50/70 dark:bg-orange-950/20 border-l-4 border-orange-500 text-xs text-orange-900 dark:text-orange-200">
+          {quoteLines.map((ql, qIdx) => (
+            <p key={qIdx} className="leading-relaxed">{ql}</p>
+          ))}
+        </div>
+      )
+      continue
+    }
+
+    // Markdown Table
+    if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+      const tableLines: string[] = []
+      while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
+        tableLines.push(lines[i].trim())
+        i++
+      }
+      if (tableLines.length >= 2) {
+        const headerCells = tableLines[0].split('|').slice(1, -1).map(c => c.trim())
+        const bodyLines = tableLines.slice(2)
+        rendered.push(
+          <div key={`table-${i}`} className="my-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700">
+                <tr>
+                  {headerCells.map((h, hIdx) => (
+                    <th key={hIdx} className="px-3 py-2">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-600 dark:text-slate-300">
+                {bodyLines.map((row, rIdx) => {
+                  const cells = row.split('|').slice(1, -1).map(c => c.trim())
+                  return (
+                    <tr key={rIdx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                      {cells.map((c, cIdx) => (
+                        <td key={cIdx} className="px-3 py-2">{c}</td>
+                      ))}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )
+        continue
+      }
+    }
+
+    // Bullet list
+    if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
+      rendered.push(
+        <div key={`bullet-${i}`} className="flex items-start gap-2 text-xs text-slate-700 dark:text-slate-300 my-1 pl-2">
+          <span className="text-orange-500 font-bold leading-relaxed">•</span>
+          <span className="leading-relaxed">{line.trim().slice(2)}</span>
+        </div>
+      )
+      i++
+      continue
+    }
+
+    // Numbered list
+    if (/^\d+\.\s/.test(line.trim())) {
+      const match = line.trim().match(/^(\d+)\.\s(.*)$/)
+      if (match) {
+        rendered.push(
+          <div key={`num-${i}`} className="flex items-start gap-2 text-xs text-slate-700 dark:text-slate-300 my-1 pl-2">
+            <span className="font-mono font-bold text-orange-600 dark:text-orange-400 text-[11px] leading-relaxed min-w-[16px]">
+              {match[1]}.
+            </span>
+            <span className="leading-relaxed">{match[2]}</span>
+          </div>
+        )
+        i++
+        continue
+      }
+    }
+
+    // Empty line
+    if (!line.trim()) {
+      rendered.push(<div key={`blank-${i}`} className="h-2" />)
+      i++
+      continue
+    }
+
+    // Normal paragraph
+    rendered.push(
+      <p key={`p-${i}`} className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed my-1">
+        {line}
+      </p>
+    )
+    i++
+  }
+
+  return <div className="space-y-1">{rendered}</div>
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Settings Tab - Comprehensive Full Width Layout
 // ──────────────────────────────────────────────────────────────────────────────
 function SettingsTab({ assignment, assignmentId, onUpdateAssignment }: { assignment: AssignmentRow | null; assignmentId: string; onUpdateAssignment?: (updated: Partial<AssignmentRow>) => void }) {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  const isVi = language === 'vi'
+
   const [form, setForm] = React.useState({
     title: '',
     description: '',
@@ -52,6 +361,9 @@ function SettingsTab({ assignment, assignmentId, onUpdateAssignment }: { assignm
   const [saving, setSaving] = React.useState(false)
   const [saved, setSaved] = React.useState(false)
   const [saveError, setSaveError] = React.useState<string | null>(null)
+  const [descTab, setDescTab] = React.useState<'editor' | 'preview'>('editor')
+
+  const textareaRef = React.useRef<HTMLTextAreaElement | null>(null)
 
   React.useEffect(() => {
     if (!assignment) return
@@ -86,6 +398,57 @@ function SettingsTab({ assignment, assignmentId, onUpdateAssignment }: { assignm
       lateSubmitHours: (assignment as any).lateSubmitHours || 24,
     })
   }, [assignment])
+
+  // Formatting toolbar helper
+  const insertFormatting = (prefix: string, suffix: string = '', defaultText: string = '') => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const selectedText = form.description.substring(start, end)
+    const textToInsert = selectedText || defaultText
+    const replacement = prefix + textToInsert + suffix
+    const newContent = form.description.substring(0, start) + replacement + form.description.substring(end)
+    setForm(prev => ({ ...prev, description: newContent }))
+
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + prefix.length, start + prefix.length + textToInsert.length)
+    }, 0)
+  }
+
+  // Quick date presets
+  const applyDatePreset = (days: number) => {
+    const d = new Date()
+    d.setDate(d.getDate() + days)
+    d.setHours(23, 59, 0, 0)
+    setForm(prev => ({ ...prev, dueAt: toLocalDatetimeInputString(d.toISOString()) }))
+  }
+
+  // Load standard FPT template
+  const handleApplyTemplate = (key: string) => {
+    const tmpl = FPT_ASSIGNMENT_TEMPLATES[key]
+    if (!tmpl) return
+    if (form.description.trim()) {
+      const ok = window.confirm(
+        isVi
+          ? `Bạn có muốn thay thế nội dung mô tả hiện tại bằng mẫu ${tmpl.label}?`
+          : `Replace current description with ${tmpl.label} template?`
+      )
+      if (!ok) return
+    }
+    setForm(prev => ({ ...prev, description: tmpl.content }))
+    setDescTab('editor')
+  }
+
+  // Word & character stats
+  const descStats = React.useMemo(() => {
+    const text = form.description.trim()
+    const chars = text.length
+    const words = text ? text.split(/\s+/).length : 0
+    const lines = form.description.split('\n').length
+    return { chars, words, lines }
+  }, [form.description])
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -151,166 +514,623 @@ function SettingsTab({ assignment, assignmentId, onUpdateAssignment }: { assignm
   }
 
   return (
-    <form onSubmit={handleSave} className="space-y-6 max-w-3xl">
-      {/* Basic info */}
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-5">
-        <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <Settings className="w-4 h-4 text-orange-500" /> {t('lecturer.workspace.settings.assignment_info', 'Assignment Information')}
-        </h3>
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <label className="block space-y-1.5">
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t('lecturer.workspace.settings.title_label', 'Assignment Title')}</span>
-              <input
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                value={form.title}
-                onChange={e => setForm({ ...form, title: e.target.value })}
-                required
-              />
-            </label>
-            <label className="block space-y-1.5">
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t('lecturer.workspace.settings.status_label', 'Trạng thái phát hành')}</span>
-              <select
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                value={form.status}
-                onChange={e => setForm({ ...form, status: e.target.value })}
-              >
-                <option value="published">🚀 {t('lecturer.workspace.settings.status_published_opt', 'Đã giao (Sinh viên thấy và nộp bài)')}</option>
-                <option value="draft">📝 {t('lecturer.workspace.settings.status_draft_opt', 'Bản nháp (Chỉ giảng viên nhìn thấy)')}</option>
-              </select>
-            </label>
-          </div>
-          <label className="block space-y-1.5">
-            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t('lecturer.workspace.settings.desc_label', 'Description / Problem Statement')}</span>
-            <textarea
-              rows={4}
-              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
-              value={form.description}
-              onChange={e => setForm({ ...form, description: e.target.value })}
-            />
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block space-y-1.5">
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t('lecturer.workspace.settings.due_label', 'Due Date')}</span>
-              <input
-                type="datetime-local"
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                value={form.dueAt}
-                onChange={e => setForm({ ...form, dueAt: e.target.value })}
-              />
-            </label>
-            <label className="block space-y-1.5">
-              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t('lecturer.workspace.settings.max_score', 'Max Score')}</span>
-              <input
-                type="number" min={1} max={100}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                value={form.maxScore}
-                onChange={e => setForm({ ...form, maxScore: Number(e.target.value) || 10 })}
-              />
-            </label>
-          </div>
-        </div>
-      </div>
+    <form onSubmit={handleSave} className="w-full space-y-6 pb-12">
+      {/* FULL-WIDTH 12-COLUMN DASHBOARD GRID */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
 
-      {/* Grading Strategy */}
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4">
-        <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <Zap className="w-4 h-4 text-blue-500" /> {t('lecturer.workspace.settings.grading_strategy', 'Grading Strategy')}
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {[
-            { value: 'CONTINUOUS_QUEUE', label: t('lecturer.workspace.settings.strategy_continuous', 'Continuous Grading'), desc: t('lecturer.workspace.settings.strategy_continuous_desc', 'Grade immediately when student submits (real-time).') },
-            { value: 'BATCH_POST_DEADLINE', label: t('lecturer.workspace.settings.strategy_batch', 'Batch Grading after Deadline'), desc: t('lecturer.workspace.settings.strategy_batch_desc', 'Wait until deadline then grade all at once.') },
-          ].map(opt => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setForm({ ...form, strategy: opt.value })}
-              className={`p-4 rounded-2xl border-2 text-left transition-all ${
-                form.strategy === opt.value
-                  ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20'
-                  : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
-              }`}
-            >
-              <p className={`font-bold text-sm ${form.strategy === opt.value ? 'text-blue-700 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}>{opt.label}</p>
-              <p className="text-xs text-slate-500 mt-1">{opt.desc}</p>
-            </button>
-          ))}
-        </div>
-      </div>
+        {/* ── LEFT / MAIN COLUMN (8 COLS): CORE INFO & DETAILED ASSIGNMENT SPEC ── */}
+        <div className="xl:col-span-8 space-y-6">
 
-      {/* Late Policy */}
-      <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4">
-        <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <Clock className="w-4 h-4 text-amber-500" /> {t('lecturer.workspace.settings.late_policy', 'Late Submission Policy')}
-        </h3>
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              { value: 'NONE_LOCKED', label: t('lecturer.workspace.settings.late_none_locked', 'Not accepted (locked)'), desc: t('lecturer.workspace.settings.late_none_locked_desc', 'Locked after deadline.') },
-              { value: 'DAILY_POINTS', label: t('lecturer.workspace.settings.late_daily_points', 'Deduct points per day'), desc: t('lecturer.workspace.settings.late_daily_points_desc', 'Deduct N points per day late.') },
-              { value: 'DAILY_PERCENT', label: t('lecturer.workspace.settings.late_daily_percent', 'Deduct percentage per day'), desc: t('lecturer.workspace.settings.late_daily_percent_desc', 'Deduct N% per day late.') },
-              { value: 'FLAT_POINTS', label: t('lecturer.workspace.settings.late_flat_points', 'Flat point deduction'), desc: t('lecturer.workspace.settings.late_flat_points_desc', 'Deduct N fixed points when late.') },
-              { value: 'NONE_FREE', label: t('lecturer.workspace.settings.late_none_free', 'No penalty'), desc: t('lecturer.workspace.settings.late_none_free_desc', 'Allow late submissions for free.') },
-            ].map(opt => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setForm({ ...form, latePolicyOption: opt.value })}
-                className={`p-3 rounded-2xl border-2 text-left transition-all ${
-                  form.latePolicyOption === opt.value
-                    ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/20'
-                    : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
-                }`}
-              >
-                <p className={`font-bold text-xs ${form.latePolicyOption === opt.value ? 'text-amber-700 dark:text-amber-400' : 'text-slate-600 dark:text-slate-300'}`}>{opt.label}</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">{opt.desc}</p>
-              </button>
-            ))}
-          </div>
+          {/* CARD 1: THÔNG TIN BÀI TẬP CƠ BẢN */}
+          <div className="p-5 sm:p-6 bg-white dark:bg-slate-900 rounded-3xl border border-orange-100/90 dark:border-slate-800 shadow-xs space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold">
+                  <Settings className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+                    {t('lecturer.workspace.settings.assignment_info', 'Thông tin bài tập')}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {isVi ? 'Thiết lập tiêu đề, trạng thái phát hành, hạn nộp và thang điểm của đề bài' : 'Configure title, publish status, deadline, and scoring'}
+                  </p>
+                </div>
+              </div>
 
-          {form.latePolicyOption !== 'NONE_LOCKED' && form.latePolicyOption !== 'NONE_FREE' && (
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <label className="block space-y-1.5">
-                <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-                  {t('lecturer.workspace.settings.penalty_value_label', 'Penalty / day').replace('{{type}}', form.latePolicyOption === 'DAILY_PERCENT' ? t('lecturer.workspace.settings.penalty_percent', '(%)') : t('lecturer.workspace.settings.penalty_points', '(points)'))}
+              {/* Status Indicator Badge */}
+              <div className="flex items-center gap-2">
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold font-mono ${
+                  form.status === 'published'
+                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800'
+                    : 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800'
+                }`}>
+                  <span className={`w-2 h-2 rounded-full ${form.status === 'published' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
+                  <span>{form.status === 'published' ? (isVi ? 'ĐÃ PHÁT HÀNH' : 'PUBLISHED') : (isVi ? 'BẢN NHÁP' : 'DRAFT')}</span>
                 </span>
-                <input
-                  type="number" min={0} max={form.latePolicyOption === 'DAILY_PERCENT' ? 100 : form.maxScore}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  value={form.latePenaltyValue}
-                  onChange={e => setForm({ ...form, latePenaltyValue: Number(e.target.value) || 0 })}
-                />
-              </label>
-              <label className="block space-y-1.5">
-                <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t('lecturer.workspace.settings.max_late_hours', 'Maximum late submission hours')}</span>
-                <input
-                  type="number" min={1}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  value={form.lateSubmitHours}
-                  onChange={e => setForm({ ...form, lateSubmitHours: Number(e.target.value) || 24 })}
-                />
-              </label>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Tiêu đề bài tập & Trạng thái phát hành */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+                <div className="sm:col-span-8 space-y-1.5">
+                  <label htmlFor="assignment-title-input" className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    {t('lecturer.workspace.settings.title_label', 'Tiêu đề bài tập')} *
+                  </label>
+                  <input
+                    id="assignment-title-input"
+                    className="w-full h-10 px-3.5 rounded-xl border border-orange-200/90 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-2xs transition-colors"
+                    placeholder={isVi ? 'VD: Quản lý sinh viên bằng Java — OOP, Linked List và File I/O' : 'e.g., Student Management OOP'}
+                    value={form.title}
+                    onChange={e => setForm({ ...form, title: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="sm:col-span-4 space-y-1.5">
+                  <label htmlFor="assignment-status-select" className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    {t('lecturer.workspace.settings.status_label', 'Trạng thái')}
+                  </label>
+                  <select
+                    id="assignment-status-select"
+                    className="w-full h-10 px-3 rounded-xl border border-orange-200/90 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-2xs cursor-pointer transition-colors"
+                    value={form.status}
+                    onChange={e => setForm({ ...form, status: e.target.value })}
+                  >
+                    <option value="published">🚀 {t('lecturer.workspace.settings.status_published_opt', 'Đã giao (Sinh viên thấy và nộp bài)')}</option>
+                    <option value="draft">📝 {t('lecturer.workspace.settings.status_draft_opt', 'Bản nháp (Chỉ giảng viên nhìn thấy)')}</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Hạn nộp & Thang điểm */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 pt-1">
+                <div className="sm:col-span-8 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="assignment-due-input" className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      {t('lecturer.workspace.settings.due_label', 'Hạn chót nộp bài (Deadline)')}
+                    </label>
+                    <span className="text-[11px] text-slate-400 font-mono">
+                      {form.dueAt ? (new Date(form.dueAt).getTime() > Date.now() ? (isVi ? 'Đang mở nộp' : 'Open') : (isVi ? 'Đã quá hạn' : 'Past due')) : ''}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="assignment-due-input"
+                      type="datetime-local"
+                      className="w-full h-10 px-3 rounded-xl border border-orange-200/90 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-2xs transition-colors"
+                      value={form.dueAt}
+                      onChange={e => setForm({ ...form, dueAt: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Quick Preset Buttons */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px]">
+                    <span className="text-slate-400 font-medium mr-1">{isVi ? 'Chọn nhanh:' : 'Quick:'}</span>
+                    <button
+                      type="button"
+                      onClick={() => applyDatePreset(3)}
+                      className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-orange-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium transition-colors cursor-pointer"
+                    >
+                      +3 {isVi ? 'ngày' : 'days'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyDatePreset(7)}
+                      className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-orange-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium transition-colors cursor-pointer"
+                    >
+                      +7 {isVi ? 'ngày (1 tuần)' : 'days (1 week)'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyDatePreset(14)}
+                      className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-orange-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium transition-colors cursor-pointer"
+                    >
+                      +14 {isVi ? 'ngày (2 tuần)' : 'days (2 weeks)'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyDatePreset(30)}
+                      className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-orange-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium transition-colors cursor-pointer"
+                    >
+                      +30 {isVi ? 'ngày (1 tháng)' : 'days'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="sm:col-span-4 space-y-1.5">
+                  <label htmlFor="assignment-maxscore-input" className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    {t('lecturer.workspace.settings.max_score', 'Thang điểm tối đa')}
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="assignment-maxscore-input"
+                      type="number"
+                      min={1}
+                      max={100}
+                      className="w-full h-10 px-3.5 pr-14 rounded-xl border border-orange-200/90 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-2xs transition-colors"
+                      value={form.maxScore}
+                      onChange={e => setForm({ ...form, maxScore: Number(e.target.value) || 10 })}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                      {isVi ? 'điểm' : 'pts'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 pt-1 text-[11px]">
+                    <span className="text-slate-400 font-medium mr-1">{isVi ? 'Chuẩn:' : 'Standard:'}</span>
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, maxScore: 10 })}
+                      className={`px-2 py-0.5 rounded-lg font-bold transition-colors cursor-pointer ${
+                        form.maxScore === 10
+                          ? 'bg-orange-500 text-white'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-orange-50'
+                      }`}
+                    >
+                      10 {isVi ? 'điểm (FPT)' : 'pts'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, maxScore: 100 })}
+                      className={`px-2 py-0.5 rounded-lg font-bold transition-colors cursor-pointer ${
+                        form.maxScore === 100
+                          ? 'bg-orange-500 text-white'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-orange-50'
+                      }`}
+                    >
+                      100 {isVi ? 'điểm' : 'pts'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* CARD 2: MÔ TẢ ĐỀ BÀI & YÊU CẦU KỸ THUẬT CHUYÊN NGHIỆP */}
+          <div className="p-5 sm:p-6 bg-white dark:bg-slate-900 rounded-3xl border border-orange-100/90 dark:border-slate-800 shadow-xs space-y-4">
+            {/* Header with Editor & Preview Switcher */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold">
+                    <FileText className="w-3.5 h-3.5" />
+                  </div>
+                  <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+                    {t('lecturer.workspace.settings.desc_label', 'Mô tả đề bài & Yêu cầu kỹ thuật')}
+                  </h3>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 pl-9">
+                  {isVi
+                    ? 'Soạn thảo kịch bản nghiệp vụ, kiến trúc phân tầng, ràng buộc và quy cách nộp bài (.zip) cho sinh viên'
+                    : 'Compose business scenarios, technical architecture, and zip submission structure'}
+                </p>
+              </div>
+
+              {/* Editor / Preview Tabs */}
+              <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200/70 dark:border-slate-700/60 self-start sm:self-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setDescTab('editor')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    descTab === 'editor'
+                      ? 'bg-white dark:bg-slate-900 text-orange-600 dark:text-orange-400 shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>{isVi ? 'Soạn thảo' : 'Editor'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDescTab('preview')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    descTab === 'preview'
+                      ? 'bg-white dark:bg-slate-900 text-orange-600 dark:text-orange-400 shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>{isVi ? 'Xem trước sinh viên' : 'Preview'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* FPT Assignment Template Presets Bar */}
+            <div className="p-3 rounded-2xl bg-gradient-to-r from-orange-50/70 via-amber-50/30 to-orange-50/50 dark:from-slate-800/60 dark:to-orange-950/20 border border-orange-100/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2 text-xs">
+                <Sparkles className="w-4 h-4 text-orange-500 shrink-0" />
+                <span className="font-bold text-slate-700 dark:text-slate-300">
+                  {isVi ? 'Khung mẫu đề bài FPT chuẩn:' : 'FPT Course Templates:'}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                {Object.entries(FPT_ASSIGNMENT_TEMPLATES).map(([key, tmpl]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => handleApplyTemplate(key)}
+                    className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 hover:bg-orange-500 hover:text-white dark:hover:bg-orange-600 border border-orange-200/80 dark:border-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-200 transition-all cursor-pointer shadow-2xs"
+                    title={tmpl.label}
+                  >
+                    <span>{tmpl.subject}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* TAB CONTENT: EDITOR */}
+            {descTab === 'editor' ? (
+              <div className="space-y-2">
+                {/* Formatting Toolbar */}
+                <div className="flex flex-wrap items-center gap-1 p-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 text-slate-700 dark:text-slate-300">
+                  <button
+                    type="button"
+                    onClick={() => insertFormatting('**', '**', 'chữ in đậm')}
+                    className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 font-bold text-xs cursor-pointer transition-colors"
+                    title="In đậm (Bold)"
+                  >
+                    B
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertFormatting('*', '*', 'chữ in nghiêng')}
+                    className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 italic text-xs cursor-pointer transition-colors"
+                    title="In nghiêng (Italic)"
+                  >
+                    I
+                  </button>
+                  <span className="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1" />
+                  <button
+                    type="button"
+                    onClick={() => insertFormatting('\n## ', '\n', 'Tiêu đề phần')}
+                    className="px-2 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 font-mono font-bold text-xs cursor-pointer transition-colors"
+                    title="Tiêu đề mục (H2)"
+                  >
+                    H2
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertFormatting('\n### ', '\n', 'Tiêu đề con')}
+                    className="px-2 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 font-mono font-bold text-xs cursor-pointer transition-colors"
+                    title="Tiêu đề con (H3)"
+                  >
+                    H3
+                  </button>
+                  <span className="w-px h-4 bg-slate-300 dark:bg-slate-700 mx-1" />
+                  <button
+                    type="button"
+                    onClick={() => insertFormatting('\n- ', '\n', 'Mục danh sách')}
+                    className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 cursor-pointer transition-colors"
+                    title="Danh sách gạch đầu dòng"
+                  >
+                    <List className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertFormatting('\n1. ', '\n', 'Bước thực hiện')}
+                    className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 cursor-pointer transition-colors"
+                    title="Danh sách số thứ tự"
+                  >
+                    <ListOrdered className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertFormatting('\n```java\n// Mã nguồn minh họa\n', '\n```\n', '')}
+                    className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 cursor-pointer transition-colors"
+                    title="Khối mã nguồn (Code block)"
+                  >
+                    <Code2 className="w-3.5 h-3.5 text-orange-500" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertFormatting('\n| Tiêu chí | Điểm tối đa | Mô tả |\n|---|---|---|\n| Chức năng A | 3.0 | Mô tả chức năng |\n', '', '')}
+                    className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 cursor-pointer transition-colors"
+                    title="Chèn bảng Markdown"
+                  >
+                    <Table className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertFormatting('\n> **Lưu ý:** ', '\n', 'Nghiêm cấm sao chép bài làm.')}
+                    className="p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 cursor-pointer transition-colors"
+                    title="Ghi chú cảnh báo (Callout)"
+                  >
+                    <Quote className="w-3.5 h-3.5 text-amber-500" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertFormatting('\n```\n[MSSV]_[TenMon]_Assignment.zip\n├── src/\n├── web/\n└── Setup.sql\n```\n', '', '')}
+                    className="px-2 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-[11px] font-bold text-orange-600 dark:text-orange-400 cursor-pointer transition-colors flex items-center gap-1"
+                    title="Khung cấu trúc nộp bài .zip"
+                  >
+                    <FileCode className="w-3 h-3" />
+                    <span>{isVi ? 'Cấu trúc .zip' : 'Zip Structure'}</span>
+                  </button>
+                </div>
+
+                {/* Main Textarea Editor */}
+                <div className="relative">
+                  <textarea
+                    ref={textareaRef}
+                    rows={16}
+                    className="w-full p-4 rounded-2xl border border-orange-200/90 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs sm:text-sm font-mono leading-relaxed text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-2xs resize-y transition-colors min-h-[380px]"
+                    placeholder={isVi
+                      ? 'Nhập nội dung đề bài, các yêu cầu kỹ thuật, chuẩn phân tầng MVC/Clean Architecture, quy cách nộp bài...\n\nGợi ý: Chọn nhanh "Khung mẫu FPT" ở trên để tự động chèn khung sườn chuẩn mực.'
+                      : 'Enter assignment description and problem statement...'}
+                    value={form.description}
+                    onChange={e => setForm({ ...form, description: e.target.value })}
+                  />
+                </div>
+
+                {/* Footer Word & Character Counter */}
+                <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-[11px] text-slate-400">
+                  <div className="flex items-center gap-3">
+                    <span>{descStats.words} {isVi ? 'từ' : 'words'}</span>
+                    <span>•</span>
+                    <span>{descStats.chars} {isVi ? 'ký tự' : 'chars'}</span>
+                    <span>•</span>
+                    <span>{descStats.lines} {isVi ? 'dòng' : 'lines'}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-slate-400">
+                    <HelpCircle className="w-3 h-3 text-orange-500" />
+                    <span>{isVi ? 'Đề bài hỗ trợ định dạng GitHub Markdown hoàn chỉnh.' : 'Supports standard GitHub Markdown.'}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* TAB CONTENT: LIVE PREVIEW */
+              <div className="p-5 rounded-2xl bg-white dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 min-h-[380px] space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 text-[11px] text-slate-400">
+                  <span className="font-semibold text-slate-600 dark:text-slate-300">
+                    {isVi ? 'Xem trước hiển thị phía sinh viên:' : 'Student view preview:'}
+                  </span>
+                  <span className="font-mono">{assignment?.title || form.title || 'Đề bài'}</span>
+                </div>
+                <MarkdownPreview content={form.description} />
+              </div>
+            )}
+          </div>
+
+          {/* CARD 3: TÀI LIỆU & TỆP ĐÍNH KÈM (NẾU CÓ) */}
+          {(((assignment as any)?.attachments && (assignment as any).attachments.length > 0) || (assignment as any)?.sqlSetupScript) && (
+            <div className="p-5 bg-white dark:bg-slate-900 rounded-3xl border border-orange-100/90 dark:border-slate-800 shadow-xs space-y-3">
+              <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <Download className="w-4 h-4 text-orange-500" />
+                <span>{isVi ? 'Tài liệu & Kịch bản CSDL đính kèm đề bài' : 'Attachments & Database Setup Scripts'}</span>
+              </h3>
+              <div className="flex flex-wrap gap-2.5">
+                {(assignment as any)?.attachments?.map((att: any, idx: number) => (
+                  <a
+                    key={att.id || idx}
+                    href={att.fileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-orange-50 dark:hover:bg-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors border border-slate-200 dark:border-slate-700"
+                  >
+                    <FileCode className="w-4 h-4 text-orange-500" />
+                    <span>{att.fileName || (isVi ? 'Tài liệu đề bài' : 'Document')}</span>
+                    <Download className="w-3.5 h-3.5 opacity-60 ml-1" />
+                  </a>
+                ))}
+                {(assignment as any)?.sqlSetupScript && (
+                  <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-xs font-semibold text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                    <Database className="w-4 h-4 text-emerald-600" />
+                    <span>{isVi ? 'Đã nạp SQL Setup Script' : 'SQL Setup Loaded'}</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
-        </div>
-      </div>
 
-      {/* Save */}
-      <div className="flex items-center gap-3">
-        <Button type="submit" variant="primary" isLoading={saving} className="gap-2">
-          <Save className="w-4 h-4" /> {t('lecturer.workspace.settings.save_config', 'Save configuration')}
-        </Button>
-        {saved && (
-          <div className="flex items-center gap-1.5 text-green-600 text-sm font-semibold animate-in fade-in duration-300">
-            <CheckCircle className="w-4 h-4" /> {t('lecturer.workspace.settings.saved', 'Saved!')}
+        </div>
+
+        {/* ── RIGHT / SIDEBAR COLUMN (4 COLS): STRATEGY, LATE POLICY & STICKY ACTIONS ── */}
+        <div className="xl:col-span-4 space-y-6">
+
+          {/* STICKY CARD: TÓM TẮT & NÚT LƯU THAY ĐỔI */}
+          <div className="p-5 sm:p-6 bg-white dark:bg-slate-900 rounded-3xl border border-orange-200/90 dark:border-slate-800 shadow-md shadow-orange-500/5 space-y-4 sticky top-6">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                {isVi ? 'Tóm tắt & Thao tác' : 'Overview & Actions'}
+              </h4>
+              <Badge variant={form.status === 'published' ? 'success' : 'default'} className="text-[10px]">
+                {form.status === 'published' ? (isVi ? 'Đã giao' : 'Published') : (isVi ? 'Bản nháp' : 'Draft')}
+              </Badge>
+            </div>
+
+            <div className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300 font-medium">
+              <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span className="text-slate-400">{isVi ? 'Hạn nộp:' : 'Deadline:'}</span>
+                <span className="font-bold font-mono text-slate-900 dark:text-white">
+                  {form.dueAt ? new Date(form.dueAt).toLocaleDateString('vi-VN') : (isVi ? 'Chưa đặt' : 'None')}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span className="text-slate-400">{isVi ? 'Thang điểm:' : 'Max points:'}</span>
+                <span className="font-bold font-mono text-orange-600 dark:text-orange-400">
+                  {form.maxScore} {isVi ? 'điểm' : 'pts'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                <span className="text-slate-400">{isVi ? 'Chiến lược:' : 'Strategy:'}</span>
+                <span className="font-bold text-blue-600 dark:text-blue-400">
+                  {form.strategy === 'CONTINUOUS_QUEUE' ? (isVi ? 'Chấm liên tục' : 'Real-time') : (isVi ? 'Hàng loạt' : 'Batch')}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-1">
+                <span className="text-slate-400">{isVi ? 'Nộp trễ:' : 'Late policy:'}</span>
+                <span className="font-bold text-amber-600 dark:text-amber-400">
+                  {form.latePolicyOption === 'NONE_LOCKED' ? (isVi ? 'Khóa cổng' : 'Locked') : (isVi ? 'Có áp dụng' : 'Allowed')}
+                </span>
+              </div>
+            </div>
+
+            {/* Main Action Buttons */}
+            <div className="pt-2 space-y-2.5">
+              <Button
+                type="submit"
+                variant="primary"
+                isLoading={saving}
+                className="w-full h-11 text-xs sm:text-sm font-bold gap-2 shadow-md shadow-orange-500/20 cursor-pointer justify-center"
+              >
+                <Save className="w-4 h-4 shrink-0" />
+                <span>{t('lecturer.workspace.settings.save_config', 'Lưu cấu hình bài tập')}</span>
+              </Button>
+
+              {saved && (
+                <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center gap-1.5 text-emerald-700 dark:text-emerald-300 text-xs font-bold animate-in fade-in duration-300">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  <span>{t('lecturer.workspace.settings.saved', 'Đã lưu cấu hình thành công!')}</span>
+                </div>
+              )}
+
+              {saveError && (
+                <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 flex items-center gap-1.5 text-rose-700 dark:text-rose-300 text-xs font-medium">
+                  <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                  <span>{saveError}</span>
+                </div>
+              )}
+            </div>
           </div>
-        )}
-        {saveError && (
-          <div className="flex items-center gap-1.5 text-red-600 text-xs font-semibold">
-            <AlertCircle className="w-4 h-4" /> {saveError}
+
+          {/* CARD 4: CHIẾN LƯỢC CHẤM ĐIỂM (GRADING STRATEGY) */}
+          <div className="p-5 sm:p-6 bg-white dark:bg-slate-900 rounded-3xl border border-orange-100/90 dark:border-slate-800 shadow-xs space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+              <Zap className="w-4 h-4 text-blue-500" />
+              <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                {t('lecturer.workspace.settings.grading_strategy', 'Chiến lược chấm điểm')}
+              </h3>
+            </div>
+
+            <div className="space-y-2.5">
+              {[
+                {
+                  value: 'CONTINUOUS_QUEUE',
+                  label: t('lecturer.workspace.settings.strategy_continuous', 'Chấm liên tục (Real-time queue)'),
+                  desc: t('lecturer.workspace.settings.strategy_continuous_desc', 'Chấm ngay khi sinh viên nộp bài qua Docker sandbox & AI evaluation.'),
+                  icon: Zap,
+                },
+                {
+                  value: 'BATCH_POST_DEADLINE',
+                  label: t('lecturer.workspace.settings.strategy_batch', 'Chấm hàng loạt sau hạn (Batch)'),
+                  desc: t('lecturer.workspace.settings.strategy_batch_desc', 'Chờ hết hạn nộp rồi chấm đồng loạt tất cả bài nộp của cả lớp.'),
+                  icon: Layers,
+                },
+              ].map(opt => {
+                const Icon = opt.icon
+                const isSelected = form.strategy === opt.value
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setForm({ ...form, strategy: opt.value })}
+                    className={`w-full p-3.5 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                      isSelected
+                        ? 'border-blue-500 bg-blue-50/60 dark:bg-blue-950/30 shadow-xs'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-white dark:bg-slate-800/40'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <div className={`p-1.5 rounded-lg mt-0.5 ${isSelected ? 'bg-blue-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'}`}>
+                        <Icon className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <p className={`font-bold text-xs ${isSelected ? 'text-blue-700 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}`}>
+                          {opt.label}
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                          {opt.desc}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
           </div>
-        )}
+
+          {/* CARD 5: CHÍNH SÁCH NỘP TRỄ (LATE POLICY) */}
+          <div className="p-5 sm:p-6 bg-white dark:bg-slate-900 rounded-3xl border border-orange-100/90 dark:border-slate-800 shadow-xs space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+              <Clock className="w-4 h-4 text-amber-500" />
+              <h3 className="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                {t('lecturer.workspace.settings.late_policy', 'Chính sách nộp trễ')}
+              </h3>
+            </div>
+
+            <div className="space-y-2">
+              {[
+                { value: 'NONE_LOCKED', label: t('lecturer.workspace.settings.late_none_locked', 'Không cho phép nộp trễ (khóa cổng)'), desc: t('lecturer.workspace.settings.late_none_locked_desc', 'Khóa ngay sau deadline.') },
+                { value: 'DAILY_POINTS', label: t('lecturer.workspace.settings.late_daily_points', 'Trừ điểm theo ngày'), desc: t('lecturer.workspace.settings.late_daily_points_desc', 'Trừ N điểm mỗi ngày nộp trễ.') },
+                { value: 'DAILY_PERCENT', label: t('lecturer.workspace.settings.late_daily_percent', 'Trừ phần trăm theo ngày'), desc: t('lecturer.workspace.settings.late_daily_percent_desc', 'Trừ N% điểm mỗi ngày trễ.') },
+                { value: 'FLAT_POINTS', label: t('lecturer.workspace.settings.late_flat_points', 'Trừ điểm cố định'), desc: t('lecturer.workspace.settings.late_flat_points_desc', 'Trừ N điểm cố định khi trễ.') },
+                { value: 'NONE_FREE', label: t('lecturer.workspace.settings.late_none_free', 'Không phạt'), desc: t('lecturer.workspace.settings.late_none_free_desc', 'Cho phép nộp trễ miễn phí.') },
+              ].map(opt => {
+                const isSelected = form.latePolicyOption === opt.value
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setForm({ ...form, latePolicyOption: opt.value })}
+                    className={`w-full p-2.5 rounded-xl border-2 text-left transition-all cursor-pointer ${
+                      isSelected
+                        ? 'border-amber-500 bg-amber-50/60 dark:bg-amber-950/30'
+                        : 'border-slate-200 dark:border-slate-700/80 hover:border-slate-300 bg-white dark:bg-slate-800/40'
+                    }`}
+                  >
+                    <p className={`font-bold text-xs ${isSelected ? 'text-amber-800 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                      {opt.label}
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      {opt.desc}
+                    </p>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Custom Penalty Inputs */}
+            {form.latePolicyOption !== 'NONE_LOCKED' && form.latePolicyOption !== 'NONE_FREE' && (
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                <div className="space-y-1">
+                  <label htmlFor="penalty-value-input" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {t('lecturer.workspace.settings.penalty_value_label', 'Mức phạt {{type}} / ngày').replace('{{type}}', form.latePolicyOption === 'DAILY_PERCENT' ? t('lecturer.workspace.settings.penalty_percent', '(%)') : t('lecturer.workspace.settings.penalty_points', '(điểm)'))}
+                  </label>
+                  <input
+                    id="penalty-value-input"
+                    type="number"
+                    min={0}
+                    step="0.5"
+                    max={form.latePolicyOption === 'DAILY_PERCENT' ? 100 : form.maxScore}
+                    className="w-full h-9 px-3 rounded-xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    value={form.latePenaltyValue}
+                    onChange={e => setForm({ ...form, latePenaltyValue: Number(e.target.value) || 0 })}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label htmlFor="late-submit-hours-input" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {t('lecturer.workspace.settings.max_late_hours', 'Chấp nhận nộp trễ tối đa (giờ)')}
+                  </label>
+                  <input
+                    id="late-submit-hours-input"
+                    type="number"
+                    min={1}
+                    className="w-full h-9 px-3 rounded-xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    value={form.lateSubmitHours}
+                    onChange={e => setForm({ ...form, lateSubmitHours: Number(e.target.value) || 24 })}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
+
       </div>
     </form>
   )
@@ -368,7 +1188,7 @@ function AIRubricTab({ assignment, assignmentId, onUpdateAssignment }: { assignm
     let active = true
     const rubricObj = (assignment as any)?.rubric
     const rubricsList = (assignment as any)?.rubrics
-    
+
     // Check if there are valid rules
     let rules: any[] | null = null
     if (rubricObj?.rules && Array.isArray(rubricObj.rules) && rubricObj.rules.length > 0) {
@@ -515,8 +1335,8 @@ function AIRubricTab({ assignment, assignmentId, onUpdateAssignment }: { assignm
   const totalPoints = editRows.reduce((sum, r) => sum + (Number(r.maxPoints) || 0), 0)
 
   const hasPublishedRules = Boolean(publishedRubric?.rules && publishedRubric.rules.length > 0)
-  const passThresholdVal = publishedRubric?.passThreshold !== undefined 
-    ? Math.round(Number(publishedRubric.passThreshold) * 100) 
+  const passThresholdVal = publishedRubric?.passThreshold !== undefined
+    ? Math.round(Number(publishedRubric.passThreshold) * 100)
     : 70
 
   // 1. Published Rubric View (default when rules exist and user hasn't explicitly clicked Generator)
