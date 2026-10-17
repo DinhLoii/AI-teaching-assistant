@@ -10,6 +10,7 @@ import type { ILogger } from '../../../shared/application/ports/logger.interface
 import type { IExamRepository } from '../domain/repositories/exam-repository.interface.js'
 import path from 'path'
 import fs from 'fs'
+import { canAccessExamDocument } from '../application/document-access.js'
 
 import { memoryCache } from '../../../shared/infrastructure/memory-cache.js'
 
@@ -40,7 +41,7 @@ export class ExamsController extends BaseController {
       return
     }
     const result = await this.listExamsUseCase.execute({ user: req.user!, params })
-    memoryCache.set(cacheKey, result, 20)
+    memoryCache.set(cacheKey, result, 60)
     this.ok(res, result, MESSAGES.SUCCESS)
   }
 
@@ -82,21 +83,30 @@ export class ExamsController extends BaseController {
     this.logger.debug(`Received request to download attachment: ${attachmentId}`)
 
     const attachment = await this.examRepo.getAttachment(attachmentId)
-    if (!attachment) {
+    if (!attachment?.fileUrl) {
       res.status(404).json({ success: false, Message: 'Attachment not found' })
       return
     }
+    const exam = attachment.examId ? await this.examRepo.findById(attachment.examId) : null
+    if (!canAccessExamDocument(exam, req.user)) {
+      res.status(403).json({ success: false, message: 'Bạn không có quyền tải tài liệu của bài tập này.' }); return
+    }
+    res.setHeader('Cache-Control', 'private, no-store')
+    res.setHeader('X-Content-Type-Options', 'nosniff')
+    const inline = req.query.inline === 'true' && path.extname(attachment.fileName).toLowerCase() === '.pdf'
 
     if (attachment.fileUrl.startsWith('http://') || attachment.fileUrl.startsWith('https://')) {
       try {
-        const response = await fetch(attachment.fileUrl);
+        const remote = new URL(attachment.fileUrl)
+        if (remote.protocol !== 'https:' || remote.hostname !== 'res.cloudinary.com') { res.status(422).json({ success: false, message: 'Kho tài liệu này chưa được hỗ trợ tải trực tiếp.' }); return }
+        const response = await fetch(attachment.fileUrl, { redirect: 'error', signal: AbortSignal.timeout(20000) });
         if (!response.ok) {
           this.logger.error(`Failed to fetch attachment from cloud: ${response.status} ${response.statusText}`);
           res.status(500).json({ success: false, Message: 'Failed to download file from cloud storage' });
           return;
         }
 
-        if (req.query.inline === 'true') {
+        if (inline) {
           res.setHeader('Content-Disposition', `inline; filename="${attachment.fileName}"`);
         } else {
           res.attachment(attachment.fileName);
@@ -124,14 +134,17 @@ export class ExamsController extends BaseController {
       return;
     }
 
-    const filePath = path.join(process.cwd(), attachment.fileUrl)
+    const filePath = path.resolve(process.cwd(), attachment.fileUrl.replace(/^\/+/, ''))
+    const uploadRoot = path.resolve(process.cwd(), 'uploads', 'attachments')
+    if (!filePath.startsWith(uploadRoot + path.sep)) { res.status(422).json({ success: false, message: 'Vị trí tài liệu không hợp lệ.' }); return }
     if (!fs.existsSync(filePath)) {
       this.logger.error(`File not found on disk: ${filePath}`)
       res.status(404).json({ success: false, Message: 'File not found on disk' })
       return
     }
+    if (!fs.realpathSync(filePath).startsWith(fs.realpathSync(uploadRoot) + path.sep)) { res.status(422).json({ success: false, message: 'Vị trí tài liệu không hợp lệ.' }); return }
 
-    if (req.query.inline === 'true') {
+    if (inline) {
       res.setHeader('Content-Disposition', `inline; filename="${attachment.fileName}"`);
       res.sendFile(filePath);
     } else {

@@ -52,6 +52,12 @@ export class CreateExamRequestDto {
   constructor(public readonly data: CreateExamRequestDtoType) {}
 
   static from(body: unknown): CreateExamRequestDto {
+    if (body && typeof body === 'object' && 'payload' in body) {
+      const decoded = z.string().transform((value, context) => {
+        try { return JSON.parse(value) } catch { context.addIssue({ code: z.ZodIssueCode.custom, message: 'Dữ liệu cấu hình bài tập không hợp lệ.' }); return z.NEVER }
+      }).parse((body as { payload: unknown }).payload)
+      return new CreateExamRequestDto(CreateExamSchema.parse(decoded))
+    }
     return new CreateExamRequestDto(CreateExamSchema.parse(body))
   }
 }
@@ -196,7 +202,7 @@ export class ExamResponseDto {
       exam.LatePenaltyValue !== undefined && exam.LatePenaltyValue !== null ? Number(exam.LatePenaltyValue) : (exam.latePenaltyValue !== undefined ? Number(exam.latePenaltyValue) : null),
       exam.MaxLatePenalty !== undefined && exam.MaxLatePenalty !== null ? Number(exam.MaxLatePenalty) : (exam.maxLatePenalty !== undefined ? Number(exam.maxLatePenalty) : null),
       exam.AllowLateSubmission ?? exam.allowLateSubmission ?? true,
-      exam.content || (exam.ExamSection && exam.ExamSection[0]?.Description) || null,
+      exam.content || exam.Description || exam.description || null,
       classId,
       classIds,
       dueDateStr,
@@ -212,6 +218,16 @@ export class ExamResponseDto {
       ? Number(exam.passThreshold)
       : (exam.rubric?.passThreshold !== undefined ? Number(exam.rubric.passThreshold) : 0.7);
     (dto as any).rubric = exam.rubric ?? null;
+    let config: any = {}
+    try { const raw = exam.aiGeneratedContent || exam.AiGeneratedContent; config = typeof raw === 'string' ? JSON.parse(raw) : raw || {} } catch {}
+    ;(dto as any).documentContent = [exam.description, exam.Description, exam.originalPrompt, exam.OriginalPrompt, exam.content].find(value => typeof value === 'string' && value.trim() && !/^Barem tiêu chí chấm điểm tự động và AI\.?$/i.test(value.trim())) || ''
+    ;(dto as any).documentAnalysis = {
+      requirementGroups: config.aiConfig?.requirementGroups || null,
+      acceptanceTests: config.aiConfig?.acceptanceTests || [],
+      reviewStatus: config.aiConfig?.analysisReview?.acknowledged === true ? 'teacher_reviewed' : 'unreviewed',
+      platform: config.aiConfig?.analysisReview?.profile?.platform || null,
+      language: config.runtimeConfig?.language || null,
+    }
     return dto;
   }
 }
