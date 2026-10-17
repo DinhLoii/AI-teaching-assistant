@@ -32,7 +32,7 @@ export const AnalyzedRubricCriterionSchema = z.object({
 
 export const AdaptiveAnalysisOutputSchema = z.object({
   suggestedTitle: z.string().min(1),
-  detectedLanguage: z.enum(['C', 'C++', 'Java', 'Python', 'SQL', 'C#']),
+  detectedLanguage: z.enum(['C', 'C++', 'Java', 'Python', 'SQL', 'C#', 'JavaScript', 'TypeScript', 'Kotlin', 'Dart', 'Swift', 'Go', 'Rust', 'PHP', 'Unknown']),
   allowedLanguages: z.array(z.string()).optional(),
   assignmentCategory: z.enum(['standard', 'sql', 'multimodule']),
   submissionFormat: z.object({
@@ -63,8 +63,8 @@ export const AdaptiveAnalysisOutputSchema = z.object({
   inputSpecification: z.string().optional(),
   outputSpecification: z.string().optional(),
   constraints: z.array(z.string()).optional(),
-  testCases: z.array(AnalyzedTestCaseSchema).min(1),
-  rubricCriteria: z.array(AnalyzedRubricCriterionSchema).min(1),
+  testCases: z.array(AnalyzedTestCaseSchema),
+  rubricCriteria: z.array(AnalyzedRubricCriterionSchema),
   edgeCasesAndPitfalls: z.object({
     edgeCases: z.array(z.string()),
     commonPitfalls: z.string(),
@@ -140,29 +140,8 @@ export class AnalysisValidatorService {
       }
     }
 
-    // 3. Validate Test Cases
-    if (output.testCases.length === 0) {
-      warnings.push('Không có test cases nào trong đề bài. Đã bổ sung bộ test cases mặc định.')
-      output.testCases = [
-        {
-          id: `tc-def-1`,
-          input: '1\n2',
-          expectedOutput: '3',
-          points: 1,
-          isHidden: false,
-          comparisonMode: 'trim_whitespace',
-          source: 'DEFAULT',
-          notes: 'Test case mặc định bổ sung do tài liệu chưa có kịch bản mẫu.',
-        },
-      ]
-    }
-
-    // Ensure at least one hidden test case exists for automated sandbox integrity
-    const hasHidden = output.testCases.some(t => t.isHidden)
-    if (!hasHidden && output.testCases.length >= 2) {
-      // Mark last test case as hidden
-      output.testCases[output.testCases.length - 1].isHidden = true
-    }
+    // Missing execution evidence remains empty; never inject or hide invented cases.
+    if (!output.testCases.length) warnings.push('Chưa có testcase thực thi được xác minh.');
 
     return {
       isValid: errors.length === 0,
@@ -181,7 +160,7 @@ export class AnalysisValidatorService {
 
     for (let i = 0; i < criteria.length; i++) {
       if (i === criteria.length - 1) {
-        criteria[i].maxPoints = Number(Math.max(0.5, targetMaxScore - runningSum).toFixed(1))
+        criteria[i].maxPoints = Number(Math.max(0, targetMaxScore - runningSum).toFixed(1))
       } else {
         const basePts = typeof criteria[i].maxPoints === 'number' ? criteria[i].maxPoints : 1
         const scaled = Number((basePts * factor).toFixed(1))

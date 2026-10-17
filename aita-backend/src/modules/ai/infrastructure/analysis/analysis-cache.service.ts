@@ -8,7 +8,7 @@ interface CacheEntry {
 }
 
 export class AnalysisCacheService {
-  private static readonly PARSER_VERSION = 'v2.0-hybrid'
+  private static readonly PARSER_VERSION = 'v3-source-contract'
   private static readonly DEFAULT_TTL_MS = 30 * 60 * 1000 // 30 minutes
   private static readonly MAX_ENTRIES = 100
 
@@ -33,7 +33,7 @@ export class AnalysisCacheService {
       return null
     }
 
-    return entry.output
+    return structuredClone(entry.output)
   }
 
   public static set(key: string, output: AdaptiveAnalysisOutput, ttlMs: number = this.DEFAULT_TTL_MS): void {
@@ -44,7 +44,7 @@ export class AnalysisCacheService {
     }
 
     this.cache.set(key, {
-      output,
+      output: structuredClone(output),
       timestamp: Date.now(),
       expiresAt: Date.now() + ttlMs,
     })

@@ -12,6 +12,8 @@ export class EmbeddingService implements IEmbeddingService {
   private readonly dimensions = 768
   private readonly modelName = 'text-embedding-004'
   private genAI: GoogleGenerativeAI | null = null
+  private static isCloudAvailable: boolean = true
+  private static hasLoggedCloudStatus: boolean = false
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEYS
@@ -34,8 +36,8 @@ export class EmbeddingService implements IEmbeddingService {
 
   /**
    * Generates a 768-dimensional normalized embedding vector.
-   * Uses Google text-embedding-004 if API key is valid.
-   * Gracefully falls back to high-resolution deterministic semantic hash embedding if offline/unconfigured.
+   * Uses Google text-embedding-004 if API key supports it.
+   * Seamlessly switches to high-resolution deterministic semantic hash embedding if offline/unsupported.
    */
   public async generateEmbedding(text: string): Promise<number[]> {
     const cleaned = (text || '').trim()
@@ -43,16 +45,30 @@ export class EmbeddingService implements IEmbeddingService {
       return new Array(this.dimensions).fill(0)
     }
 
-    if (this.genAI) {
+    if (this.genAI && EmbeddingService.isCloudAvailable) {
       try {
         const model = this.genAI.getGenerativeModel({ model: this.modelName })
-        const res = await model.embedContent(cleaned)
+        const res = await Promise.race([
+          model.embedContent(cleaned),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Cloud embedding timed out after 3.5s limit')), 3500)
+          )
+        ])
         const values = res.embedding?.values
         if (values && values.length === this.dimensions) {
           return this.normalizeVector(values)
         }
       } catch (err: any) {
-        console.warn(`[EmbeddingService] Cloud embedding failed (${err.message}). Using resilient local semantic embedding.`)
+        const msg = String(err?.message || '')
+        if (msg.includes('404') || msg.includes('not found') || msg.includes('not supported') || msg.includes('API_KEY_INVALID')) {
+          EmbeddingService.isCloudAvailable = false
+          if (!EmbeddingService.hasLoggedCloudStatus) {
+            EmbeddingService.hasLoggedCloudStatus = true
+            console.info(`[EmbeddingService] Cloud embedding endpoint (${this.modelName}) is not active for the current API key. Automatically switched to local 768-dimensional deterministic semantic engine.`)
+          }
+        } else {
+          console.warn(`[EmbeddingService] Cloud embedding failed (${msg}). Using resilient local semantic embedding.`)
+        }
       }
     }
 
