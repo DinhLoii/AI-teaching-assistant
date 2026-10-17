@@ -3,14 +3,14 @@ import { PublishedAssignment } from '../core/domain/submission/PublishedAssignme
 import { prisma } from '../../../../database/prisma.js';
 
 export class PublishedAssignmentRepository {
-    constructor() {}
+    constructor(private readonly db: any = prisma) {}
 
     public async saveAsync(assignment: PublishedAssignment): Promise<void> {
         const dataStr = JSON.stringify(assignment);
         const versionStr = assignment.version !== undefined && assignment.version !== null 
             ? String(assignment.version) 
             : '1';
-        await prisma.publishedAssignment.upsert({
+        await this.db.publishedAssignment.upsert({
             where: { Id: assignment.id },
             update: {
                 Version: versionStr,
@@ -34,7 +34,7 @@ export class PublishedAssignmentRepository {
     }
 
     public async getAsync(id: string): Promise<PublishedAssignment | undefined> {
-        const row = await prisma.publishedAssignment.findUnique({ where: { Id: id } });
+        const row = await this.db.publishedAssignment.findUnique({ where: { Id: id } });
         if (row && row.Data) {
             return JSON.parse(row.Data) as PublishedAssignment;
         }
@@ -42,7 +42,7 @@ export class PublishedAssignmentRepository {
     }
     
     public async getLatestAsync(): Promise<PublishedAssignment | undefined> {
-        const row = await prisma.publishedAssignment.findFirst({
+        const row = await this.db.publishedAssignment.findFirst({
             orderBy: { CreatedAt: 'desc' }
         });
         if (row && row.Data) {
@@ -52,7 +52,7 @@ export class PublishedAssignmentRepository {
     }
 
     public async getAllAsync(): Promise<PublishedAssignment[]> {
-        const rows = await prisma.publishedAssignment.findMany({
+        const rows = await this.db.publishedAssignment.findMany({
             where: { OR: [{ IsDeleted: false }, { IsDeleted: null }] },
             orderBy: { CreatedAt: 'desc' }
         });
@@ -60,7 +60,7 @@ export class PublishedAssignmentRepository {
     }
 
     public async getTrashAsync(): Promise<PublishedAssignment[]> {
-        const rows = await prisma.publishedAssignment.findMany({
+        const rows = await this.db.publishedAssignment.findMany({
             where: { IsDeleted: true },
             orderBy: { DeletedAt: 'desc' }
         });
@@ -75,7 +75,7 @@ export class PublishedAssignmentRepository {
 
     public async softDeleteAsync(id: string): Promise<boolean> {
         try {
-            await prisma.publishedAssignment.update({
+            await this.db.publishedAssignment.update({
                 where: { Id: id },
                 data: {
                     IsDeleted: true,
@@ -92,7 +92,7 @@ export class PublishedAssignmentRepository {
 
     public async restoreAsync(id: string): Promise<boolean> {
         try {
-            await prisma.publishedAssignment.update({
+            await this.db.publishedAssignment.update({
                 where: { Id: id },
                 data: {
                     IsDeleted: false,
@@ -109,7 +109,7 @@ export class PublishedAssignmentRepository {
 
     public async deleteAsync(id: string): Promise<boolean> {
         try {
-            await prisma.publishedAssignment.delete({ where: { Id: id } });
+            await this.db.publishedAssignment.delete({ where: { Id: id } });
             console.log(`[PublishedAssignmentRepository] Deleted assignment ${id} from DB.`);
             return true;
         } catch (error) {
