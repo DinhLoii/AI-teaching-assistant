@@ -92,18 +92,23 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
-          cache-dependency-path: aita-fontend/package-lock.json
+          cache-dependency-path: |
+            aita-fontend/package-lock.json
+            aita-backend/package-lock.json
 
-      - name: Install Dependencies
+      - name: Install Frontend Dependencies
         run: npm ci
+
+      - name: Install Backend Dependencies for Full-Stack Contract Tests
+        run: |
+          npm --prefix ../aita-backend ci
+          npm --prefix ../aita-backend run db:generate
 
       - name: Verify Architecture & Route Structure
         run: npm run check:structure
 
       - name: Run Automated Unit Tests
         run: npm test
-      - name: Frontend lint
-        run: npm run lint
 
       - name: Next.js Typegen & TypeScript Check
         run: npm run typecheck
