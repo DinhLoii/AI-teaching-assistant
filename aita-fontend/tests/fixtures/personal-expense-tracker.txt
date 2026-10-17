@@ -1,0 +1,273 @@
+MOBILE APPLICATION DEVELOPMENT
+
+ASSIGNMENT 2 – PERSONAL EXPENSE TRACKER
+
+ĐỀ BÀI THỰC HÀNH / PROJECT ASSIGNMENT
+
+Hình thức: Cá nhân hoặc nhóm theo quy định giảng viên  |  Thang điểm: 10  |  Nền tảng: Android
+
+Thời hạn nộp: Do giảng viên công bố  |  Sản phẩm: Dự án Android Studio chạy được
+
+1. Bối cảnh bài toán
+
+Sinh viên xây dựng ứng dụng Android “Personal Expense Tracker” giúp người dùng ghi lại khoản thu/chi hằng ngày, quản lý danh mục, xem số dư và theo dõi ngân sách. Ứng dụng hoạt động offline, lưu dữ liệu bền vững sau khi đóng/mở lại. Bài tập đánh giá kỹ năng Kotlin, giao diện Jetpack Compose, quản lý trạng thái, Room Database, tổ chức mã nguồn và kiểm thử.
+
+2. Mục tiêu học tập
+
+Xây dựng giao diện nhiều màn hình bằng Kotlin và Jetpack Compose.
+
+Thiết kế cơ sở dữ liệu Room và thực hiện các thao tác CRUD.
+
+Phân tách tối thiểu lớp UI, dữ liệu và ViewModel; xử lý trạng thái/lỗi.
+
+Thực hiện lọc dữ liệu, tổng hợp số liệu và kiểm tra tính đúng đắn.
+
+3. Công nghệ và phạm vi
+
+Thành phần
+
+Yêu cầu
+
+Ngôn ngữ
+
+Kotlin
+
+Giao diện
+
+Jetpack Compose + Material 3
+
+Lưu trữ
+
+Room Database (SQLite), lưu offline
+
+Kiến trúc
+
+MVVM khuyến nghị; Repository/DAO để tách truy cập dữ liệu
+
+IDE
+
+Android Studio; Gradle theo phiên bản dự án
+
+Không bắt buộc
+
+Đăng nhập, cloud backend, Firebase, thanh toán thật
+
+4. Chức năng bắt buộc – nền tảng (mức mục tiêu 6–7 điểm)
+
+4.1. Quản lý giao dịch
+
+Hiển thị danh sách giao dịch mới nhất trước, gồm tiêu đề, số tiền, loại (Thu/Chi), danh mục, ngày.
+
+Thêm giao dịch với các trường: tiêu đề, số tiền > 0, loại Thu/Chi, danh mục, ngày; ghi chú tùy chọn.
+
+Sửa giao dịch đã tạo; xóa giao dịch có hộp thoại xác nhận.
+
+Không lưu giao dịch thiếu trường bắt buộc hoặc số tiền không hợp lệ.
+
+4.2. Danh mục và tổng quan
+
+Có sẵn danh mục ví dụ: Ăn uống, Di chuyển, Mua sắm, Lương, Khác; mỗi giao dịch gắn danh mục phù hợp.
+
+Màn hình tổng quan hiển thị tổng thu, tổng chi và số dư (tổng thu − tổng chi).
+
+Có màn hình hoặc tab lọc riêng giao dịch Thu và Chi.
+
+Dữ liệu được giữ lại sau khi tắt, mở lại ứng dụng; có trạng thái rỗng khi chưa có giao dịch.
+
+5. Chức năng nâng cao – mục tiêu 8–9 điểm
+
+Sau khi hoàn thành toàn bộ mục 4, sinh viên tiếp tục các chức năng sau:
+
+Thiết lập ngân sách chi theo từng tháng; lưu ngân sách và hiển thị đã chi/còn lại; cảnh báo khi vượt ngân sách.
+
+Tìm kiếm giao dịch theo tiêu đề và lọc theo tháng hoặc danh mục; có thể kết hợp bộ lọc.
+
+Thống kê tổng chi theo danh mục trong tháng, trình bày bằng danh sách có tỷ lệ hoặc biểu đồ.
+
+Quản lý danh mục: thêm, sửa hoặc vô hiệu hóa danh mục tùy chọn; giữ toàn vẹn tham chiếu giao dịch.
+
+Nâng cao UX: trạng thái loading/empty/error, thông báo thành công, xử lý bàn phím và bố cục ở nhiều kích thước màn hình.
+
+Không bắt buộc thực hiện toàn bộ mục 5 để đạt điểm trung bình; mức 8–9 chỉ là định hướng theo rubric, không bảo đảm điểm.
+
+6. Mô hình dữ liệu tối thiểu
+
+Bảng/Entity
+
+Trường tối thiểu
+
+Ràng buộc
+
+Transaction
+
+id, title, amount, type, categoryId, date, note
+
+amount > 0; type = INCOME/EXPENSE; FK categoryId
+
+Category
+
+id, name, type
+
+name không rỗng; type hợp lệ
+
+MonthlyBudget (nâng cao)
+
+id, year, month, amount
+
+amount ≥ 0; unique(year, month)
+
+Có thể thay đổi tên lớp/trường nếu bảo đảm chức năng, quan hệ và khả năng migration; không được lưu dữ liệu chỉ trong biến nhớ tạm.
+
+7. Yêu cầu giao diện
+
+Ít nhất 3 khu vực/màn hình: Tổng quan, Danh sách giao dịch, Biểu mẫu Thêm/Sửa.
+
+Điều hướng rõ ràng; số tiền hiển thị dễ đọc và thống nhất định dạng; ngày hiển thị đúng.
+
+Form báo lỗi trực tiếp khi nhập sai; thao tác xóa yêu cầu xác nhận.
+
+Không crash trong luồng sử dụng bình thường; không sử dụng dữ liệu giả để thay thế Room khi demo.
+
+8. Tình huống kiểm thử/acceptance test
+
+TC
+
+Thao tác
+
+Kết quả mong đợi
+
+01
+
+Thêm giao dịch Thu 5.000.000
+
+Lưu thành công; tổng thu tăng đúng
+
+02
+
+Thêm giao dịch Chi 120.000
+
+Tổng chi tăng; số dư giảm đúng
+
+03
+
+Sửa số tiền giao dịch Chi
+
+Danh sách và tổng quan cập nhật
+
+04
+
+Xóa giao dịch và xác nhận
+
+Giao dịch biến mất; tổng số liệu tính lại
+
+05
+
+Nhập tiêu đề rỗng hoặc số tiền ≤ 0
+
+Hiển thị lỗi, không ghi DB
+
+06
+
+Đóng rồi mở lại app
+
+Giao dịch vẫn tồn tại
+
+07
+
+Chọn bộ lọc Thu/Chi
+
+Chỉ hiện giao dịch đúng loại
+
+08
+
+Chưa có dữ liệu
+
+Hiện empty state, không crash
+
+09*
+
+Đặt ngân sách tháng rồi chi vượt
+
+Có cảnh báo vượt ngân sách
+
+10*
+
+Tìm kiếm/lọc và thống kê tháng
+
+Kết quả lọc và tổng hợp chính xác
+
+* TC09–TC10 dành cho nhóm chức năng nâng cao.
+
+9. Rubric chấm điểm (10 điểm)
+
+Hạng mục
+
+Điểm
+
+Tiêu chí chấm
+
+CRUD giao dịch & validation
+
+3.0
+
+Thêm/xem/sửa/xóa hoạt động; dữ liệu và lỗi nhập đúng
+
+Room & thiết kế dữ liệu
+
+1.5
+
+Entity, DAO, quan hệ; dữ liệu tồn tại sau mở lại
+
+Dashboard & lọc cơ bản
+
+1.5
+
+Tính thu/chi/số dư chính xác; lọc Thu/Chi
+
+Giao diện & kiến trúc
+
+1.0
+
+Dễ dùng, điều hướng rõ, tách UI và data hợp lý
+
+Ngân sách & thống kê nâng cao
+
+1.5
+
+Ngân sách, cảnh báo, tìm/lọc theo tháng, tổng hợp theo danh mục
+
+Kiểm thử, báo cáo & khả năng chạy
+
+1.5
+
+Build/run, test case, README, minh chứng, chất lượng bàn giao
+
+TỔNG
+
+10.0
+
+Chấm theo tính năng chạy thực tế và minh chứng
+
+Diễn giải hai mức hoàn thành
+
+Mức mục tiêu 6–7 điểm: hoàn thiện phần CRUD, Room, dashboard và giao diện cơ bản; còn hạn chế ở các mục ngân sách, tìm kiếm và kiểm thử tự động. Mức mục tiêu 8–9 điểm: hoàn thiện phần cơ bản, triển khai phần lớn tính năng nâng cao, kiểm thử tốt hơn và UI ổn định. Điểm thực tế phụ thuộc chất lượng và rubric; không cộng điểm chỉ vì khai báo tính năng.
+
+10. Quy định nộp bài
+
+Nộp 01 file ZIP chứa toàn bộ project Android Studio (source, Gradle config và tài nguyên cần thiết), không kèm thư mục build/cache dung lượng lớn.
+
+README.md: tên ứng dụng, yêu cầu môi trường, cách mở/build/run, chức năng đã hoàn thành và chức năng còn thiếu.
+
+Báo cáo PDF/DOCX ngắn (3–6 trang): mô tả, mô hình dữ liệu, ảnh 3–5 màn hình, bảng kết quả các TC đã chạy, hạn chế.
+
+Có thể cung cấp APK debug nếu giảng viên yêu cầu; APK không thay thế mã nguồn.
+
+Mã nguồn phải là sản phẩm do sinh viên hiểu và có thể giải thích/demonstrate; ghi rõ nguồn thư viện và phần tham khảo.
+
+11. Quy trình demo và quy tắc đánh giá
+
+Khi demo, giảng viên có thể yêu cầu tạo, sửa, xóa 2–3 giao dịch; khởi động lại ứng dụng để kiểm tra lưu trữ; nhập dữ liệu sai; kiểm tra kết quả tổng hợp và, với bản nâng cao, ngân sách/thống kê. Chức năng không chạy hoặc chỉ có hình minh họa sẽ không được tính như đã hoàn thành.
+
+Lưu ý: Đây là đề mẫu dùng cho luyện tập/định hướng, cần đối chiếu quy định môn học chính thức trước khi sử dụng để giao hoặc chấm.
+
+Assignment 2  •  Mobile Application Development  •  Personal Expense Tracker

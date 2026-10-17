@@ -13,8 +13,9 @@ const candidateRoots = [
 const root = candidateRoots.find(p => fs.existsSync(p)) || candidateRoots[0]
 const fallbackZod = (() => {
   const z = {
-    object: (shape) => ({
-      parse: (input) => {
+    object: (shape) => {
+      const schema = {
+        parse: (input) => {
         if (!input || typeof input !== 'object') throw new Error('Invalid input');
         const output = { ...input };
         for (const [key, validator] of Object.entries(shape)) {
@@ -23,9 +24,12 @@ const fallbackZod = (() => {
           }
         }
         return output;
-      },
-      optional: function () { return this; },
-    }),
+        },
+        optional: () => schema,
+        refine: () => schema,
+      };
+      return schema;
+    },
     string: () => {
       let isOptional = false;
       let minLen = 0;
@@ -67,7 +71,10 @@ const fallbackZod = (() => {
       };
       return v;
     },
+    boolean: () => ({ optional() { return this } }),
+    enum: () => ({ optional() { return this }, default() { return this } }),
   };
+  z.coerce = { number: z.number };
   return { z, default: z, ...z };
 })();
 
@@ -158,4 +165,51 @@ test('draft, publish, unpublish, republish preserve raw score and feedback witho
   }
   await execute({ feedback: '', isPublished: true })
   assert.equal(db.InstructorFeedback, '')
+})
+
+test('lowercase student role cannot see unpublished scores and cannot read another student submission', async () => {
+  const load = loader()
+  const { SubmissionResponseDto } = load('modules/submissions/application/dtos/submission.dto.ts')
+  const hidden = SubmissionResponseDto.from({
+    Id: 'submission',
+    StudentId: 'student-1',
+    ReviewStatus: 'PENDING_REVIEW',
+    TotalScore: 10,
+    RawScore: 10,
+    FinalScore: 10,
+    ReportData: JSON.stringify({ totalScore: 10, overallFeedback: 'Private feedback' }),
+  }, 'student')
+  assert.equal(hidden.score, null)
+  assert.equal(hidden.reportData, null)
+  assert.equal(hidden.aiFeedback, null)
+
+  const { GetSubmissionUseCase } = load('modules/submissions/application/use-cases/get-submission.use-case.ts')
+  const repo = {
+    findById: async () => ({ studentId: 'student-1', reviewStatus: 'PENDING_REVIEW', totalScore: 10 }),
+    findByIdForInstructor: async () => null,
+  }
+  const useCase = new GetSubmissionUseCase(repo)
+  await assert.rejects(
+    () => useCase.execute({ id: 'submission', user: { id: 'student-2', role: 'student' } }),
+    error => error?.statusCode === 403
+  )
+})
+
+test('lecturer submission detail lookup is scoped to classes they teach', async () => {
+  const load = loader()
+  const { GetSubmissionUseCase } = load('modules/submissions/application/use-cases/get-submission.use-case.ts')
+  const calls = []
+  const repo = {
+    findById: async () => { throw new Error('unscoped lookup must not be used') },
+    findByIdForInstructor: async (id, instructorId) => {
+      calls.push([id, instructorId])
+      return { id, studentId: 'student-1', reviewStatus: 'PENDING_REVIEW', totalScore: 8 }
+    },
+  }
+  const result = await new GetSubmissionUseCase(repo).execute({
+    id: 'submission',
+    user: { id: 'lecturer-1', role: 'lecturer' },
+  })
+  assert.deepEqual(calls, [['submission', 'lecturer-1']])
+  assert.equal(result.totalScore, 8)
 })

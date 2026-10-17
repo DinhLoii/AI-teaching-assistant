@@ -9,7 +9,7 @@ import ts from 'typescript';
 export function createLoader(globals = {}) {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../src');
   const cache = new Map();
-  const context = vm.createContext({ console, URLSearchParams, FormData, setTimeout, clearTimeout, ...globals });
+  const context = vm.createContext({ console, URLSearchParams, Headers, FormData, setTimeout, clearTimeout, ...globals });
   function load(file) {
     const resolved = path.resolve(root, file);
     if (!resolved.startsWith(root + path.sep)) throw new Error('Test module outside src');
