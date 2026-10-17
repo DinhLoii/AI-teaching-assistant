@@ -1,7 +1,6 @@
 'use client'
 
 import * as React from 'react'
-import { useRouter } from 'next/navigation'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { ADMIN_NAV } from '@/config/navigation'
 import { Card } from '@/components/ui/card'
@@ -10,8 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { notificationsApi } from '@/lib/api/modules/notifications'
-import { useNotifications } from '@/providers/notification-provider'
-import { emitNotificationEvent, subscribeNotificationEvents } from '@/lib/events/notifications'
+import { useNotificationInbox } from '../hooks/useNotificationInbox'
+import { NotificationSyncStatus } from '../components/NotificationSyncStatus'
 import {
   Bell,
   CheckCircle2,
@@ -29,119 +28,12 @@ import { useLanguage } from '@/providers/language-provider'
 
 
 export default function AdminNotificationsPage() {
-  const router = useRouter()
-  const [notifications, setNotifications] = React.useState<any[]>([])
-  const [filter, setFilter] = React.useState<'all' | 'unread'>('all')
-  const [loading, setLoading] = React.useState(false)
+  const { t } = useLanguage()
+  const { notifications, filter, setFilter, loading, working, error, hasMore, loadMore, loadNotifications,
+    unreadCount, visibleNotifications, resolveTarget, handleItemClick, handleMarkAllAsRead, handleDeleteOne, handleDeleteAll } = useNotificationInbox('admin')
   const [broadcastModal, setBroadcastModal] = React.useState(false)
   const [broadcasting, setBroadcasting] = React.useState(false)
   const [broadcastData, setBroadcastData] = React.useState({ title: '', message: '', targetRole: 'ALL' })
-  const { refresh: refreshBadge, clearNew } = useNotifications()
-  const { t } = useLanguage()
-
-  const resolveTarget = React.useCallback((item: any): string => {
-    if (item.link) return item.link
-    return '/admin'
-  }, [])
-
-  const loadNotifications = React.useCallback(() => {
-    setLoading(true)
-    notificationsApi.getMyNotifications()
-      .then((data: any) => {
-        if (Array.isArray(data) && data.length > 0) {
-          const apiMapped = data.map((n: any) => {
-            const isRead = n.isRead ?? n.read ?? false
-            const createdAt = n.createdAt ? new Date(n.createdAt) : null
-            let timeStr = t('notifications.time_recently', 'Gần đây')
-            if (createdAt && !isNaN(createdAt.getTime())) {
-              const diffMs = Date.now() - createdAt.getTime()
-              const diffMins = Math.floor(diffMs / 60000)
-              const diffHours = Math.floor(diffMins / 60)
-              const diffDays = Math.floor(diffHours / 24)
-              if (diffMins < 5) timeStr = t('notifications.time_just_now', 'Vừa xong')
-              else if (diffMins < 60) timeStr = t('notifications.time_minutes_ago', '{{minutes}} phút trước').replace('{{minutes}}', String(diffMins))
-              else if (diffHours < 24) timeStr = t('notifications.time_hours_ago', '{{hours}} giờ trước').replace('{{hours}}', String(diffHours))
-              else timeStr = t('notifications.time_days_ago', '{{days}} ngày trước').replace('{{days}}', String(diffDays))
-            }
-
-            return {
-              id: n.id,
-              title: n.title,
-              content: n.message || n.content,
-              time: timeStr,
-              read: isRead,
-              type: n.type,
-              referenceId: n.referenceId,
-              referenceType: n.referenceType,
-              subjectCode: n.subjectCode,
-              link: resolveTarget(n),
-              actionText: t('admin.notifications.action_detail', 'Xem chi tiết'),
-            }
-          })
-
-          setNotifications(apiMapped)
-        }
-      })
-      .catch((err) => {
-        console.error('Failed to load notifications from API:', err)
-      })
-      .finally(() => setLoading(false))
-  }, [resolveTarget, t])
-
-  React.useEffect(() => {
-    loadNotifications()
-    const unsub = subscribeNotificationEvents(() => loadNotifications())
-    return unsub
-  }, [loadNotifications])
-
-  const handleItemClick = (item: any) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === item.id ? { ...n, read: true, isRead: true } : n))
-    )
-
-    if (!item.read && item.id && !item.id.startsWith('admin_notif_')) {
-      notificationsApi.markNotificationAsRead(item.id).catch(() => {}).finally(() => refreshBadge())
-      emitNotificationEvent()
-    }
-
-    const targetUrl = resolveTarget(item)
-    router.push(targetUrl)
-  }
-
-  const handleMarkAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true, isRead: true })))
-    clearNew()
-    emitNotificationEvent()
-    notificationsApi.markAllNotificationsAsRead().catch(() => {}).finally(() => refreshBadge())
-  }
-
-  const handleDeleteOne = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!confirm(t('notifications.confirm_delete_one', 'Bạn có chắc muốn xóa thông báo này?'))) return
-    setNotifications(prev => prev.filter(n => n.id !== id))
-    try {
-      if (id && !id.startsWith('admin_notif_')) {
-        await notificationsApi.deleteNotification(id)
-      }
-      emitNotificationEvent()
-      refreshBadge()
-    } catch (err) {
-      console.error('Failed to delete notification:', err)
-    }
-  }
-
-  const handleDeleteAll = async () => {
-    if (!confirm(t('notifications.confirm_delete_all', 'Bạn có chắc muốn xóa tất cả thông báo?'))) return
-    setNotifications([])
-    try {
-      await notificationsApi.deleteAllNotifications()
-      emitNotificationEvent()
-      refreshBadge()
-    } catch (err) {
-      console.error('Failed to delete all notifications:', err)
-    }
-  }
-
   const handleBroadcast = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!broadcastData.title.trim() || !broadcastData.message.trim()) return
@@ -163,13 +55,6 @@ export default function AdminNotificationsPage() {
       setBroadcasting(false)
     }
   }
-
-  const visibleNotifications = notifications.filter((n) => {
-    if (filter === 'unread') return !n.read
-    return true
-  })
-
-  const unreadCount = notifications.filter((n) => !n.read).length
 
   const renderIcon = (type: string, title: string) => {
     const t = String(type || '').toUpperCase()
@@ -269,7 +154,7 @@ export default function AdminNotificationsPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={handleMarkAllAsRead}
+                  onClick={handleMarkAllAsRead} disabled={working}
                   className="text-xs text-slate-700 dark:text-slate-300 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/30 gap-1.5 rounded-xl font-bold cursor-pointer"
                 >
                   <CheckCheck className="w-4 h-4 text-emerald-500" />
@@ -281,7 +166,7 @@ export default function AdminNotificationsPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={handleDeleteAll}
+                  onClick={handleDeleteAll} disabled={working}
                   className="text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 gap-1.5 rounded-xl font-bold cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -302,12 +187,14 @@ export default function AdminNotificationsPage() {
           </div>
         </div>
 
+        <NotificationSyncStatus />
         <div className="space-y-3">
-          {visibleNotifications.length === 0 ? (
+          {error && <div role="alert" className="p-3 rounded-xl bg-rose-50 text-rose-700 text-sm">{error}<Button size="sm" variant="outline" onClick={loadNotifications}>{t('ui.retry', 'Thử lại')}</Button></div>}
+          {loading && notifications.length === 0 ? <p role="status" className="p-8 text-center text-slate-500">{t('notifications.loading', 'Đang tải thông báo...')}</p> : error && notifications.length === 0 ? null : visibleNotifications.length === 0 ? (
             <div className="p-12 text-center text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50">
               <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
               <p className="text-base font-bold text-slate-900 dark:text-white">
-                {t('notifications.empty_title', 'Không có thông báo nào!')}
+                {filter === 'unread' && unreadCount > 0 ? t('notifications.more_unread', 'Còn thông báo chưa đọc; chọn Xem thêm thông báo để tải tiếp.') : t('notifications.empty_title', 'Không có thông báo nào!')}
               </p>
             </div>
           ) : (
@@ -360,11 +247,11 @@ export default function AdminNotificationsPage() {
 
                   <div className="flex flex-col items-end gap-2 shrink-0">
                     <span className="text-[11px] text-slate-500 font-medium">
-                      {n.time}
+                      <time dateTime={n.createdAt || undefined} title={n.absoluteTime}>{n.time}</time>
                     </span>
                     <button
                       type="button"
-                      onClick={(e) => handleDeleteOne(n.id, e)}
+                      onClick={(e) => handleDeleteOne(n.id, e)} disabled={working} onKeyDown={e => e.stopPropagation()}
                       title="Xóa thông báo này"
                       className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
                     >
@@ -378,6 +265,7 @@ export default function AdminNotificationsPage() {
         </div>
       </div>
 
+      {hasMore && <Button variant="outline" onClick={loadMore} disabled={loading || working}>{t('notifications.load_more', 'Xem thêm thông báo')}</Button>}
       {/* Broadcast Modal */}
       <Modal
         isOpen={broadcastModal}
