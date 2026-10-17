@@ -26,9 +26,9 @@ export const config = {
   },
 
   ai: {
-    stubMode: process.env.AI_STUB_MODE !== 'false' && process.env.AI_STUB_MODE !== '0',
+    stubMode: process.env.AI_STUB_MODE === 'true' || process.env.AI_STUB_MODE === '1',
     geminiKeys: (process.env.GEMINI_API_KEYS || '').split(',').map(k => k.trim()).filter(k => k.length > 0),
-    geminiModel: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
+    geminiModel: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
     geminiBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/',
 
     groqKey: process.env.GROQ_API_KEY || '',
@@ -41,7 +41,7 @@ export const config = {
 
     embeddingModel: 'text-embedding-3-small', // For github if needed
     temperature: 0.7,
-    timeoutMs: 30000
+    timeoutMs: Math.max(1000, Math.min(90000, Number(process.env.AI_TIMEOUT_MS) || 60000))
   }
 
 } as const;
