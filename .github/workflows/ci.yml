@@ -72,6 +72,8 @@ jobs:
         run: npm test
       - name: PostgreSQL queue recovery and lease fencing
         run: npm run test:postgres
+      - name: Real console runner compilation and exit-status checks
+        run: npm run test:console-docker
 
   # =========================================================================
   # 2. FRONTEND CI

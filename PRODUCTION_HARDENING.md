@@ -74,3 +74,11 @@ Sau khi chủ dự án xác nhận cho phép worker chạy liên tục, đã kh�
 Trước khi sử dụng trên quy mô thật, vẫn phải nghiệm thu bộ bài có điểm chuẩn do giảng viên xác nhận, runner từng môn, tải đồng thời và quy trình backup/restore trên hạ tầng đích. Nếu ZIP cũ đã từng được công bố trực tiếp trên Cloudinary, cần kiểm tra và thu hồi/chuyển các bản sao trên dịch vụ đó; chặn URL của backend không thu hồi được URL bên ngoài.
 
 Tham khảo hạ tầng vector: [tài liệu pgvector chính thức](https://github.com/pgvector/pgvector#docker).
+
+## Bổ sung kiểm chứng console ngày 18/10/2026
+
+`STDIO_SANDBOX_ENABLED=true` bật riêng runner console, không bật sandbox Web/SQL. Cấu hình cục bộ đã bật cờ này; Docker Desktop cần tiếp tục chạy. Runner dùng container không mạng, user không đặc quyền, giới hạn CPU/RAM/PID, filesystem gốc chỉ đọc và thư mục làm việc tạm.
+
+Bài console có testcase sẽ được kiểm chứng độc lập kể cả khi các tiêu chí dùng AI; kết quả chạy và biên dịch được lưu trong báo cáo, không cộng thêm một ngân sách điểm ngoài rubric. Tiêu chí đã dùng StdInOutProbe tiếp tục dùng kết quả chấm của tiêu chí đó. Lỗi hạ tầng không được ghi thành testcase Pass/Fail; lỗi biên dịch không được coi là đã chạy testcase. Kiểm thử Docker thực tế chạy bằng `npm run test:console-docker`.
+
+Đã sửa bộ đọc Word để giữ xuống dòng trong ô bảng và chặn việc lấy các câu văn nhắc đến input/output làm testcase. Riêng đề Mini Inventory trong báo lỗi đã được sao lưu rồi đối chiếu lại từ file Word gốc: sửa thành 10 testcase, chạy ZIP C++ mới nhất bằng GCC thực tế và lưu kết quả 2/10, biên dịch thành công vào báo cáo nháp. Giữ nguyên điểm AI và trạng thái chưa công bố. Các đề cũ khác có dữ liệu trích sai vẫn cần đối chiếu tài liệu gốc trước khi sửa; không tự sửa hàng loạt hoặc bịa output.

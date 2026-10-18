@@ -6,6 +6,8 @@ hoàn thiện chức năng từ FE cũ.
 
 ## Chạy cục bộ
 
+Để dùng local với các trang đã biên dịch sẵn, chạy `npm run local` từ **thư mục gốc repository**, rồi mở **http://localhost:5194**. Bản dựng được dùng lại khi mã nguồn không đổi. Xem README gốc để cấu hình backend. Hướng dẫn dưới đây dành cho chế độ chỉnh sửa code có cập nhật tự động khi lưu.
+
 Từ thư mục `aita-fontend`:
 
 ```sh
@@ -18,8 +20,8 @@ npm run dev
 đến backend này. Có thể đặt `NEXT_PUBLIC_API_URL` trong `.env.local` để dùng
 API origin khác. Biến `NEXT_PUBLIC_*` công khai trong browser, không đặt secret.
 
-Build dùng Google Fonts (Plus Jakarta Sans và JetBrains Mono), cần mạng ở lần
-tải font đầu tiên. `npm run start` phục vụ production ở cổng mặc định 3000;
+Font Plus Jakarta Sans và JetBrains Mono được lưu trong source, không cần tải
+từ Google khi khởi động. `npm run start` phục vụ production ở cổng mặc định 3000;
 có thể dùng `npm run start -- -p 5174`.
 
 Trên PowerShell chặn `npm.ps1`, dùng `npm.cmd` thay cho `npm`.

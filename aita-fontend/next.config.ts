@@ -4,6 +4,10 @@ const rawApiTarget = process.env.API_PROXY_TARGET || process.env.NEXT_PUBLIC_API
 const apiTarget = rawApiTarget.replace(/\/api\/?$/, '').replace(/\/+$/, '');
 
 const nextConfig: NextConfig = {
+  ...(process.env.AITA_LOCAL_BUILD === '1' ? {
+    distDir: '.next-local',
+    typescript: { tsconfigPath: 'tsconfig.local.json' },
+  } : {}),
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
