@@ -8,7 +8,7 @@ interface CacheEntry {
 }
 
 export class AnalysisCacheService {
-  private static readonly PARSER_VERSION = 'v3-source-contract'
+  private static readonly PARSER_VERSION = 'v5-docx-soft-breaks'
   private static readonly DEFAULT_TTL_MS = 30 * 60 * 1000 // 30 minutes
   private static readonly MAX_ENTRIES = 100
 

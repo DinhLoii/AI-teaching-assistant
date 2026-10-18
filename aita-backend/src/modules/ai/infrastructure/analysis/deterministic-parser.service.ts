@@ -8,6 +8,7 @@ import type {
   RubricSourceType,
 } from '../../domain/analysis/analysis.types.js'
 import { detectAssignmentProfile, extractDocumentRubric } from './assignment-contract.js'
+import { extractLabeledConsoleTests } from './console-test-extractor.js'
 
 export interface DeterministicParseResult {
   title: ProvenancedField<string>
@@ -606,6 +607,8 @@ export class DeterministicParserService {
    * Extract Test Cases / Examples from text
    */
   private extractTestCases(text: string, _sections: DocumentSection[]): AnalyzedTestCase[] {
+    const referenceCases = extractLabeledConsoleTests(text)
+    if (referenceCases.length) return referenceCases
     const testCases: AnalyzedTestCase[] = []
 
     // 1. Look inside document text for Input / Output example pairs
@@ -613,7 +616,7 @@ export class DeterministicParserService {
 
     for (const st of searchTexts) {
       // Regex pattern for Input / Output pairs (excluding Input Format / Output Format specifications)
-      const ioPattern = /(?:Input(?!\s*Format)|Đầu\s*vào(?!\s*Format)|Sample\s*Input)[\s:\-]+([\s\S]*?)(?:Output(?!\s*Format)|Đầu\s*ra(?!\s*Format)|Sample\s*Output)[\s:\-]+([\s\S]*?)(?=(?:Input|Đầu\s*vào|Sample\s*Input|Ví\s*dụ|Example|\n\n\n|$))/gi
+      const ioPattern = /^[ \t]*(?:Sample\s*Input|Input|Đầu\s*vào)[ \t]*:[ \t]*\n?([\s\S]*?)^[ \t]*(?:(?:Expected|Sample)\s*Output|Output|Đầu\s*ra)[ \t]*:[ \t]*\n?([\s\S]*?)(?=^[ \t]*(?:Input|Đầu\s*vào|Sample\s*Input|Ví\s*dụ|Example|\d+[.)]\s+\p{L})|$(?![\s\S]))/gimu
       let match: RegExpExecArray | null
 
       while ((match = ioPattern.exec(st)) !== null) {

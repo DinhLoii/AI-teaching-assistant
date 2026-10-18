@@ -5,7 +5,7 @@ const languagePatterns: [string, RegExp][] = [
   ['Kotlin', /\bkotlin\b/i], ['Dart', /\bdart\b/i], ['Swift', /\bswift\b/i],
   ['TypeScript', /\btypescript\b/i], ['JavaScript', /\bjavascript\b/i],
   ['C++', /c\+\+|\bcpp\b/i], ['C#', /c#|\bcsharp\b/i], ['Python', /\bpython(?:3)?\b/i],
-  ['Java', /\bjava\b/i], ['SQL', /\bsql\b/i], ['Go', /\bgolang\b|^go$/i], ['Rust', /\brust\b/i], ['PHP', /\bphp\b/i], ['C', /^c$|\bansi c\b/i],
+  ['Java', /\bjava\b/i], ['SQL', /\bsql\b/i], ['Go', /\bgolang\b|^go$/i], ['Rust', /\brust\b/i], ['PHP', /\bphp\b/i], ['C', /^c(?=$|[\s(])|^c(?:99|11|17|23)\b|\bansi c\b/i],
 ]
 export function detectAssignmentProfile(text: string, filename = '') {
   const normalized = text.replaceAll('\r\n', '\n')
@@ -18,7 +18,8 @@ export function detectAssignmentProfile(text: string, filename = '') {
   const mobile = /\bandroid\b|jetpack compose|\bflutter\b|\bios\b|swiftui/i.test(positive)
   const web = /spring boot|servlets?|asp\.net|\breact\b|\bnext\.js\b|\bdjango\b|\blaravel\b|ứng dụng web|web application|rest api|backend|frontend/i.test(positive)
   const desktop = /\bwpf\b|winforms|javafx|ứng dụng desktop/i.test(positive)
-  const explicitLang = explicit ? languagePatterns.find(([, pattern]) => pattern.test(explicit))?.[0] : undefined
+  // A later clause such as "compiler GCC; không chọn SQL" must not override "C (C11)".
+  const explicitLang = explicit ? languagePatterns.find(([, pattern]) => pattern.test(explicit.split(/[;,]/)[0]))?.[0] : undefined
   let language = direct || explicitLang
   if (!language) {
     language = languagePatterns.filter(([name]) => name !== 'SQL' && name !== 'C').find(([, pattern]) => pattern.test(positive))?.[0]

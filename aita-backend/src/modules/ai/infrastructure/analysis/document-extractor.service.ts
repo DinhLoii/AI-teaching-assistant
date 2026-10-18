@@ -137,8 +137,17 @@ export class DocumentExtractorService {
     try {
       const mammothModule: any = await import('mammoth')
       const mammoth = mammothModule.default || mammothModule
-      const docxData = await mammoth.extractRawText({ buffer })
-      return docxData?.value || ''
+      const docxData = await mammoth.convertToHtml({ buffer })
+      // extractRawText drops Word soft line breaks (<w:br>), joining stdin
+      // commands and expected output. Preserve those breaks and cell boundaries.
+      return (docxData?.value || '')
+        .replace(/<br\s*\/?\s*>/gi, '\n')
+        .replace(/<\/(?:p|h[1-6]|td|th|tr|table|li)>/gi, '\n\n')
+        .replace(/<[^>]*>/g, '')
+        .replace(/&#x([0-9a-f]+);/gi, (_: string, hex: string) => String.fromCodePoint(parseInt(hex, 16)))
+        .replace(/&#(\d+);/g, (_: string, number: string) => String.fromCodePoint(Number(number)))
+        .replaceAll('&nbsp;', ' ').replaceAll('&lt;', '<').replaceAll('&gt;', '>')
+        .replaceAll('&quot;', '"').replaceAll('&#39;', "'").replaceAll('&amp;', '&')
     } catch (err: any) {
       console.warn('[DocumentExtractor] DOCX parsing error:', err?.message || err)
       return ''
