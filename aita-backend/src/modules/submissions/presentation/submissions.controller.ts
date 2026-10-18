@@ -39,13 +39,9 @@ export class SubmissionsController extends BaseController {
         this.logger.debug('Received request to list submissions')
         const query = ListSubmissionsQueryDto.from(req.query)
         const cacheKey = `subs_list_${req.user!.id}_${req.user!.role}_${JSON.stringify(req.query)}`
-        const cached = memoryCache.get(cacheKey)
-        if (cached) {
-            this.ok(res, cached, MESSAGES.SUBMISSION_LIST_SUCCESS)
-            return
-        }
-        const result = await this.listUseCase.execute({ user: req.user!, query })
-        memoryCache.set(cacheKey, result, 12)
+        const load = () => this.listUseCase.execute({ user: req.user!, query })
+        const result = /no-cache|no-store/i.test(req.get('Cache-Control') || '')
+            ? await load() : await memoryCache.wrap(cacheKey, 12, load)
         this.ok(res, result, MESSAGES.SUBMISSION_LIST_SUCCESS)
     }
 
@@ -53,13 +49,7 @@ export class SubmissionsController extends BaseController {
         this.logger.debug('Received request to get recent submissions')
         const limit = Math.min(Number(req.query.limit) || 5, 20)
         const cacheKey = `subs_recent_${req.user!.id}_${limit}`
-        const cached = memoryCache.get(cacheKey)
-        if (cached) {
-            this.ok(res, cached, MESSAGES.SUBMISSION_RECENT_SUCCESS)
-            return
-        }
-        const result = await this.recentUseCase.execute({ user: req.user!, limit })
-        memoryCache.set(cacheKey, result, 15)
+        const result = await memoryCache.wrap(cacheKey, 15, () => this.recentUseCase.execute({ user: req.user!, limit }))
         this.ok(res, result, MESSAGES.SUBMISSION_RECENT_SUCCESS)
     }
 
@@ -67,7 +57,7 @@ export class SubmissionsController extends BaseController {
         const id = String(req.params.id)
         this.logger.debug(`Received request to get submission: ${id}`)
         const cacheKey = `sub_detail_${id}_${req.user!.id}_${String(req.user!.role).toUpperCase()}`
-        const cached = memoryCache.get(cacheKey)
+        const cached = /no-cache|no-store/i.test(req.get('Cache-Control') || '') ? null : memoryCache.get(cacheKey)
         if (cached) {
             this.ok(res, cached, MESSAGES.SUBMISSION_GET_SUCCESS)
             return

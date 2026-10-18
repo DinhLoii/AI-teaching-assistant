@@ -83,6 +83,7 @@ export class ReopenSubmissionUseCase implements IUseCase<{ dto: ReopenSubmission
           Title: `Gia hạn nộp bài: ${exam.Title}`,
           Message: `Giảng viên đã mở lại bài nộp "${exam.Title}" cho bạn. Hạn nộp mới: ${parsedDueDate.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}.`,
           Type: 'ASSIGNMENT_REOPENED',
+          CreatedAt: new Date(),
           ReferenceId: examId,
           ReferenceType: 'EXAM',
           CreatedBy: user.id,

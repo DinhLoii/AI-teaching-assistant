@@ -3,8 +3,25 @@ import { v4 as uuidv4 } from 'uuid'
 import { logger } from '../../../../shared/infrastructure/logger.js'
 
 export class AutoZeroSubmissionService {
+  constructor(private readonly db: typeof prisma = prisma) {}
+
   private static lastSyncStudent = new Map<string, number>()
   private static lastSyncExam = new Map<string, number>()
+
+  async syncZeroScoresForClass(classId: string, instructorId: string): Promise<void> {
+    const exams = await this.db.exam.findMany({
+      where: {
+        DueDate: { lt: new Date() },
+        NOT: [{ IsDeleted: true }, { Status: 'Deleted' }],
+        ExamClass: { some: { ClassId: classId, Class: { InstructorClass: { some: { UserId: instructorId } } } } },
+      },
+      select: { Id: true },
+    })
+    // Bound concurrency so a large class does not monopolize the database pool.
+    for (let offset = 0; offset < exams.length; offset += 4) {
+      await Promise.all(exams.slice(offset, offset + 4).map(exam => this.syncZeroScoresForExam(exam.Id)))
+    }
+  }
 
   /**
    * Đồng bộ tạo điểm 0 cho một học sinh đối với tất cả các bài tập đã quá hạn mà học sinh chưa nộp.
@@ -21,7 +38,7 @@ export class AutoZeroSubmissionService {
       AutoZeroSubmissionService.lastSyncStudent.set(studentId, now.getTime())
 
       // 1. Lấy danh sách các lớp học mà sinh viên đang tham gia
-      const enrollments = await prisma.studentClass.findMany({
+      const enrollments = await this.db.studentClass.findMany({
         where: { UserId: studentId },
         select: { ClassId: true }
       })
@@ -30,7 +47,7 @@ export class AutoZeroSubmissionService {
       const enrolledClassIds = enrollments.map(e => e.ClassId)
 
       // 2. Lấy danh sách các bài thi đã xuất bản và đã quá hạn của các lớp này
-      const expiredExams: any[] = await (prisma.exam as any).findMany({
+      const expiredExams: any[] = await (this.db.exam as any).findMany({
         where: {
           Status: { in: ['Published', 'published', 'PUBLISHED'] },
           DueDate: { lt: now },
@@ -59,14 +76,14 @@ export class AutoZeroSubmissionService {
       // 3. Lấy các bài nộp đã có của sinh viên cho các bài thi này
       const examIds = expiredExams.map(e => e.Id)
       const [existingSubmissions, publishedRows] = await Promise.all([
-        prisma.submission.findMany({
+        this.db.submission.findMany({
           where: {
             StudentId: studentId,
             ExamId: { in: examIds }
           },
           select: { ExamId: true }
         }),
-        (prisma as any).publishedAssignment.findMany({
+        this.db.publishedAssignment.findMany({
           where: { Id: { in: examIds } },
           select: { Id: true, Data: true }
         }).catch(() => [])
@@ -82,7 +99,7 @@ export class AutoZeroSubmissionService {
         } catch {}
       }
 
-      let createdCount = 0
+      const missing: any[] = []
 
       for (const exam of expiredExams) {
         if (submittedExamIds.has(exam.Id)) continue
@@ -119,8 +136,7 @@ export class AutoZeroSubmissionService {
         const classId = exam.ExamClass?.[0]?.ClassId || enrolledClassIds[0]
 
         // Tạo bản ghi nộp bài 0 điểm với trạng thái Graded & PUBLISHED
-        await prisma.submission.create({
-          data: {
+        missing.push({
             Id: uuidv4(),
             ExamId: exam.Id,
             StudentId: studentId,
@@ -144,18 +160,12 @@ export class AutoZeroSubmissionService {
               passedRules: 0,
               totalRules: 0
             })
-          }
-        }).catch((err) => {
-          // Bỏ qua lỗi duplicate nếu đồng thời đã được tạo
-          if (err?.code !== 'P2002') {
-            logger.warn(`Lỗi tạo auto-zero submission cho student ${studentId}, exam ${exam.Id}: ${err.message}`)
-          }
-        })
+          })
 
-        createdCount++
+
       }
 
-      return createdCount
+      return missing.length ? (await this.db.submission.createMany({ data: missing, skipDuplicates: true })).count : 0
     } catch (error: any) {
       logger.error(`Error in syncZeroScoresForStudent for student ${studentId}:`, error)
       return 0
@@ -177,7 +187,7 @@ export class AutoZeroSubmissionService {
       AutoZeroSubmissionService.lastSyncExam.set(examId, now.getTime())
 
       // 1. Tìm thông tin bài thi
-      const exam: any = await (prisma.exam as any).findUnique({
+      const exam: any = await (this.db.exam as any).findUnique({
         where: { Id: examId },
         include: {
           ExamClass: {
@@ -202,7 +212,7 @@ export class AutoZeroSubmissionService {
       // Chỉ chốt 0 điểm khi bài tập không cho nộp trễ hoặc bài đã Closed
       let publishedMeta: any = null
       try {
-        const pubRow = await prisma.publishedAssignment.findUnique({
+        const pubRow = await this.db.publishedAssignment.findUnique({
           where: { Id: exam.Id },
           select: { Data: true },
         })
@@ -247,7 +257,7 @@ export class AutoZeroSubmissionService {
 
       // 3. Tìm các sinh viên đã có bài nộp
       const studentIds = Array.from(studentClassMap.keys())
-      const existingSubmissions = await prisma.submission.findMany({
+      const existingSubmissions = await this.db.submission.findMany({
         where: {
           ExamId: examId,
           StudentId: { in: studentIds }
@@ -258,7 +268,7 @@ export class AutoZeroSubmissionService {
 
       const overrideMap = new Map<string, any>((exam.SubmissionOverride || []).map((o: any) => [o.StudentId, o.ExtendedDueDate]))
 
-      let createdCount = 0
+      const missing: any[] = []
 
       for (const [studentId, classId] of studentClassMap.entries()) {
         if (submittedStudentIds.has(studentId)) continue
@@ -268,8 +278,7 @@ export class AutoZeroSubmissionService {
           continue // Còn trong thời gian gia hạn
         }
 
-        await prisma.submission.create({
-          data: {
+        missing.push({
             Id: uuidv4(),
             ExamId: exam.Id,
             StudentId: studentId,
@@ -293,17 +302,12 @@ export class AutoZeroSubmissionService {
               passedRules: 0,
               totalRules: 0
             })
-          }
-        }).catch((err) => {
-          if (err?.code !== 'P2002') {
-            logger.warn(`Lỗi tạo auto-zero submission cho student ${studentId}, exam ${examId}: ${err.message}`)
-          }
-        })
+          })
 
-        createdCount++
+
       }
 
-      return createdCount
+      return missing.length ? (await this.db.submission.createMany({ data: missing, skipDuplicates: true })).count : 0
     } catch (error: any) {
       logger.error(`Error in syncZeroScoresForExam for exam ${examId}:`, error)
       return 0
@@ -316,7 +320,7 @@ export class AutoZeroSubmissionService {
   async sweepExpiredExams(): Promise<number> {
     try {
       const now = new Date()
-      const expiredExams: any[] = await (prisma.exam as any).findMany({
+      const expiredExams: any[] = await (this.db.exam as any).findMany({
         where: {
           Status: { in: ['Published', 'published', 'PUBLISHED'] },
           DueDate: { lt: now }

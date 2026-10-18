@@ -49,6 +49,7 @@ export class SubmitFeedbackUseCase implements IUseCase<{ id: string; user: { id:
                     Title: 'Grade Inquiry / Student Feedback',
                     Message: `A student submitted feedback for "${examTitle}": ${feedback}`,
                     Type: 'FEEDBACK',
+                    CreatedAt: new Date(),
                     ReferenceId: submission.Id,
                     ReferenceType: 'Submission',
                     NotificationRecipient: {

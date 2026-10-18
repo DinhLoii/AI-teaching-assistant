@@ -6,7 +6,7 @@ import { PublishGradeRequestDto, SubmissionResponseDto } from '../dtos/submissio
 import { MESSAGES } from '../../../../shared/constants/messages.js'
 import { prisma } from '../../../../database/prisma.js'
 import { calculateLatePenalty } from '../../domain/utils/late-penalty-calculator.js'
-import { sseService } from '../../../../shared/infrastructure/sse-service.js'
+import { publishNotification } from '../../../../shared/infrastructure/publish-notification.js'
 
 export class PublishGradeUseCase implements IUseCase<{ id: string; dto: PublishGradeRequestDto, user: AuthUser }, ReturnType<typeof SubmissionResponseDto.from>> {
   constructor(private readonly submissionRepo: ISubmissionRepository) { }
@@ -105,6 +105,7 @@ export class PublishGradeUseCase implements IUseCase<{ id: string; dto: PublishG
               Title: `Điểm bài tập ${dbSub.Exam.Title || 'mới'} đã được công bố`,
               Message: `Giảng viên đã công bố kết quả chấm theo Barem Rubric AI cho bài "${dbSub.Exam.Title}". Nhấn để xem kết quả chi tiết.`,
               Type: 'GRADE_PUBLISHED',
+              CreatedAt: new Date(),
               ReferenceId: dbSub.ExamId,
               ReferenceType: 'ASSIGNMENT',
               CreatedBy: user.id,
@@ -117,19 +118,7 @@ export class PublishGradeUseCase implements IUseCase<{ id: string; dto: PublishG
             },
           })
           // Push real-time SSE event to the student if they have an open connection
-          sseService.push(dbSub.StudentId, {
-            type: 'NOTIFICATION',
-            payload: {
-              id: notif.Id,
-              title: notif.Title,
-              message: notif.Message,
-              notificationType: notif.Type,
-              referenceId: notif.ReferenceId,
-              referenceType: notif.ReferenceType,
-              createdAt: notif.CreatedAt?.toISOString() ?? new Date().toISOString(),
-              isRead: false,
-            },
-          })
+          publishNotification([dbSub.StudentId], notif)
         } catch (notifErr) {
           // ignore error to not block grading
         }

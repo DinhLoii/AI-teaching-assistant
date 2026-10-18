@@ -13,6 +13,7 @@ import path from 'path'
 import fs from 'fs'
 import { privateSubmissionRoot } from '../../infrastructure/submission-storage.js'
 import { inspectSourceArchive } from '../../infrastructure/source-archive.js'
+import { assertSubmissionLanguage, examConfiguration } from '../submission-language.js'
 
 export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmissionRequestDto; file?: Express.Multer.File; user: AuthUser }, ReturnType<typeof SubmissionResponseDto.from>> {
   constructor(
@@ -182,7 +183,9 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
 
     if (file) {
       if (path.extname(file.originalname).toLowerCase() !== '.zip') throw new ValidationError('Bài nộp phải là tệp ZIP.')
-      try { inspectSourceArchive(file.buffer) } catch { throw new ValidationError('Tệp ZIP không hợp lệ hoặc vượt giới hạn đọc an toàn.') }
+      let archive: ReturnType<typeof inspectSourceArchive>
+      try { archive = inspectSourceArchive(file.buffer) } catch { throw new ValidationError('Tệp ZIP không hợp lệ hoặc vượt giới hạn đọc an toàn.') }
+      assertSubmissionLanguage(examConfiguration(exam), archive.files.map(source => source.path))
       // Sanitized here, not at the call sites: these also become a local directory
       // path in the >10MB fallback below, so a stray "/" or ".." must never survive.
       const subjectCode = sanitizeCloudinaryPathSegment(subjectInfo.subjectCode || subjectInfo.Code, 'UnknownSubject')
@@ -289,6 +292,7 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
                 Title: isResubmission ? 'Sinh viên nộp lại bài tập' : 'Sinh viên nộp bài tập',
                 Message: `Sinh viên ${studentName} đã ${isResubmission ? 'nộp lại' : 'nộp'} bài làm cho bài tập "${examTitle}".`,
                 Type: isResubmission ? 'RESUBMISSION' : 'NEW_SUBMISSION',
+                CreatedAt: new Date(),
                 ReferenceId: examId,
                 ReferenceType: 'ASSIGNMENT_GRADING',
                 CreatedBy: user.id,

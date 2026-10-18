@@ -1,8 +1,10 @@
 import { z } from 'zod'
+import { studentReportView } from '../student-report-view.js'
 
 export const ListSubmissionsQuerySchema = z.object({
   assignmentId: z.string().optional(),
   examId: z.string().optional(),
+  classId: z.string().optional(),
   status: z.string().optional(),
   includeHistory: z.enum(['true', 'false']).optional(),
 })
@@ -106,7 +108,7 @@ export class SubmissionResponseDto {
     const visibleFinalScore = shouldHideScores ? null : (rawFinalScore ?? (reportData?.totalScore != null ? Number(reportData.totalScore) : null));
     const visibleScore = shouldHideScores ? null : (rawFinalScore ?? rawScoreValue ?? (reportData?.totalScore != null ? Number(reportData.totalScore) : null));
     const visibleAiScore = shouldHideScores ? null : calculatedAiScore;
-    const visibleReportData = hideStudentReport ? null : reportData;
+    const visibleReportData = hideStudentReport ? null : isStudent ? studentReportView(reportData) : reportData;
     const visibleAiFeedback = hideStudentReport ? null : aiFeedback;
 
     const submittedAtDate = (submission.submittedAt || submission.SubmittedAt) ? new Date(submission.submittedAt || submission.SubmittedAt) : null;

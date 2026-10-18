@@ -11,7 +11,7 @@ export class ListSubmissionsUseCase implements IUseCase<{ user: AuthUser; query:
   ) { }
 
   async execute({ user, query }: { user: AuthUser; query: ListSubmissionsQueryDto }) {
-    const { assignmentId, examId, status } = query.data
+    const { assignmentId, examId, classId, status } = query.data
     const targetExamId = examId ?? assignmentId
 
     // On-demand sync: Đồng bộ điểm 0 cho các bài quá hạn nếu có
@@ -19,10 +19,13 @@ export class ListSubmissionsUseCase implements IUseCase<{ user: AuthUser; query:
       await autoZeroSubmissionService.syncZeroScoresForStudent(user.id)
     } else if (targetExamId) {
       await autoZeroSubmissionService.syncZeroScoresForExam(targetExamId)
+    } else if (classId && user.role === 'LECTURER') {
+      await autoZeroSubmissionService.syncZeroScoresForClass(classId, user.id)
     }
 
     const filter: any = { latestOnly: query.data.includeHistory !== 'true' }
     if (targetExamId) filter.examId = targetExamId
+    if (classId) filter.classId = classId
     if (status) filter.status = status as GradingStatusValue
     if (user.role === 'STUDENT') filter.studentId = user.id
     if (user.role === 'LECTURER') filter.instructorId = user.id
