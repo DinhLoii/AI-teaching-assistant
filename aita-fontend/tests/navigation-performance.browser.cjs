@@ -49,7 +49,7 @@ async function main() {
     await prefetched
     await resultsLink.click()
     await student.page.waitForURL('**/student/results')
-    await student.page.getByRole('button', { name: /Tải lại|Refresh/ }).waitFor()
+    await student.page.getByRole('button', { name: /Làm mới|Refresh/ }).waitFor()
     assert.equal(submissionRequests, 1)
     await student.context.close()
 
