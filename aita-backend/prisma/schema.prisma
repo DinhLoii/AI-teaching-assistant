@@ -166,7 +166,7 @@ model Notification {
   ReferenceId           String?
   ReferenceType         String?
   CreatedBy             String?
-  CreatedAt             DateTime?
+  CreatedAt             DateTime?               @default(now())
   User                  User?                   @relation(fields: [CreatedBy], references: [Id], onDelete: NoAction, onUpdate: NoAction)
   NotificationRecipient NotificationRecipient[]
 }
