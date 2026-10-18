@@ -684,7 +684,21 @@ export class AssignmentController extends BaseController {
                 if (exam.AiGeneratedContent) {
                     try {
                         const parsed = JSON.parse(exam.AiGeneratedContent);
-                        rubricData = parsed.rubric || parsed;
+                        rubricData = parsed.rubric?.rules?.length ? parsed.rubric : null;
+                        // The exam creation wizard stores lecturer-approved criteria here,
+                        // rather than as a PublishedAssignment rubric.
+                        if (!rubricData && Array.isArray(parsed.rubricCriteria) && parsed.rubricCriteria.length) {
+                            const rules = parsed.rubricCriteria.map((criterion: any, index: number) => ({
+                                id: criterion.id || `CRIT-${index + 1}`,
+                                title: criterion.name || criterion.title || criterion.description || `Tiêu chí ${index + 1}`,
+                                description: criterion.description || '',
+                                weight: Number(criterion.maxPoints ?? criterion.weight ?? 0),
+                                scoringStrategy: criterion.method || 'ai_assessment',
+                                passCondition: criterion.passCondition || '',
+                                failCondition: criterion.failCondition || '',
+                            }));
+                            rubricData = { rules, totalWeight: Number(exam.TotalPoints) };
+                        }
                         contentStr = parsed.content || parsed.description || '';
                     } catch (e) {}
                 }

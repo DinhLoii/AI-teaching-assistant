@@ -38,10 +38,13 @@ export interface StdInOutTestCase {
   expectedOutput: string;
   /** Timeout in ms for this test case. Default: 5000 */
   timeoutMs?: number;
+  comparisonMode?: 'exact' | 'trim_whitespace' | 'flexible';
+  isHidden?: boolean;
 }
 
 export interface StdInOutProbeSpec {
   description: string;
+  requiredLanguage?: string;
   /** Override build command (auto-detected if not specified) */
   buildCommand?: string;
   /** Override run command (auto-detected if not specified) */

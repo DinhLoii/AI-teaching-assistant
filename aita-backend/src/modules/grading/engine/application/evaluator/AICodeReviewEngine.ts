@@ -125,7 +125,8 @@ export class AICodeReviewEngine {
     snapshot: ProjectSourceSnapshot,
     semanticDescription: string,
     ruleTitle: string,
-    crashLogs?: string
+    crashLogs?: string,
+    runtimeTestSummary?: string
   ): Promise<CodeReviewResult> {
     if (!snapshot.files || snapshot.files.length === 0) {
       return {
@@ -211,6 +212,7 @@ YOUR TASK
 ═══════════════════════════════════════
 ${semanticDescription}
 ${crashLogsContext}
+${runtimeTestSummary ? `VERIFIED CONSOLE TEST SUMMARY (runner evidence): ${runtimeTestSummary}\nUse this evidence only for the current rubric criterion. Do not claim tests passed contrary to these results; do not add extra criteria or a second score budget.` : ''}
 ═══════════════════════════════════════
 SOURCE CODE TO EVALUATE
 ═══════════════════════════════════════

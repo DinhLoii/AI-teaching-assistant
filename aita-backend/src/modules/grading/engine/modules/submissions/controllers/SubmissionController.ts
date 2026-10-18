@@ -29,6 +29,9 @@ import { SubmissionHistoryRepository } from '../../../infrastructure/file-system
 import { calculateLatePenalty } from '../../../../../submissions/domain/utils/late-penalty-calculator.js';
 import { ForbiddenError, NotFoundError } from '../../../../../../shared/application/app.error.js';
 import { memoryCache } from '../../../../../../shared/infrastructure/memory-cache.js';
+import { assertDirectorySubmissionLanguage, examConfiguration } from '../../../../../submissions/application/submission-language.js';
+import { verifyConsoleTests } from '../../../application/evaluator/console-verification.js';
+import { studentReportView } from '../../../../../submissions/application/student-report-view.js';
 
 import { BaseController } from '../../../../../../shared/presentation/base-controller.js';
 
@@ -80,6 +83,7 @@ const mapDatabaseRubricRule = (rule: any, testCases: any[]) => {
                     id: testCase.Id,
                     input: testCase.Input || '',
                     expectedOutput: testCase.ExpectedOutput || '',
+                    isHidden: testCase.IsHidden !== false,
                     timeoutMs: testCase.TimeoutMs || 5000
                 }))
             }
@@ -573,6 +577,16 @@ export class SubmissionController extends BaseController {
 
                 const evaluationPromise = (async () => {
                     checkCancelled();
+                    const sourceExam = await prisma.exam.findUnique({ where: { Id: submission.assignmentId }, select: { AiGeneratedContent: true, Description: true, TestCase: { orderBy: { SortOrder: 'asc' } } } });
+                    const sourceConfig = examConfiguration(sourceExam);
+                    const languageConfig = { ...publishedAssignment.metadata, ...sourceConfig };
+                    await assertDirectorySubmissionLanguage(languageConfig, extractDir);
+                    const requiredLanguage = languageConfig.submissionFormat?.requiredLanguage || languageConfig.runtimeConfig?.language || languageConfig.requiredLanguage || languageConfig.language;
+                    for (const rule of publishedAssignment.rubric?.rules || []) {
+                        for (const evidence of rule.requiredEvidence || []) {
+                            if (evidence.stdInOutProbe && requiredLanguage) evidence.stdInOutProbe.requiredLanguage = requiredLanguage;
+                        }
+                    }
                     globalJobManager.updateProgress(submissionId, 5, 'Initialize the execution environment (Sandbox)...');
                     try {
                         const startSandboxPromise = this.sandboxService.startAsync(extractDir, publishedAssignment.metadata?.projectType as any);
@@ -669,7 +683,6 @@ export class SubmissionController extends BaseController {
                     } catch (docErr) { }
 
                     checkCancelled();
-                    globalJobManager.updateProgress(submissionId, 50, 'Starting evaluation of criteria...');
                     const context: EvaluationContext = {
                         sandbox: sandboxHandle,
                         sourceSnapshot,
@@ -682,7 +695,12 @@ export class SubmissionController extends BaseController {
                         projectType: sandboxHandle.projectType || publishedAssignment.metadata?.projectType
                     };
 
-                    return await this.evaluator.evaluateAsync(
+                    globalJobManager.updateProgress(submissionId, 45, 'Biên dịch và kiểm chứng testcase đã lưu...');
+                    const consoleVerification = sourceExam ? await verifyConsoleTests(sourceExam, publishedAssignment.rubric.rules, extractDir) : null;
+                    if (consoleVerification) context.crashLogs = undefined; // An unavailable web server is not a console-program crash.
+                    if (consoleVerification?.status === 'completed') context.runtimeTestSummary = JSON.stringify({ compilationPassed: consoleVerification.compilationPassed, passed: consoleVerification.passedCases, total: consoleVerification.totalCases });
+                    globalJobManager.updateProgress(submissionId, 50, 'Starting evaluation of criteria...');
+                    const evaluatedReport = await this.evaluator.evaluateAsync(
                         submissionId,
                         publishedAssignment.id,
                         submission.studentId,
@@ -693,6 +711,11 @@ export class SubmissionController extends BaseController {
                             globalJobManager.updateProgress(submissionId, pct, msg, meta);
                         }
                     );
+                    if (consoleVerification) {
+                        evaluatedReport.consoleVerification = consoleVerification;
+                        if (consoleVerification.status === 'completed' && typeof consoleVerification.compilationPassed === 'boolean') evaluatedReport.compilationSummary = { passed: consoleVerification.compilationPassed };
+                    }
+                    return evaluatedReport;
                 })();
 
                 const timeoutPromise = new Promise((_, reject) =>
@@ -703,6 +726,7 @@ export class SubmissionController extends BaseController {
 
 
                 report.executionSummary = { runtimeStack: sandboxHandle?.runtimeStack || 'unknown', ready: sandboxHandle?.isReady === true, limitation: sandboxHandle?.isReady ? null : sandboxHandle?.crashLogs || 'No executable test environment was available.' };
+                if (report.consoleVerification?.status === 'completed') report.executionSummary = { runtimeStack: 'console', ready: true, limitation: null };
                 // --- Save to History DB ---
                 try {
                     await this.historyRepo.saveAsync({
@@ -978,6 +1002,7 @@ export class SubmissionController extends BaseController {
             }
         } catch (e) { }
 
+        const visibleReport = req.user?.role?.toUpperCase() === 'STUDENT' ? studentReportView(report) : report;
         this.ok(res, {
             submissionId: id,
             assignmentId,
@@ -986,8 +1011,10 @@ export class SubmissionController extends BaseController {
             maxScore: report.maxPossibleScore ?? null,
             gradingError: report.error || report.lastGradingError || null,
             executionSummary: report.executionSummary || null,
-            rules: report.passedRules || [],
-            failedRules: report.failedRules || [],
+            consoleVerification: visibleReport.consoleVerification || null,
+            compilationSummary: visibleReport.compilationSummary || null,
+            rules: visibleReport.passedRules || [],
+            failedRules: visibleReport.failedRules || [],
             manualReviewNotes: report.manualReviewNotes || [],
             overallFeedback: effectiveFeedback,
             isPublished,
@@ -1135,6 +1162,7 @@ export class SubmissionController extends BaseController {
                         Title: `Đã có điểm: ${title}`,
                         Message: `Giảng viên đã công bố điểm cho bài "${title}". Vào mục Kết quả để xem điểm và nhận xét.`,
                         Type: 'GRADE_PUBLISHED',
+                        CreatedAt: new Date(),
                         ReferenceId: submission.Id,
                         ReferenceType: 'SUBMISSION',
                         CreatedBy: (req as any).user?.id,

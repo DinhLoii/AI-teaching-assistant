@@ -65,10 +65,10 @@ export const requirePublishClasses: RequestHandler = async (req, _res, next) => 
 export function studentAssignmentView(assignment: any) {
   return {
     id: assignment.id, version: assignment.version,
-    metadata: Object.fromEntries(['title', 'description', 'content', 'subject', 'subjectCode', 'projectType', 'dueDate', 'assignmentType', 'category', 'allowLateSubmission', 'latePenaltyType', 'latePenaltyValue', 'maxLatePenalty'].filter(key => assignment.metadata?.[key] !== undefined).map(key => [key, assignment.metadata[key]])),
+    metadata: Object.fromEntries(['title', 'description', 'content', 'subject', 'subjectCode', 'projectType', 'totalPoints', 'dueDate', 'assignmentType', 'category', 'allowLateSubmission', 'latePenaltyType', 'latePenaltyValue', 'maxLatePenalty'].filter(key => assignment.metadata?.[key] !== undefined).map(key => [key, assignment.metadata[key]])),
     rubric: assignment.rubric ? {
       totalWeight: assignment.rubric.totalWeight,
-      rules: (assignment.rubric.rules || []).map((r: any) => ({ id: r.id, title: r.title, description: r.description, weight: r.weight, scoringStrategy: r.scoringStrategy })),
+      rules: (assignment.rubric.rules || []).map((r: any) => ({ id: r.id, title: r.title, description: r.description, weight: r.weight, scoringStrategy: r.scoringStrategy, passCondition: r.passCondition, failCondition: r.failCondition })),
     } : null,
     allowLateSubmission: assignment.allowLateSubmission, latePenaltyType: assignment.latePenaltyType,
     latePenaltyValue: assignment.latePenaltyValue, maxLatePenalty: assignment.maxLatePenalty,

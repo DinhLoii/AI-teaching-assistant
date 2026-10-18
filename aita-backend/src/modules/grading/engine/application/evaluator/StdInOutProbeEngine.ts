@@ -1,13 +1,18 @@
 // @ts-nocheck
 import Docker from 'dockerode';
-import { assertSandboxExecution } from '../../config/sandbox-policy.js';
+import { randomUUID } from 'node:crypto';
+import { assertStdioSandboxExecution } from '../../config/sandbox-policy.js';
+import { canonicalSubmissionLanguage } from '../../../../submissions/application/submission-language.js';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { StdInOutProbeSpec, StdInOutTestCase } from '../../core/domain/rubric/EvidenceMatcher';
 
 export interface StdInOutCaseResult {
+  isHidden?: boolean;
   caseId: string;
-  passed: boolean;
+  passed: boolean | null;
+  compilationPassed?: boolean | null;
+  stderr?: string;
   input: string;
   expected: string;
   actual: string;
@@ -16,6 +21,7 @@ export interface StdInOutCaseResult {
 }
 
 export interface StdInOutResult {
+  compilationPassed?: boolean | null;
   passed: boolean;
   confidence: number;
   totalCases: number;
@@ -53,9 +59,9 @@ export class StdInOutProbeEngine {
     probeSpec: StdInOutProbeSpec,
     contextHint?: string
   ): Promise<StdInOutResult> {
-    assertSandboxExecution();
+    assertStdioSandboxExecution();
     // Auto-detect language if build/run commands not specified
-    const detection = await this.detectLanguage(submissionPath);
+    const detection = await this.detectLanguage(submissionPath, probeSpec.requiredLanguage);
     const dockerImage = detection.dockerImage;
 
     console.log(`[StdInOutProbe] Detected: ${detection.language} | Image: ${dockerImage}`);
@@ -95,6 +101,7 @@ export class StdInOutProbeEngine {
       const passedCases = caseResults.filter(r => r.passed).length;
       const totalCases = caseResults.length;
       const result: StdInOutResult = {
+        compilationPassed: caseResults.some(r => r.compilationPassed === false) ? false : caseResults.some(r => r.compilationPassed === true) ? true : null,
         passed: totalCases > 0 && passedCases === totalCases,
         confidence: totalCases > 0 ? passedCases / totalCases : 0,
         totalCases,
@@ -157,15 +164,15 @@ export class StdInOutProbeEngine {
       }
       case 'c':
       case 'cpp': {
-        for (const f of files.filter(f => /\.(cpp|cc|cxx|c)$/i.test(f))) {
+        for (const f of files.filter(f => detection.language === 'cpp' ? /\.(cpp|cc|cxx)$/.test(f.toLowerCase()) || f.endsWith('.C') : f.endsWith('.c'))) {
           const content = await fs.readFile(f, 'utf8');
           if (/\bmain\s*\(/.test(content)) {
             const base = path.basename(f);
             candidates.push({
               projectDir: dirOf(f),
-              buildCommand: f.endsWith('.c')
-                ? `gcc -o solution "${base}" -O2 -lm`
-                : `g++ -o solution "${base}" -std=c++17 -O2`,
+              buildCommand: detection.language === 'c'
+                ? `gcc -o solution '${base.replace(/'/g, "'\\''")}' -O2 -lm`
+                : `g++ -o solution '${base.replace(/'/g, "'\\''")}' -std=c++17 -O2`,
               runCommand: './solution',
               label: rel(f)
             });
@@ -227,9 +234,10 @@ export class StdInOutProbeEngine {
   ): Promise<StdInOutCaseResult> {
     const timeoutMs = testCase.timeoutMs || 5000;
     const startTime = Date.now();
+    const buildMarker = `__AITA_BUILD_${randomUUID()}__`;
 
     // Normalize input to handle both legacy literal '\\n' and real newlines, and escape single quotes for bash
-    const normalizedInput = testCase.input.replace(/\\n/g, '\n').replace(/\r/g, '').replace(/'/g, "'\\''");
+    const encodedInput = Buffer.from(testCase.input.replace(/\r\n/g, '\n') + '\n').toString('base64');
 
     // Build the full command:
     // 1. Copy ALL source to writable /sandbox (some languages need to compile)
@@ -237,26 +245,32 @@ export class StdInOutProbeEngine {
     // 3. Build (if needed)
     // 4. Pipe stdin and run
     const setupCmd = projectDir === '.'
-      ? `cp -a /app/. /sandbox/ && cd /sandbox`
-      : `cp -a /app/. /sandbox/ && cd /sandbox && ([ -d "${projectDir}" ] && cd "${projectDir}" || true)`;
-    const pipeCmd = `echo '${normalizedInput}' | timeout ${Math.ceil(timeoutMs / 1000)} ${runCmd}`;
+      ? `cp -R /app/. /sandbox/ && cd /sandbox`
+      : `cp -R /app/. /sandbox/ && cd '/sandbox/${projectDir.replace(/'/g, "'\\''")}'`;
+    const pipeCmd = `printf '%s' '${encodedInput}' | base64 -d | timeout ${Math.ceil(timeoutMs / 1000)} ${runCmd}`;
     const fullCmd = buildCmd
-      ? `${setupCmd} && ${buildCmd} >/dev/null 2>&1 && ${pipeCmd}`
+      ? `${setupCmd} && { ${buildCmd}; } >/tmp/aita-build.log 2>&1; build_status=$?; if [ "$build_status" -ne 0 ]; then cat /tmp/aita-build.log >&2; exit 45; fi; printf '${buildMarker}\\n' >&2; ${pipeCmd}`
       : `${setupCmd} && ${pipeCmd}`;
 
     const hostPath = submissionPath.replace(/\\/g, '/');
 
     let container: Docker.Container | null = null;
+    let systemTimer: ReturnType<typeof setTimeout> | undefined;
     try {
       container = await this.docker.createContainer({
         Image: dockerImage,
         Cmd: ["sh", "-c", fullCmd],
         WorkingDir: "/sandbox",
+        User: '65534:65534',
+        Env: ['HOME=/tmp', 'DOTNET_CLI_HOME=/tmp', 'DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1'],
         HostConfig: {
           Binds: [`${hostPath}:/app:ro`],
           Memory: 256 * 1024 * 1024, // 256MB
           CpuShares: 512,
-          NetworkMode: "none" // No network for algorithm submissions
+          NetworkMode: "none",
+          CapDrop: ['ALL'], SecurityOpt: ['no-new-privileges:true'], PidsLimit: 64,
+          NanoCpus: 1000000000, ReadonlyRootfs: true,
+          Tmpfs: { '/sandbox': 'rw,exec,nosuid,size=134217728,mode=1777', '/tmp': 'rw,nosuid,size=67108864,mode=1777' }
         },
         AttachStdout: true,
         AttachStderr: true,
@@ -269,7 +283,7 @@ export class StdInOutProbeEngine {
       // System Timeout: Give plenty of time (20s) for compilation/docker overhead.
       // The actual execution timeout is handled by the `timeout` bash command inside the container.
       const timeoutPromise = new Promise<{ StatusCode: number }>((_, reject) =>
-        setTimeout(() => reject(new Error('SYSTEM_TIMEOUT')), timeoutMs + 20000)
+        systemTimer = setTimeout(() => reject(new Error('SYSTEM_TIMEOUT')), timeoutMs + 20000)
       );
 
       let statusCode = -1;
@@ -291,10 +305,19 @@ export class StdInOutProbeEngine {
 
       // Capture stdout and stderr
       let stdout = '';
+      let stderr = '';
       if (!timedOut) {
         try {
           const logs = await container.logs({ stdout: true, stderr: true, timestamps: false });
-          stdout = this.demuxDockerLogs(Buffer.isBuffer(logs) ? logs : Buffer.from(logs));
+          const data = Buffer.isBuffer(logs) ? logs : Buffer.from(logs);
+          let offset = 0;
+          while (offset + 8 <= data.length) {
+            const length = data.readUInt32BE(offset + 4);
+            const chunk = data.subarray(offset + 8, offset + 8 + length).toString('utf8');
+            if (data[offset] === 1) stdout += chunk;
+            else if (data[offset] === 2) stderr += chunk;
+            offset += 8 + length;
+          }
         } catch (e: any) {
           console.error('[StdInOutProbeEngine] Error fetching logs:', e);
         }
@@ -303,7 +326,9 @@ export class StdInOutProbeEngine {
       const executionMs = Date.now() - startTime;
       const actual = stdout.trim();
       const expected = testCase.expectedOutput.trim();
-      const passed = !timedOut && !systemError && this.compareOutput(actual, expected);
+      const compilationPassed = buildCmd ? (stderr.includes(buildMarker) ? true : systemError ? null : false) : null;
+      const exact = (value: string) => value.replace(/\r\n/g, '\n').replace(/\n$/, '');
+      const passed = buildCmd && compilationPassed !== true ? null : statusCode === 0 && !timedOut && !systemError && (testCase.comparisonMode === 'exact' ? exact(stdout) === exact(testCase.expectedOutput) : this.compareOutput(actual, expected));
 
       let actualOutputStr = actual;
       if (timedOut) {
@@ -313,6 +338,8 @@ export class StdInOutProbeEngine {
       }
 
       return {
+        isHidden: testCase.isHidden === true,
+        compilationPassed, stderr: stderr.replace(buildMarker, '').trim().slice(0, 8000),
         caseId: testCase.id,
         passed,
         input: testCase.input.trim(),
@@ -322,16 +349,9 @@ export class StdInOutProbeEngine {
         executionMs
       };
     } catch (error: any) {
-      return {
-        caseId: testCase.id,
-        passed: false,
-        input: testCase.input.trim(),
-        expected: testCase.expectedOutput.trim(),
-        actual: `[ERROR] ${error.message}`,
-        timedOut: false,
-        executionMs: Date.now() - startTime
-      };
+      throw new Error(`STDIO_RUNNER_ERROR: ${error.message}`);
     } finally {
+      if (systemTimer) clearTimeout(systemTimer);
       if (container) {
         try {
           await container.remove({ force: true });
@@ -404,8 +424,11 @@ export class StdInOutProbeEngine {
   /**
    * Auto-detect programming language from file extensions in submission.
    */
-  private async detectLanguage(submissionPath: string): Promise<LanguageDetection> {
-    const files = await this.listFilesRecursive(submissionPath);
+  private async detectLanguage(submissionPath: string, requiredLanguage?: string): Promise<LanguageDetection> {
+    const declared = canonicalSubmissionLanguage(requiredLanguage);
+    const allowedExtensions: Record<string, string[]> = { C: ['.c'], 'C++': ['.cpp', '.cc', '.cxx', '.C'], Java: ['.java'], Python: ['.py'], 'C#': ['.cs', '.csproj'], Kotlin: ['.kt'], Go: ['.go'], Rust: ['.rs'], JavaScript: ['.js', '.jsx'], TypeScript: ['.ts', '.tsx'] };
+    const projectFiles: Record<string, string[]> = { Java: ['pom.xml', 'build.gradle', 'build.gradle.kts'], Go: ['go.mod'], Rust: ['Cargo.toml'] };
+    const files = (await this.listFilesRecursive(submissionPath)).filter(file => !declared || !allowedExtensions[declared] || allowedExtensions[declared].includes(file.endsWith('.C') ? '.C' : path.extname(file).toLowerCase()) || (projectFiles[declared] || []).includes(path.basename(file)));
     const extensions = files.map(f => path.extname(f).toLowerCase());
 
     // Check for .csproj (C#)
@@ -544,7 +567,7 @@ export class StdInOutProbeEngine {
 
     // Check for C++ (.cpp, .cc, .cxx)
     if (extensions.some(e => ['.cpp', '.cc', '.cxx', '.c'].includes(e))) {
-      const isC = extensions.includes('.c') && !extensions.some(e => ['.cpp', '.cc', '.cxx'].includes(e));
+      const isC = declared !== 'C++' && extensions.includes('.c') && !extensions.some(e => ['.cpp', '.cc', '.cxx'].includes(e));
       return {
         language: isC ? 'c' : 'cpp',
         dockerImage: 'gcc:13',

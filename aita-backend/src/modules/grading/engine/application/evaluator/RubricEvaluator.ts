@@ -27,6 +27,7 @@ export interface EvaluationContext {
     /** Extracted document for AiTextAnalysis (from Docx/PDF) */
     extractedDocument?: ExtractedDocument;
     crashLogs?: string;
+    runtimeTestSummary?: string;
     submissionId?: string;
     subjectCode?: string;
     assignmentTitle?: string;
@@ -733,7 +734,8 @@ export class RubricEvaluator {
                                 context.sourceSnapshot,
                                 rule.description,
                                 rule.title,
-                                context.crashLogs
+                                context.crashLogs,
+                                context.runtimeTestSummary
                             );
                         }
                         return null;
@@ -815,7 +817,8 @@ export class RubricEvaluator {
                         context.sourceSnapshot,
                         descriptionToEvaluate,
                         rule.title,
-                        context.crashLogs
+                        context.crashLogs,
+                        context.runtimeTestSummary
                     );
                     // Use percentageComplete for proportional scoring
                     const pct = typeof result.percentageComplete === 'number'
@@ -985,7 +988,8 @@ export class RubricEvaluator {
                                 context.sourceSnapshot,
                                 `STRICT INSTRUCTION: This is a hybrid Text + Code rule. The student was asked to design or explain an architecture/feature in text, AND implement it in code. Verify that the underlying code implementation matches the requirement. YOU MUST EXTRACT AT LEAST ONE CODE SNIPPET (via relevantSnippets array) AS EVIDENCE TO PROVE YOUR CONCLUSION. \n\nRequirement: ${rule.description}`,
                                 rule.title,
-                                context.crashLogs
+                                context.crashLogs,
+                                context.runtimeTestSummary
                             );
                         }
                         return null;
@@ -1156,16 +1160,20 @@ export class RubricEvaluator {
                         reason: `Passed ${stdResult.passedCases}/${stdResult.totalCases} test cases. ` +
                             stdResult.caseResults
                                 .filter(c => !c.passed)
-                                .map(c => `Case ${c.caseId}: expected "${c.expected.substring(0, 50)}" got "${c.actual.substring(0, 50)}"${c.timedOut ? ' [TIMEOUT]' : ''}`)
+                                .map(c => c.isHidden ? `Case ${c.caseId}: hidden test failed` : `Case ${c.caseId}: expected "${c.expected.substring(0, 50)}" got "${c.actual.substring(0, 50)}"${c.timedOut ? ' [TIMEOUT]' : ''}`)
                                 .join('; '),
                         evidence: {
+                            compilationPassed: stdResult.compilationPassed,
                             ioTestCases: stdResult.caseResults.map(c => ({
                                 caseId: c.caseId,
+                                isHidden: c.isHidden,
                                 input: c.input,
                                 expected: c.expected,
                                 actual: c.actual,
                                 passed: c.passed,
-                                timedOut: c.timedOut
+                                timedOut: c.timedOut,
+                                compilationPassed: c.compilationPassed,
+                                stderr: c.stderr
                             }))
                         }
                     };
