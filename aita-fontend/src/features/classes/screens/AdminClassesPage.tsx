@@ -62,11 +62,14 @@ export default function AdminClassesPage() {
     if (!isAuthenticated || role !== 'admin') return
     const requestId = ++sequence.current.value
     setLoading(true)
-    return Promise.all([classesApi.getClasses(page, 10, search), classesApi.getClasses(page + 1, 10, search)]).then(([rows, next]) => {
+    setHasNext(false)
+    void classesApi.getClasses(page + 1, 10, search).then(next => {
+      if (requestId === sequence.current.value) setHasNext(next.length > 0)
+    }).catch(() => {})
+    return classesApi.getClasses(page, 10, search).then(rows => {
       if (requestId !== sequence.current.value) return
       setClasses(rows)
       setError(null)
-      setHasNext(next.length > 0)
     }).catch(cause => {
       if (requestId === sequence.current.value) setError(errorMessage(cause))
     }).finally(() => {

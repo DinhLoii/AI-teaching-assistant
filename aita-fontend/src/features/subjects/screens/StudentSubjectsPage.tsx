@@ -88,7 +88,13 @@ export default function StudentSubjectsPage() {
     setError(null)
     try {
       const [subjectsRes, assignmentsRes, submissionsRes] = await Promise.all([
-        studentPortalApi.getStudentSubjects(semesterFilter || undefined),
+        studentPortalApi.getStudentSubjects(semesterFilter || undefined).then(rows => {
+          if (sequence === loadSequence.current) {
+            setSubjects(Array.isArray(rows) ? rows : [])
+            setLoading(false)
+          }
+          return rows
+        }),
         assignmentsApi.getAssignments(),
         submissionsApi.getSubmissions(),
       ])

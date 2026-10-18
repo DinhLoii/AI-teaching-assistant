@@ -3,7 +3,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { useNotifications } from '@/providers/notification-provider'
 import { useLanguage } from '@/providers/language-provider'
-import { notificationTarget, notificationTime } from '@/lib/notifications/presentation'
+import { notificationTarget, notificationTime, notificationAbsoluteTime } from '@/lib/notifications/presentation'
 import type { NotificationItem } from '@/lib/notifications/feed'
 
 export function useNotificationInbox(role: 'student' | 'lecturer' | 'admin') {
@@ -18,7 +18,7 @@ export function useNotificationInbox(role: 'student' | 'lecturer' | 'admin') {
   }, [])
   const notifications = feed.notifications.map(n => ({
     ...n, content: n.message, time: notificationTime(n.createdAt, now + feed.clockOffset, language),
-    absoluteTime: n.createdAt ? new Date(n.createdAt).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-US') : '',
+    absoluteTime: notificationAbsoluteTime(n.createdAt, language),
     actionText: n.type.toUpperCase() === 'GRADE_PUBLISHED'
       ? t('student.notifications.action_grade', 'Xem điểm & Báo cáo') : t('notifications.click_to_view', 'Xem chi tiết'),
   }))

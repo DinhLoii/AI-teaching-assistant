@@ -130,6 +130,8 @@ export default function LecturerSubmissionsPage() {
       ])
       setAssignment(assign)
       setSubmissions(subs || [])
+      // The roster supplements missing-student counts; it must not block submitted work.
+      setLoading(false)
 
       // If assignment has class information, fetch class roster to calculate missing students
       const classId = assign?.classId || (assign?.classes && assign.classes[0])
@@ -158,16 +160,21 @@ export default function LecturerSubmissionsPage() {
   React.useEffect(() => {
     const hasPending = submissions.some(sub => {
       const status = String(sub.gradingStatus || sub.status || '').toLowerCase()
-      return status === 'queued' || status === 'grading' || status === 'in_progress' || status === 'pending'
+      return ['queued', 'grading', 'in_progress', 'pending', 'processing', 'running'].includes(status)
     })
 
     if (hasPending) {
-      const interval = setInterval(() => {
-        submissionsApi.getSubmissions({ assignmentId })
-          .then(subs => setSubmissions(subs || []))
-          .catch(console.error)
+      let busy = false, cancelled = false
+      const interval = setInterval(async () => {
+        if (busy || document.hidden) return
+        busy = true
+        try {
+          const subs = await submissionsApi.getSubmissions({ assignmentId }, true)
+          if (!cancelled) setSubmissions(subs || [])
+        } catch (err) { console.error(err) }
+        finally { busy = false }
       }, 3500)
-      return () => clearInterval(interval)
+      return () => { cancelled = true; clearInterval(interval) }
     }
   }, [submissions, assignmentId])
 

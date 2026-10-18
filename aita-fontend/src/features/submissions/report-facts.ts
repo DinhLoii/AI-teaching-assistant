@@ -24,7 +24,9 @@ export function reportFacts(submission: any) {
     add(rule.evidence?.httpSteps, 'HTTP', rule.ruleId)
   }
   add(report.ioTestCases, 'I/O'); add(report.sqlTestCases, 'SQL'); add(report.httpSteps || report.probeSteps, 'HTTP')
+  if (report.consoleVerification?.status === 'completed') add(report.consoleVerification.caseResults, 'I/O')
   if (!tests.length) add(report.testCases, 'Test')
+  const buildEvidence = evaluations.map((rule: any) => rule.evidence?.compilationPassed).filter((value: unknown) => typeof value === 'boolean')
   return {
     report: identityMismatch ? {} : report, evaluations: identityMismatch ? [] : evaluations, tests: identityMismatch ? [] : tests, identityMismatch,
     score: identityMismatch || report.error ? null : finite(submission?.finalScore ?? submission?.score ?? report.totalScore),
@@ -32,7 +34,7 @@ export function reportFacts(submission: any) {
     maxScore: finite(report.maxPossibleScore ?? submission?.maxScore),
     testPassed: identityMismatch ? 0 : tests.filter(test => test.passed === true).length,
     testExecuted: identityMismatch ? 0 : tests.filter(test => test.passed !== null).length,
-    compilation: !identityMismatch && typeof report.compilationSummary?.passed === 'boolean' ? report.compilationSummary.passed : null,
+    compilation: identityMismatch ? null : typeof report.compilationSummary?.passed === 'boolean' ? report.compilationSummary.passed : buildEvidence.includes(false) ? false : buildEvidence.includes(true) ? true : null,
   }
 }
 

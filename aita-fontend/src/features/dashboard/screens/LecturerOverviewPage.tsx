@@ -11,10 +11,10 @@ import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
 import { classesApi } from '@/lib/api/modules/classes'
-import { assignmentsApi } from '@/lib/api/modules/assignments'
+import { assignmentsApi, ASSIGNMENT_LIST_PATH } from '@/lib/api/modules/assignments'
 import { submissionsApi } from '@/lib/api/modules/submissions'
 import { useNotifications } from '@/providers/notification-provider'
-import { notificationTime } from '@/lib/notifications/presentation'
+import { notificationTime, notificationAbsoluteTime } from '@/lib/notifications/presentation'
 import { aiApi } from '@/lib/api/modules/ai'
 import { peekClientApiCache } from '@/lib/api/client'
 import { formatDate, cn } from '@/lib/utils'
@@ -126,9 +126,9 @@ export default function LecturerOverviewPage() {
   const loadData = React.useCallback(async () => {
     try {
       const [cls, exms, subs] = await Promise.allSettled([
-        classesApi.getClasses(1, 1000).catch(() => []),
-        assignmentsApi.getAssignments().catch(() => []),
-        submissionsApi.getSubmissions().catch(() => []),
+        classesApi.getClasses(1, 1000).then(rows => { setClasses(rows || []); setLoading(false); return rows }).catch(() => []),
+        assignmentsApi.getAssignments().then(rows => { setExams(rows || []); return rows }).catch(() => []),
+        submissionsApi.getSubmissions().then(rows => { setSubmissions(rows || []); return rows }).catch(() => []),
       ])
 
       if (cls.status === 'fulfilled') {
@@ -150,7 +150,7 @@ export default function LecturerOverviewPage() {
     try {
       if (typeof peekClientApiCache === 'function') {
         const cachedCls = peekClientApiCache<any[]>('/classes?page=1&limit=1000')
-        const cachedExms = peekClientApiCache<any[]>('/assignments')
+        const cachedExms = peekClientApiCache<any[]>(ASSIGNMENT_LIST_PATH)
         const cachedSubs = peekClientApiCache<any[]>('/submissions')
         if (cachedCls || cachedExms) {
           if (cachedCls) setClasses(cachedCls)
@@ -809,9 +809,9 @@ export default function LecturerOverviewPage() {
                               {typeLabel}
                             </span>
                             <div className="flex items-center gap-1.5">
-                              <span className="text-xs text-slate-400 font-medium">
+                              <time className="text-xs text-slate-400 font-medium" dateTime={notif.createdAt || undefined} title={notificationAbsoluteTime(notif.createdAt, isVi ? 'vi' : 'en')}>
                                 {formatRelativeTime(notif.createdAt, isVi, clockOffset)}
-                              </span>
+                              </time>
                               {isUnread && (
                                 <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />
                               )}

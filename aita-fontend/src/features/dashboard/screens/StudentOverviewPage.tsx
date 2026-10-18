@@ -9,8 +9,9 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
 import { studentPortalApi } from '@/lib/api/modules/student-portal'
+import { dashboardSummaryText } from '@/lib/api/normalizers/dashboard'
 import { useNotifications } from '@/providers/notification-provider'
-import { notificationTime } from '@/lib/notifications/presentation'
+import { notificationTime, notificationAbsoluteTime } from '@/lib/notifications/presentation'
 import { aiApi } from '@/lib/api/modules/ai'
 import { peekClientApiCache } from '@/lib/api/client'
 import { FrogChatbotLauncher } from '@/components/chatbot/FrogChatbotLauncher'
@@ -258,7 +259,12 @@ export default function StudentOverviewPage() {
 
   // Recent AI Graded Result (Section 2) - purely real data from Neon DB
   const recentAiResult = React.useMemo(() => {
-    if (dashboard?.recentAiResult) return dashboard.recentAiResult
+    if (dashboard?.recentAiResult) return {
+      ...dashboard.recentAiResult,
+      testcases: dashboardSummaryText(dashboard.recentAiResult.testcases, 'testcases', isVi),
+      execution: dashboardSummaryText(dashboard.recentAiResult.execution, 'execution', isVi),
+      review: dashboardSummaryText(dashboard.recentAiResult.review, 'review', isVi),
+    }
     const graded = assignmentsList.find((a) => a.status === 'GRADED')
     if (!graded) return null
     return {
@@ -266,9 +272,9 @@ export default function StudentOverviewPage() {
       subject: graded.subjectName ? `${graded.subjectCode} – ${graded.subjectName}` : (graded.subjectCode || 'Môn học'),
       score: graded.score ?? 0,
       maxScore: 10,
-      testcases: isVi ? 'Đã hoàn thành kiểm thử' : 'Test execution completed',
-      execution: isVi ? 'Thực thi an toàn trong Sandbox' : 'Execution safe in Sandbox',
-      review: isVi ? 'Đã hoàn thành đánh giá Rubric AI' : 'Rubric AI evaluation completed',
+      testcases: dashboardSummaryText(null, 'testcases', isVi),
+      execution: dashboardSummaryText(null, 'execution', isVi),
+      review: dashboardSummaryText(null, 'review', isVi),
       assignmentId: graded.id,
     }
   }, [dashboard, assignmentsList, isVi])
@@ -1070,9 +1076,9 @@ export default function StudentOverviewPage() {
                               {typeLabel}
                             </span>
                             <div className="flex items-center gap-1.5">
-                              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                              <time className="text-[10px] text-slate-400 dark:text-slate-500 font-medium" dateTime={notif.createdAt || undefined} title={notificationAbsoluteTime(notif.createdAt, isVi ? 'vi' : 'en')}>
                                 {formatRelativeTime(notif.createdAt, isVi, clockOffset)}
-                              </span>
+                              </time>
                               {isUnread && (
                                 <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0" />
                               )}

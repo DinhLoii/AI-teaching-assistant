@@ -164,7 +164,7 @@ export default function LecturerNotificationsPage() {
                     : 'bg-gradient-to-br from-orange-50/70 via-white to-amber-50/30 dark:from-slate-900 dark:via-slate-900/90 dark:to-orange-950/20 border border-orange-200/90 dark:border-orange-900/40 border-l-4 border-l-orange-500 hover:border-orange-300 hover:shadow-md'
                 }`}
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
                   <div className="flex items-start gap-3.5 flex-1 min-w-0">
                     {renderIcon(n.type, n.title)}
 
@@ -193,9 +193,12 @@ export default function LecturerNotificationsPage() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-end gap-2 shrink-0">
+                  <div className="flex w-full sm:w-auto flex-row sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0">
                     <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-                      <time dateTime={n.createdAt || undefined} title={n.absoluteTime}>{n.time}</time>
+                      <time dateTime={n.createdAt || undefined} title={n.absoluteTime} className="block text-left sm:text-right">
+                          <span className="block">{n.time}</span>
+                          {n.absoluteTime && <span className="block mt-0.5 text-[10px]">{n.absoluteTime}</span>}
+                        </time>
                     </span>
                     <button
                       type="button"

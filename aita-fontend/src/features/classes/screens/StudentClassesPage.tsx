@@ -56,7 +56,13 @@ export default function StudentClassesPage() {
       }
       const options = forceRefresh ? { cache: 'no-store' as const } : {}
       const [dashData, semsData] = await Promise.allSettled([
-        studentPortalApi.getStudentDashboard(options),
+        studentPortalApi.getStudentDashboard(options).then(data => {
+          if (current === sequence.current) {
+            setClasses(data?.enrolledClasses || [])
+            setLoading(false)
+          }
+          return data
+        }),
         semestersApi.getSemesters(options)
       ])
       if (current !== sequence.current) return

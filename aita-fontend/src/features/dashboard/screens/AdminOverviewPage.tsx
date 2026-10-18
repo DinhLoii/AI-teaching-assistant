@@ -21,7 +21,7 @@ import { classesApi } from '@/lib/api/modules/classes'
 import { errorMessage } from '@/lib/api/errors'
 import { useAuth } from '@/providers/auth-provider'
 import { useNotifications } from '@/providers/notification-provider'
-import { notificationTime } from '@/lib/notifications/presentation'
+import { notificationTime, notificationAbsoluteTime } from '@/lib/notifications/presentation'
 import { useLanguage } from '@/providers/language-provider'
 import { cn } from '@/lib/utils'
 import {
@@ -106,13 +106,12 @@ export default function AdminOverviewPage() {
     setLoading(true)
     setError(null)
     try {
-      const [healthRes, logsRes, classesRes] = await Promise.all([
-        reportsApi.getSystemHealth().catch(() => null),
+      void reportsApi.getSystemHealth().then(setHealth).catch(() => {})
+      const [logsRes, classesRes] = await Promise.all([
         auditApi.getAuditLogs(1, 6).catch(() => []),
         classesApi.getClasses(1, 10).catch(() => []),
       ])
 
-      setHealth(healthRes)
       setRecentLogs(Array.isArray(logsRes) ? logsRes : [])
       setRecentClasses(Array.isArray(classesRes) ? classesRes : (classesRes as any)?.items || (classesRes as any)?.data || [])
     } catch (err) {
@@ -571,9 +570,9 @@ export default function AdminOverviewPage() {
                               {typeLabel}
                             </span>
                             <div className="flex items-center gap-1.5">
-                              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                              <time className="text-xs text-slate-500 dark:text-slate-400 font-medium" dateTime={notif.createdAt || undefined} title={notificationAbsoluteTime(notif.createdAt, isVi ? 'vi' : 'en')}>
                                 {formatRelativeTime(notif.createdAt, isVi, clockOffset)}
-                              </span>
+                              </time>
                               {isUnread && (
                                 <span className="w-1.5 h-1.5 rounded-full bg-[#FA7014] shrink-0" />
                               )}

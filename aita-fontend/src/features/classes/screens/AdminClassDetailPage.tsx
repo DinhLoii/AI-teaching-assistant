@@ -66,7 +66,7 @@ export default function AdminClassDetailPage() {
     try {
       await classesApi.updateClass(classId, { note: noteForm } as any)
       setNoteModalOpen(false)
-      await loadData()
+      void loadData()
     } catch (cause) {
       alert(errorMessage(cause))
     } finally {

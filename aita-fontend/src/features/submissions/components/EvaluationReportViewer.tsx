@@ -94,7 +94,8 @@ export function EvaluationReportViewer({ submission, onResubmit, onGetHint, isLe
       {staff && onUpdateRuleScore && Object.keys(edits).length > 0 && <Button onClick={save}>Lưu điểm theo barem</Button>}
     </div>}
     {tab === 'testcases' && <section className={panel}><h3 className="font-bold">Kết quả kiểm thử theo barem</h3><p className="text-xs text-slate-500">Chỉ hiển thị kết quả được ghi trong bằng chứng thực thi của tiêu chí. Có tệp unit test hoặc nhận xét AI không có nghĩa testcase đã chạy thành công.</p>
-      <p>{facts.testExecuted ? `${facts.testPassed}/${facts.testExecuted} kiểm thử đạt` : 'Chưa có bằng chứng thực thi testcase.'}</p>
+      <p>{facts.testExecuted ? `${facts.testPassed}/${facts.testExecuted} kiểm thử đạt` : facts.report.consoleVerification?.error || 'Chưa có bằng chứng thực thi testcase.'}</p>
+      {facts.report.consoleVerification?.scoringImpact === 'none' && <p className="text-xs text-slate-500">Bộ test kiểm chứng việc chạy chương trình; không cộng thêm điểm ngoài barem giảng viên đã duyệt.</p>}
       {facts.tests.map(test => <div key={test.key} className="rounded-xl bg-slate-50 dark:bg-slate-800 p-4 text-xs space-y-2"><div className="flex flex-wrap justify-between gap-2"><strong>{test.ruleId} · {test.kind} · {String(test.name)}</strong><span>{test.passed === true ? 'Đạt' : test.passed === false ? 'Không đạt' : 'Chưa có kết quả'}</span></div>{['input', 'expected', 'actual', 'error'].map(key => test[key] != null && <div key={key}><span className="text-slate-500">{key}:</span><pre className="whitespace-pre-wrap break-words">{String(test[key])}</pre></div>)}</div>)}
     </section>}
     {tab === 'review' && <section className={panel}><h3 className="font-bold">Code Review theo bài nộp và barem</h3>

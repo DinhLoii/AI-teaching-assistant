@@ -30,6 +30,7 @@ export default function LecturerClassDetailPage() {
   const [assignments, setAssignments] = React.useState<any[]>([])
   const [announcements, setAnnouncements] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [rosterLoading, setRosterLoading] = React.useState(true)
   const [activeTab, setActiveTab] = React.useState<TabId>('assignments')
 
   // Announcement form state
@@ -47,46 +48,46 @@ export default function LecturerClassDetailPage() {
 
   React.useEffect(() => {
     if (!classId) return
-    Promise.all([
+    let cancelled = false
+    setLoading(true)
+    setRosterLoading(true)
+    const assignmentsRequest = assignmentsApi.getAssignments({ classId }).then(rows => rows.filter((a: any) =>
+      a.classId === classId || a.class?.id === classId ||
+      (Array.isArray(a.classIds) && a.classIds.includes(classId)) ||
+      (Array.isArray(a.classes) && a.classes.some((c: any) => typeof c === 'string' ? c === classId : c?.id === classId))
+    )).catch(() => [])
+    void Promise.all([
       classesApi.getClassDetail(classId).catch(() => null),
-      classesApi.getClasses(1, 1000).catch(() => []),
-      classesApi.getClassStudents(classId).catch(() => []),
-      assignmentsApi.getAssignments().catch(() => []),
-      classesApi.getClassAnnouncements(classId).catch(() => []),
-    ]).then(async ([directClass, classesRes, studentsData, assignmentsData, announcementsData]) => {
-      const classList = Array.isArray(classesRes) ? classesRes : (classesRes as any)?.data || []
-      const currentClass = directClass || classList.find((c: any) => c.id === classId)
+      assignmentsRequest,
+    ]).then(([currentClass, rows]) => {
+      if (cancelled) return
       setClassData(currentClass)
-      setAnnouncements(Array.isArray(announcementsData) ? announcementsData : [])
-
-      const filteredAssignments = (Array.isArray(assignmentsData) ? assignmentsData : []).filter((a: any) =>
-        a.classId === classId || a.class?.id === classId ||
-        (Array.isArray(a.classIds) && a.classIds.includes(classId)) ||
-        (Array.isArray(a.classes) && a.classes.some((c: any) => typeof c === 'string' ? c === classId : c?.id === classId))
-      )
-      setAssignments(filteredAssignments)
-
-      const submissionsMap = new Map<string, any[]>()
-      if (filteredAssignments.length > 0) {
-        await Promise.all(filteredAssignments.map(async (a: any) => {
-          try {
-            const subs = await submissionsApi.getSubmissions({ assignmentId: a.id })
-            submissionsMap.set(a.id, subs)
-          } catch { submissionsMap.set(a.id, []) }
-        }))
+      setAssignments(rows)
+    }).finally(() => { if (!cancelled) setLoading(false) })
+    void classesApi.getClassAnnouncements(classId).then(rows => {
+      if (!cancelled) setAnnouncements(Array.isArray(rows) ? rows : [])
+    }).catch(() => {})
+    void Promise.all([
+      classesApi.getClassStudents(classId).catch(() => []),
+      submissionsApi.getSubmissions({ classId }).catch(() => []),
+      assignmentsRequest,
+    ]).then(([studentsData, submissions, filteredAssignments]) => {
+      if (cancelled) return
+      const submissionIndex = new Map<string, any>()
+      for (const sub of submissions) {
+        const id = sub.assignmentId || sub.examId
+        if (!id) continue
+        const key = `${id}:${String(sub.studentId).toLowerCase()}`
+        if (!submissionIndex.has(key)) submissionIndex.set(key, sub)
       }
-
       const rawStudents = Array.isArray(studentsData) ? studentsData : []
       const studentsWithGrades = rawStudents.map((s: any) => {
         const studentSubs: Record<string, any> = {}
         let totalScore = 0, submitCount = 0
         filteredAssignments.forEach((a: any) => {
-          const subs = submissionsMap.get(a.id) || []
           const sCode = String(s.studentId || s.studentCode || '').toLowerCase()
           const sUserId = String(s.id || s.userId || '').toLowerCase()
-          const mySub = subs.find((sub: any) =>
-            String(sub.studentId).toLowerCase() === sCode || String(sub.studentId).toLowerCase() === sUserId
-          )
+          const mySub = submissionIndex.get(`${a.id}:${sCode}`) || submissionIndex.get(`${a.id}:${sUserId}`)
           studentSubs[a.id] = mySub
           if (mySub) {
             submitCount++
@@ -96,7 +97,8 @@ export default function LecturerClassDetailPage() {
         return { ...s, submissions: studentSubs, submitCount, avgScore: submitCount > 0 ? (totalScore / submitCount).toFixed(1) : '-' }
       })
       setStudents(studentsWithGrades)
-    }).finally(() => setLoading(false))
+    }).finally(() => { if (!cancelled) setRosterLoading(false) })
+    return () => { cancelled = true }
   }, [classId])
 
   const handleExportGradebookCSV = () => {
@@ -319,7 +321,7 @@ export default function LecturerClassDetailPage() {
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Sinh viên & Tiến độ ({students.length})</h3>
-              {students.length > 0 && (
+              {!rosterLoading && students.length > 0 && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -332,7 +334,9 @@ export default function LecturerClassDetailPage() {
               )}
             </div>
 
-            {students.length === 0 ? (
+            {rosterLoading ? (
+              <p role="status" className="py-8 text-center text-sm text-slate-500">Đang tải danh sách sinh viên và điểm…</p>
+            ) : students.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl bg-white/50 dark:bg-slate-900/50">
                 <GraduationCap className="w-10 h-10 text-slate-300" />
                 <p className="text-sm text-slate-400">Lớp học chưa có sinh viên.</p>
