@@ -65,6 +65,64 @@ test('an old read cannot repopulate the cache after mutation or remove a newer i
   assert.equal(api.peekClientApiCache('/assignments')[0], 'new')
 })
 
+test('assignment mutations preserve master data and profile while refreshing related lists', async () => {
+  const calls = []
+  const api = setup(async (url, options) => { calls.push([url, options.method || 'GET']); return response([]) })
+  const preserved = ['/subjects', '/semesters', '/configs', '/users/me']
+  const affected = ['/assignments', '/grading/assignments/trash', '/classes?page=1', '/submissions', '/student-portal/dashboard']
+  for (const path of [...preserved, ...affected]) await api.request(path)
+  await api.request('/grading/assignments/a/hard-delete', { method: 'DELETE' })
+  for (const path of [...preserved, ...affected]) await api.request(path)
+  for (const path of preserved) assert.equal(calls.filter(([url]) => url === '/api' + path).length, 1, path)
+  for (const path of affected) assert.equal(calls.filter(([url]) => url === '/api' + path).length, 2, path)
+})
+
+test('unrelated pending reads remain cacheable during a mutation', async () => {
+  const pending = deferred()
+  let reads = 0
+  const api = setup((_url, options) => options.method === 'DELETE'
+    ? Promise.resolve(response({})) : (++reads, pending.promise))
+  const subjects = api.request('/subjects')
+  await api.request('/submissions/a', { method: 'DELETE' })
+  pending.resolve(response(['subject-a']))
+  await subjects
+  assert.equal(await api.request('/subjects').then(rows => rows[0]), 'subject-a')
+  assert.equal(reads, 1)
+})
+
+test('domain mutations invalidate dependencies without evicting unrelated resources', async () => {
+  for (const [mutation, affected, preserved] of [
+    ['/classes/a', '/student-portal/subjects', '/semesters'],
+    ['/submissions/a', '/assignments?view=summary', '/subjects'],
+    ['/prompts/a', '/prompts/subject/a', '/classes'],
+    ['/settings', '/settings', '/assignments?view=summary'],
+    ['/semesters/a', '/classes', '/users/me'],
+  ]) {
+    const api = setup(async () => response([]))
+    await api.request(affected)
+    await api.request(preserved)
+    await api.request(mutation, { method: 'PUT' })
+    assert.equal(api.peekClientApiCache(affected), undefined, mutation)
+    assert.ok(api.peekClientApiCache(preserved), mutation)
+  }
+})
+
+test('grading polls bypass the browser cache and request fresh server data', async () => {
+  let calls = 0
+  const api = setup(async (_url, options) => {
+    calls++
+    if (calls > 1) {
+      assert.equal(options.cache, 'no-store')
+      assert.equal(new Headers(options.headers).get('Cache-Control'), 'no-cache')
+    }
+    return response([{ id: 'sub-a', gradingStatus: calls > 1 ? 'Graded' : 'Processing' }])
+  })
+  const { submissionsApi } = api.load('lib/api/modules/submissions.ts')
+  assert.equal((await submissionsApi.getSubmissions({ assignmentId: 'a' }))[0].gradingStatus, 'Processing')
+  assert.equal((await submissionsApi.getSubmissions({ assignmentId: 'a' }, true))[0].gradingStatus, 'Graded')
+  assert.equal(calls, 2)
+})
+
 test('switching accounts isolates both cached data and pending requests', async () => {
   const old = deferred()
   let calls = 0

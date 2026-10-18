@@ -12,6 +12,14 @@ import { createLoader } from './helpers/load-typescript.mjs'
 const load = createLoader()
 const { reportFacts, evidenceMatches } = load('features/submissions/report-facts.ts')
 const { normalizeSubmissionRow } = load('lib/api/normalizers/submission.ts')
+test('independent console verification exposes real test outcomes without adding rubric criteria or changing score', () => {
+  const facts = reportFacts({ id: 's', finalScore: 1.3, reportData: { submissionId: 's', compilationSummary: { passed: true }, consoleVerification: { status: 'completed', scoringImpact: 'none', caseResults: [{ caseId: 'TC01', passed: true }, { caseId: 'TC02', passed: false }, { caseId: 'TC03', passed: null }] } } })
+  assert.equal(facts.testExecuted, 2)
+  assert.equal(facts.testPassed, 1)
+  assert.equal(facts.compilation, true)
+  assert.equal(facts.score, 1.3)
+  assert.equal(facts.evaluations.length, 0)
+})
 const backend = path.resolve('../aita-backend')
 function backendModule(file, mocks = {}) {
   const filename = path.join(backend, 'src', file)

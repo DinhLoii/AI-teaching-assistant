@@ -14,6 +14,33 @@ function setup(handler) {
 const flush = () => new Promise(resolve => setTimeout(resolve, 0))
 function deferred() { let resolve; const promise = new Promise(r => { resolve = r }); return { promise, resolve } }
 
+test('absolute notification times use Vietnam time regardless of the device timezone', () => {
+  const { load } = setup(() => [])
+  const { notificationAbsoluteTime } = load('lib/notifications/presentation.ts')
+  const value = notificationAbsoluteTime('2026-10-18T08:10:11Z', 'vi')
+  assert.match(value, /15:10:11/)
+  assert.match(value, /18\/10\/2026/)
+  assert.match(value, /UTC\+7/)
+  assert.equal(notificationAbsoluteTime(null, 'vi'), '')
+  assert.equal(notificationAbsoluteTime('invalid', 'en'), '')
+})
+
+test('an update or snapshot missing a timestamp never erases a known date', async () => {
+  let row = item('known')
+  const { feed, load } = setup(url => url.includes('unread-count') ? { count: 1 } : [row])
+  await feed.refresh()
+  const date = feed.getSnapshot().items[0].createdAt
+  row = { ...row, createdAt: null }
+  feed.receive({ type: 'NOTIFICATION', payload: { ...row, updated: true } })
+  assert.equal(feed.getSnapshot().items[0].createdAt, date)
+  await flush()
+  assert.equal(feed.getSnapshot().items[0].createdAt, date)
+  const { normalizeNotification } = load('lib/notifications/feed.ts')
+  assert.equal(normalizeNotification({ createdAt: 'invalid', CreatedAt: date }).createdAt, date)
+  assert.equal(normalizeNotification({ id: 'unknown' }).createdAt, null)
+  feed.stop()
+})
+
 test('snapshot accepts an empty inbox and all notification reads bypass the API cache', async () => {
   const calls = []
   const { feed } = setup((url, opts) => { calls.push(opts.cache); return url.includes('unread-count') ? { count: 0 } : [] })
