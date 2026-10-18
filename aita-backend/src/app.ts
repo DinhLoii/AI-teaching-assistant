@@ -47,7 +47,7 @@ export function createApp() {
   app.use(cors(corsOptions))
   app.use(requestLogger)
   app.use(analyticsMutationEvents)
-  app.use(morgan(':method :safe-url :status :response-time ms', { immediate: false }))
+  if (env.LOG_LEVEL === 'debug') app.use(morgan(':method :safe-url :status :response-time ms', { immediate: false }))
   app.use(express.json({ limit: '100mb' }))
   app.use(express.urlencoded({ limit: '100mb', extended: true }))
   // Uploaded avatars/attachments are fetched by the web client (:5173) and the Expo web build

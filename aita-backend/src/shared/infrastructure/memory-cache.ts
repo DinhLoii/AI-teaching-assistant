@@ -8,8 +8,9 @@ interface CacheEntry<T> {
   expiresAt: number
 }
 
-class MemoryCache {
+export class MemoryCache {
   private store = new Map<string, CacheEntry<any>>()
+  private pending = new Map<string, Promise<any>>()
   private readonly maxEntries: number
   private hits = 0
   private misses = 0
@@ -65,6 +66,7 @@ class MemoryCache {
    */
   del(key: string): void {
     this.store.delete(key)
+    this.pending.delete(key)
   }
 
   /**
@@ -75,6 +77,9 @@ class MemoryCache {
       if (key.startsWith(prefix)) {
         this.store.delete(key)
       }
+    }
+    for (const key of this.pending.keys()) {
+      if (key.startsWith(prefix)) this.pending.delete(key)
     }
   }
 
@@ -111,9 +116,17 @@ class MemoryCache {
     if (cached !== null && cached !== undefined) {
       return cached
     }
-    const fresh = await fn()
-    this.set(key, fresh, ttlSeconds)
-    return fresh
+    const existing = this.pending.get(key)
+    if (existing) return existing
+    const promise = Promise.resolve().then(fn).then(fresh => {
+      // A write may invalidate this read while its query is still running.
+      if (this.pending.get(key) === promise) this.set(key, fresh, ttlSeconds)
+      return fresh
+    }).finally(() => {
+      if (this.pending.get(key) === promise) this.pending.delete(key)
+    })
+    this.pending.set(key, promise)
+    return promise
   }
 }
 

@@ -92,6 +92,7 @@ export class DeadlineReminderJob {
             Title: `Nhắc nhở: Sắp đến hạn nộp bài`,
             Message: `Bài tập "${exam.Title}" sẽ hết hạn vào lúc ${exam.DueDate?.toLocaleString('vi-VN')}. Vui lòng hoàn thành đúng hạn.`,
             Type: 'Reminder',
+            CreatedAt: new Date(),
             ReferenceId: exam.Id,
             ReferenceType: 'Exam',
             NotificationRecipient: {

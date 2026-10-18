@@ -7,8 +7,13 @@ export const requestContext = new AsyncLocalStorage<Map<string, any>>()
 export class Logger implements ILogger {
   private context: string
 
-  constructor(context: string = 'App') {
+  constructor(context: string = 'App', private readonly level = env.LOG_LEVEL) {
     this.context = context
+  }
+
+  private enabled(level: 'debug' | 'info' | 'warn' | 'error'): boolean {
+    const priority = { debug: 0, info: 1, warn: 2, error: 3 }
+    return priority[level] >= priority[this.level]
   }
 
   private formatMessage(level: string, message: string, meta?: any): string {
@@ -34,17 +39,17 @@ export class Logger implements ILogger {
   }
 
   debug(message: string, meta?: Record<string, unknown>): void {
-    if (env.NODE_ENV !== 'production' || process.env.LOG_LEVEL === 'debug') {
+    if (this.enabled('debug')) {
       console.debug(this.formatMessage('DEBUG', message, meta))
     }
   }
 
   info(message: string, meta?: Record<string, unknown>): void {
-    console.info(this.formatMessage('INFO', message, meta))
+    if (this.enabled('info')) console.info(this.formatMessage('INFO', message, meta))
   }
 
   warn(message: string, meta?: Record<string, unknown>): void {
-    console.warn(this.formatMessage('WARN', message, meta))
+    if (this.enabled('warn')) console.warn(this.formatMessage('WARN', message, meta))
   }
 
   error(message: string, error?: Error | Record<string, unknown>): void {
@@ -55,7 +60,7 @@ export class Logger implements ILogger {
   }
 
   createChild(childContext: string): Logger {
-    return new Logger(`${this.context}:${childContext}`)
+    return new Logger(`${this.context}:${childContext}`, this.level)
   }
 
   // Helper for tracking elapsed time
