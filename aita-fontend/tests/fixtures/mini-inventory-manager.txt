@@ -1,0 +1,327 @@
+C++ PROGRAMMING
+ASSIGNMENT 2 – MINI INVENTORY MANAGER
+
+ĐỀ BÀI LẬP TRÌNH • C++17 • 10 ĐIỂM
+
+1. Bối cảnh và mục tiêu
+
+Viết chương trình quản lý kho hàng mini cho một cửa hàng. Hệ thống đọc một chuỗi lệnh từ đầu vào chuẩn (stdin), quản lý hàng hóa trong bộ nhớ và in kết quả ra đầu ra chuẩn (stdout). Bài tập kiểm tra cấu trúc dữ liệu, xử lý điều kiện, tính toán số nguyên và tổ chức chương trình C++.
+
+2. Yêu cầu công nghệ và nộp bài
+
+Ngôn ngữ C++17; chỉ dùng thư viện chuẩn; không cần database, file hay giao diện. Nộp một file main.cpp. Chương trình không in menu, lời nhắc, giải thích hoặc thông báo khác ngoài định dạng quy định. Biên dịch tham chiếu: g++ -std=c++17 -O2 -Wall -Wextra main.cpp -o main.
+
+3. Quy tắc dữ liệu
+
+Mỗi sản phẩm có mã id (chuỗi không chứa khoảng trắng), số lượng tồn kho quantity (số nguyên không âm), đơn giá price (số nguyên dương, tính theo VND). Mã sản phẩm phân biệt hoa/thường. Số loại sản phẩm tối đa 1000. Giá trị và kết quả tính toán nằm trong phạm vi signed 64-bit. Dùng long long cho tính tiền.
+
+Mỗi dòng là một lệnh. Tất cả lệnh đầu vào bảo đảm đúng số tham số và kiểu dữ liệu; tuy nhiên có thể chứa mã trùng/không tồn tại, số lượng không hợp lệ hoặc giá không hợp lệ. Không bắt buộc phát hiện lệnh không được liệt kê.
+
+4. Định dạng đầu vào và các lệnh
+
+Dòng đầu tiên là số nguyên Q (1 ≤ Q ≤ 1000). Q dòng tiếp theo, mỗi dòng chứa đúng một lệnh:
+
+Lệnh
+
+Ý nghĩa
+
+Kết quả stdout (một dòng)
+
+ADD id qty price
+
+Thêm sản phẩm mới; hợp lệ nếu id chưa tồn tại, qty ≥ 0, price > 0
+
+ADDED hoặc ERROR
+
+RESTOCK id qty
+
+Tăng tồn kho; hợp lệ nếu id tồn tại và qty > 0
+
+RESTOCKED hoặc ERROR
+
+SELL id qty
+
+Bán sản phẩm; hợp lệ nếu id tồn tại, qty > 0, qty ≤ tồn kho
+
+SOLD amount hoặc ERROR; amount=qty×price
+
+QUERY id
+
+Xem thông tin sản phẩm
+
+id qty price hoặc NOT_FOUND
+
+TOTAL
+
+Tổng giá trị kho hiện tại = Σ(qty×price)
+
+TOTAL amount
+
+TOP
+
+Sản phẩm có giá trị tồn kho lớn nhất
+
+TOP id value hoặc EMPTY nếu chưa có sản phẩm
+
+Quy tắc TOP: nếu nhiều sản phẩm có cùng giá trị tồn kho lớn nhất, chọn id nhỏ nhất theo thứ tự từ điển C++ (so sánh chuỗi case-sensitive). Sản phẩm có tồn kho 0 vẫn được xét TOP. Nếu không có sản phẩm, TOTAL trả TOTAL 0.
+
+Lệnh thất bại không được làm thay đổi trạng thái kho. Mỗi lệnh xuất đúng một dòng; không in dòng trống.
+
+5. Ví dụ minh họa
+
+Input
+
+10
+ADD A01 5 100
+ADD B02 2 300
+TOTAL
+TOP
+SELL A01 2
+QUERY A01
+RESTOCK A01 4
+TOTAL
+SELL B02 3
+TOP
+
+Output
+
+ADDED
+ADDED
+TOTAL 1100
+TOP B02 600
+SOLD 200
+A01 3 100
+RESTOCKED
+TOTAL 1300
+ERROR
+TOP A01 700
+
+6. Nhóm yêu cầu theo mức độ
+
+Mức cơ bản (mục tiêu khoảng 6–7 điểm): xử lý ADD, RESTOCK, SELL, QUERY, TOTAL; quản lý trạng thái đúng, nhập/xuất đúng mẫu, chặn dữ liệu bất hợp lệ. Mức nâng cao (mục tiêu 8–9 điểm): bổ sung TOP và tie-break, xử lý trường hợp biên, kiểm tra toàn bộ lệnh/giá trị lớn. Đây là định hướng, điểm thực tế phụ thuộc rubric và kết quả kiểm thử.
+
+7. Bộ test tham chiếu (Input / Expected Output)
+
+TC01 – Thêm và truy vấn
+
+Input (stdin)
+
+Expected output (stdout)
+
+3
+ADD A 4 50
+QUERY A
+TOTAL
+
+ADDED
+A 4 50
+TOTAL 200
+
+TC02 – Mã trùng
+
+Input (stdin)
+
+Expected output (stdout)
+
+3
+ADD A 1 10
+ADD A 2 20
+QUERY A
+
+ADDED
+ERROR
+A 1 10
+
+TC03 – Giá/số lượng không hợp lệ
+
+Input (stdin)
+
+Expected output (stdout)
+
+4
+ADD X -1 10
+ADD Y 2 0
+TOTAL
+TOP
+
+ERROR
+ERROR
+TOTAL 0
+EMPTY
+
+TC04 – Nhập thêm tồn kho
+
+Input (stdin)
+
+Expected output (stdout)
+
+4
+ADD P 0 7
+RESTOCK P 5
+QUERY P
+TOTAL
+
+ADDED
+RESTOCKED
+P 5 7
+TOTAL 35
+
+TC05 – Bán hợp lệ
+
+Input (stdin)
+
+Expected output (stdout)
+
+4
+ADD P 8 12
+SELL P 3
+QUERY P
+TOTAL
+
+ADDED
+SOLD 36
+P 5 12
+TOTAL 60
+
+TC06 – Bán vượt kho
+
+Input (stdin)
+
+Expected output (stdout)
+
+4
+ADD P 2 15
+SELL P 3
+SELL P 0
+QUERY P
+
+ADDED
+ERROR
+ERROR
+P 2 15
+
+TC07 – Mã không tồn tại
+
+Input (stdin)
+
+Expected output (stdout)
+
+4
+QUERY Z
+RESTOCK Z 2
+SELL Z 1
+TOTAL
+
+NOT_FOUND
+ERROR
+ERROR
+TOTAL 0
+
+TC08 – TOP và tie-break
+
+Input (stdin)
+
+Expected output (stdout)
+
+5
+ADD B 2 50
+ADD A 5 20
+TOP
+SELL A 1
+TOP
+
+ADDED
+ADDED
+TOP A 100
+SOLD 20
+TOP B 100
+
+TC09 – Giá trị lớn
+
+Input (stdin)
+
+Expected output (stdout)
+
+3
+ADD BIG 100000 100000
+TOTAL
+TOP
+
+ADDED
+TOTAL 10000000000
+TOP BIG 10000000000
+
+TC10 – Tồn kho bằng 0
+
+Input (stdin)
+
+Expected output (stdout)
+
+4
+ADD Z 0 10
+TOP
+SELL Z 1
+QUERY Z
+
+ADDED
+TOP Z 0
+ERROR
+Z 0 10
+
+8. Rubric chấm điểm – tổng 10 điểm
+
+Tiêu chí
+
+Điểm
+
+Điều kiện đánh giá
+
+ADD và quản lý dữ liệu
+
+2.0
+
+Thêm đúng, chống id trùng, kiểm tra qty/price
+
+RESTOCK và SELL
+
+2.0
+
+Cập nhật tồn kho; từ chối số lượng sai; SOLD amount đúng
+
+QUERY và TOTAL
+
+2.0
+
+Truy vấn đúng, NOT_FOUND, tổng giá trị kho chính xác
+
+TOP
+
+1.5
+
+Chọn giá trị lớn nhất, đúng tie-break, EMPTY
+
+Biên và tính nhất quán
+
+1.5
+
+Không đổi trạng thái khi lỗi; xử lý kho 0 và số lớn
+
+Chuẩn nhập/xuất và C++17
+
+1.0
+
+Đọc Q lệnh, chỉ in định dạng yêu cầu; biên dịch được
+
+Chấm kết hợp các test case tự động và kiểm tra code. Nếu một tiêu chí chỉ đạt một phần, cho điểm tương ứng mức hoàn thành; không chấm trùng điểm. Các test công khai minh họa hành vi, hệ thống có thể dùng test ẩn tương đương.
+
+9. Hướng dẫn cấu hình chấm tự động
+
+Chọn ngôn ngữ C++17 (không chọn SQL). Kiểu chấm: stdin/stdout, đối chiếu output sau khi chuẩn hóa chỉ ký tự xuống dòng cuối file nếu hệ thống hỗ trợ. Dữ liệu test phải được gửi đầy đủ qua stdin, không chia mỗi lệnh thành một bài riêng khi trạng thái cần được giữ giữa các lệnh. Timeout gợi ý 2 giây/test; giới hạn bộ nhớ gợi ý 256 MB. Không yêu cầu truy cập mạng, DB hay cài thư viện ngoài.
+
+10. Checklist trước khi phát hành
+
+□ Chạy thử toàn bộ 10 test công khai trên lời giải chuẩn.
+□ Kiểm tra test ẩn có cả lỗi và dữ liệu biên.
+□ Bảo đảm tổng rubric bằng 10.0.
+□ Xác nhận thời hạn, lớp học phần, cách nộp main.cpp.
+□ Tránh dùng test SQL hay test API cho đề C++ stdin/stdout.

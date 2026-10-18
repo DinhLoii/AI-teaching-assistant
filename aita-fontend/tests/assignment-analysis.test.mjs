@@ -27,6 +27,8 @@ function loader(mocks = {}) {
 const plain = loader()
 const contract = plain('modules/ai/infrastructure/analysis/assignment-contract.ts')
 const fixture = fs.readFileSync('tests/fixtures/personal-expense-tracker.txt', 'utf8')
+const libraryFixture = fs.readFileSync('tests/fixtures/mini-library-manager.txt', 'utf8')
+const inventoryFixture = fs.readFileSync('tests/fixtures/mini-inventory-manager.txt', 'utf8')
 function useCase(aiResponse, unavailable = false) {
   let prompt = ''
   const load = loader({
@@ -38,6 +40,70 @@ function useCase(aiResponse, unavailable = false) {
   })
   return { execute: input => new (load('modules/ai/application/use-cases/auto-configure-assignment.use-case.ts').AutoConfigureAssignmentUseCase)().execute(input), prompt: () => prompt }
 }
+
+test('Mini Library reference table produces exactly TC01–TC10 with original I/O, not the illustrative example or rubric text', async () => {
+  const result = await useCase({}, true).execute({ promptText: libraryFixture, maxScore: 10 })
+  assert.equal(result.detectedLanguage, 'C')
+  assert.equal(result.testCases.length, 10)
+  assert.equal(result.rubricCriteria.length, 7)
+  assert.equal(result.rubricCriteria.reduce((sum, rule) => sum + rule.maxPoints, 0), 10)
+  for (const [index, tc] of result.testCases.entries()) {
+    assert.equal(tc.id, `TC${String(index + 1).padStart(2, '0')}`)
+    const lines = tc.input.split('\n')
+    assert.equal(lines.length - 1, Number(lines[0]))
+    assert.equal(tc.expectedOutput.split('\n').length, Number(lines[0]))
+    assert.equal(tc.source, 'EXTRACTED')
+    assert.equal(tc.isHidden, false)
+    assert.equal(tc.points, 0) // Rubric is the sole score budget.
+  }
+  assert.equal(result.testCases[0].input, '3\nADD 10 3\nFIND 10\nSTATS')
+  assert.equal(result.testCases[0].expectedOutput, 'OK\n10 3 3 0\n1 3 3 0')
+  assert.equal(result.testCases[9].expectedOutput, 'OK\nOK\n7 0\n7 1 1 0')
+})
+
+test('labelled sequential console examples work; ambiguous flattened cells and UI scenarios are not invented', () => {
+  const { extractLabeledConsoleTests } = plain('modules/ai/infrastructure/analysis/console-test-extractor.ts')
+  const cases = extractLabeledConsoleTests('TC01 – Sum\nInput:\n2 3\nExpected output:\n5\n\n8. Rubric\n10 points')
+  assert.equal(cases.length, 1)
+  assert.equal(cases[0].input, '2 3')
+  assert.equal(cases[0].expectedOutput, '5')
+  assert.equal(extractLabeledConsoleTests('TC01\nInput / stdin\nExpected output / stdout\n2 3\n5').length, 0)
+  assert.equal(extractLabeledConsoleTests('TC01\nMở ứng dụng, thêm giao dịch.\nKết quả: Lưu thành công.').length, 0)
+})
+
+test('native DOCX I/O tables retain all ten cases when commands use Word soft line breaks', async () => {
+  const AdmZip = createRequire(path.resolve('../aita-backend/package.json'))('adm-zip')
+  const { extractLabeledConsoleTests } = plain('modules/ai/infrastructure/analysis/console-test-extractor.ts')
+  const cases = extractLabeledConsoleTests(libraryFixture)
+  const escape = text => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+  const paragraph = text => `<w:p><w:r><w:t xml:space="preserve">${escape(text)}</w:t></w:r></w:p>`
+  const cell = text => `<w:tc><w:p><w:r>${text.split('\n').map(line => `<w:t xml:space="preserve">${escape(line)}</w:t>`).join('<w:br/>')}</w:r></w:p></w:tc>`
+  const intro = libraryFixture.slice(0, libraryFixture.indexOf('7. Bộ kiểm thử'))
+  const tables = cases.map(tc => paragraph(tc.id) + `<w:tbl><w:tr>${cell('Input / stdin')}${cell('Expected output / stdout')}</w:tr><w:tr>${cell(tc.input)}${cell(tc.expectedOutput)}</w:tr></w:tbl>`).join('')
+  const zip = new AdmZip()
+  zip.addFile('[Content_Types].xml', Buffer.from('<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'))
+  zip.addFile('_rels/.rels', Buffer.from('<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'))
+  zip.addFile('word/document.xml', Buffer.from(`<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${intro.split('\n').map(paragraph).join('')}${tables}${paragraph('8. Rubric')}</w:body></w:document>`))
+  const { DocumentExtractorService } = plain('modules/ai/infrastructure/analysis/document-extractor.service.ts')
+  const { DeterministicParserService } = plain('modules/ai/infrastructure/analysis/deterministic-parser.service.ts')
+  const extraction = await new DocumentExtractorService().extract({ filename: 'Library.docx', buffer: zip.toBuffer() })
+  const result = new DeterministicParserService().parse(extraction)
+  assert.equal(result.testCases.length, 10)
+  assert.equal(result.testCases[0].expectedOutput, 'OK\n10 3 3 0\n1 3 3 0')
+  assert.equal(result.testCases[9].input, '4\nADD 12 2\nADD 7 1\nTOP\nFIND 7')
+})
+
+test('Inventory source yields ten exact cases and never turns prose mentioning input/output into executable tests', async () => {
+  const result = await useCase({}, true).execute({ promptText: inventoryFixture, maxScore: 10 })
+  assert.equal(result.detectedLanguage, 'C++')
+  assert.equal(result.testCases.length, 10)
+  assert.equal(result.testCases[0].input, '3\nADD A 4 50\nQUERY A\nTOTAL')
+  assert.equal(result.testCases[0].expectedOutput, 'ADDED\nA 4 50\nTOTAL 200')
+  const { DocumentExtractorService } = plain('modules/ai/infrastructure/analysis/document-extractor.service.ts')
+  const { DeterministicParserService } = plain('modules/ai/infrastructure/analysis/deterministic-parser.service.ts')
+  const prose = await new DocumentExtractorService().extract(undefined, 'Ngôn ngữ: C++\nĐọc standard input qua luồng chuẩn (stdin), quản lý hàng hóa và in kết quả ra standard output.\n2. Yêu cầu công nghệ\nDữ liệu không có testcase.')
+  assert.equal(new DeterministicParserService().parse(prose).testCases.length, 0)
+})
 test('language detection distinguishes app database dependencies from SQL assignments across subjects', () => {
   for (const [text, lang, mode] of [
     [fixture, 'Kotlin', 'project'],

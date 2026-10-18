@@ -1,0 +1,384 @@
+ASSIGNMENT 2 – MINI LIBRARY MANAGER
+
+ĐỀ BÀI LẬP TRÌNH C (C11) | CHẤM TỰ ĐỘNG QUA STDIN / STDOUT
+
+Hình thức: Cá nhân  |  Tổng điểm: 10  |  Thời gian nộp: Theo giảng viên  |  File nộp: main.c
+
+1. Bối cảnh và mục tiêu
+
+Viết chương trình quản lý thư viện mini bằng ngôn ngữ C. Hệ thống nhận một chuỗi lệnh qua standard input, quản lý số lượng bản sách, cho mượn/trả, tra cứu và thống kê. Không xây dựng menu tương tác, không in lời nhắc hoặc thông báo ngoài định dạng quy định.
+
+2. Yêu cầu kỹ thuật
+
+Chuẩn C11; biên dịch tham chiếu: gcc -std=c11 -O2 -Wall -Wextra main.c -o main.
+
+Chương trình đọc từ stdin, chỉ ghi kết quả từng lệnh ra stdout.
+
+Không sử dụng file ngoài, không kết nối mạng, không cần dữ liệu có sẵn.
+
+Giới hạn: 1 ≤ Q ≤ 1000; ID là số nguyên từ 1 đến 1000000; số lượng khi ADD từ 1 đến 1000 (nếu không hợp lệ in ERROR).
+
+Mọi kết quả được in thành một dòng; phân biệt chữ hoa và chữ thường.
+
+3. Định dạng đầu vào
+
+Dòng đầu chứa số nguyên Q (số lệnh). Mỗi dòng trong Q dòng tiếp theo là một trong các lệnh sau:
+
+Lệnh
+
+Ý nghĩa
+
+ADD id quantity
+
+Thêm đầu sách mới với quantity bản. ID đã tồn tại hoặc quantity không hợp lệ: ERROR.
+
+BORROW id
+
+Mượn một bản còn sẵn. Không tìm thấy sách hoặc hết bản: ERROR.
+
+RETURN id
+
+Trả một bản đang được mượn. Không tìm thấy sách hoặc chưa có bản mượn: ERROR.
+
+FIND id
+
+Tra cứu đầu sách. Không tồn tại: NOT FOUND.
+
+STATS
+
+Thống kê toàn thư viện.
+
+TOP
+
+Đầu sách có số lượt mượn thành công cao nhất; hòa chọn ID nhỏ nhất.
+
+4. Định dạng đầu ra (chính xác)
+
+Lệnh
+
+Output
+
+ADD thành công
+
+OK
+
+BORROW thành công
+
+OK
+
+RETURN thành công
+
+OK
+
+Lỗi ADD/BORROW/RETURN
+
+ERROR
+
+FIND id tồn tại
+
+id total available borrowed
+
+FIND id không tồn tại
+
+NOT FOUND
+
+STATS
+
+titles total available borrowed
+
+TOP
+
+id borrowTimes; nếu chưa có đầu sách: NONE
+
+Quy ước: total là số bản ban đầu của đầu sách; available là số bản còn trong thư viện; borrowed = total − available; borrowTimes tăng 1 sau mỗi lần BORROW thành công và không giảm khi RETURN. STATS cộng total/available/borrowed của tất cả đầu sách; titles là số đầu sách khác nhau.
+
+5. Ví dụ minh họa
+
+Input:
+
+10
+ADD 101 3
+ADD 205 2
+BORROW 101
+BORROW 101
+FIND 101
+RETURN 101
+FIND 101
+STATS
+TOP
+FIND 999
+
+Expected output:
+
+OK
+OK
+OK
+OK
+101 3 1 2
+OK
+101 3 2 1
+2 5 4 1
+101 2
+NOT FOUND
+
+6. Các trường hợp biên
+
+ADD cùng ID lần thứ hai phải ERROR và không làm thay đổi dữ liệu.
+
+BORROW khi available bằng 0 phải ERROR.
+
+RETURN khi borrowed bằng 0 phải ERROR.
+
+TOP sau khi có sách nhưng chưa có lượt mượn: in ID nhỏ nhất và 0.
+
+Nếu có nhiều sách đồng hạng TOP, chọn ID nhỏ nhất.
+
+Không in dấu nhắc, giải thích hoặc khoảng trắng dư cuối dòng.
+
+7. Bộ kiểm thử tham chiếu
+
+TC01 – Thêm và tìm
+
+Input / stdin
+
+Expected output / stdout
+
+3
+ADD 10 3
+FIND 10
+STATS
+
+OK
+10 3 3 0
+1 3 3 0
+
+TC02 – ID trùng
+
+Input / stdin
+
+Expected output / stdout
+
+3
+ADD 2 2
+ADD 2 9
+FIND 2
+
+OK
+ERROR
+2 2 2 0
+
+TC03 – Mượn hết
+
+Input / stdin
+
+Expected output / stdout
+
+4
+ADD 8 1
+BORROW 8
+BORROW 8
+FIND 8
+
+OK
+OK
+ERROR
+8 1 0 1
+
+TC04 – Trả không hợp lệ
+
+Input / stdin
+
+Expected output / stdout
+
+4
+ADD 5 2
+RETURN 5
+BORROW 5
+RETURN 5
+
+OK
+ERROR
+OK
+OK
+
+TC05 – Sách không tồn tại
+
+Input / stdin
+
+Expected output / stdout
+
+4
+FIND 7
+BORROW 7
+RETURN 7
+TOP
+
+NOT FOUND
+ERROR
+ERROR
+NONE
+
+TC06 – Thống kê nhiều sách
+
+Input / stdin
+
+Expected output / stdout
+
+5
+ADD 1 2
+ADD 2 5
+BORROW 2
+BORROW 1
+STATS
+
+OK
+OK
+OK
+OK
+2 7 5 2
+
+TC07 – TOP hòa điểm
+
+Input / stdin
+
+Expected output / stdout
+
+6
+ADD 9 2
+ADD 3 2
+BORROW 9
+BORROW 3
+TOP
+STATS
+
+OK
+OK
+OK
+OK
+3 1
+2 4 2 2
+
+TC08 – TOP số lượt tích lũy
+
+Input / stdin
+
+Expected output / stdout
+
+6
+ADD 4 1
+BORROW 4
+RETURN 4
+BORROW 4
+RETURN 4
+TOP
+
+OK
+OK
+OK
+OK
+OK
+4 2
+
+TC09 – Số lượng không hợp lệ
+
+Input / stdin
+
+Expected output / stdout
+
+4
+ADD 1 0
+ADD 2 1001
+ADD 3 1
+STATS
+
+ERROR
+ERROR
+OK
+1 1 1 0
+
+TC10 – TOP khi chưa mượn
+
+Input / stdin
+
+Expected output / stdout
+
+4
+ADD 12 2
+ADD 7 1
+TOP
+FIND 7
+
+OK
+OK
+7 0
+7 1 1 0
+
+8. Rubric chấm điểm (tổng 10.0)
+
+Tiêu chí
+
+Điểm
+
+Minh chứng / điều kiện
+
+ADD và dữ liệu nhất quán
+
+2.0
+
+Thêm hợp lệ; chặn ID trùng, số lượng sai; không đổi dữ liệu khi lỗi.
+
+BORROW và RETURN
+
+2.0
+
+Mượn/trả hợp lệ; chặn hết sách/chưa mượn; đếm available/borrowed đúng.
+
+FIND và STATS
+
+2.0
+
+Tra cứu đúng; tính tổng theo mọi đầu sách; xử lý không tồn tại.
+
+TOP và xử lý hòa
+
+1.5
+
+Đếm số lượt mượn thành công, không giảm sau khi trả; tie-break ID nhỏ nhất.
+
+Xử lý trường hợp biên
+
+1.0
+
+Không crash; kiểm tra ID chưa tồn tại, sách rỗng, số lượng không hợp lệ.
+
+Chuẩn C11 và I/O
+
+1.0
+
+Biên dịch; đọc đủ Q lệnh; stdout đúng từng dòng, không có lời nhắc.
+
+Tổ chức và dễ đọc
+
+0.5
+
+Tên biến rõ; tổ chức hàm hợp lý, không mã hóa sẵn output.
+
+Mức điểm tham khảo: 6–7 nếu hoàn thiện ADD, BORROW, RETURN, FIND và I/O cơ bản; 8–9 nếu thêm STATS, TOP và xử lý phần lớn trường hợp biên. Điểm thực tế phụ thuộc kết quả chấm.
+
+9. Cấu hình chấm tự động đề xuất
+
+Language: C (C11); compiler GCC; không chọn SQL/PostgreSQL.
+
+Mỗi TC là một cặp Input / stdin và Expected output / stdout trong Mục 7.
+
+Không lấy một vài dòng output mô phỏng; chạy chương trình C thực sự với mỗi input.
+
+Có thể có hidden tests cùng định dạng để kiểm tra các biên và chống hardcode.
+
+Rubric chỉ tổng 10 điểm; nếu dùng cả test tự động và AI rubric, tránh tính điểm hai lần.
+
+10. Quy định nộp bài
+
+Nộp tệp main.c (hoặc ZIP có main.c theo yêu cầu hệ thống). Mã nguồn tự biên dịch, không cần nhập menu, không yêu cầu file dữ liệu, chạy được trên Linux/GCC. Chương trình phải đưa ra đúng số dòng kết quả tương ứng với Q lệnh.
+
+Assignment C • Mini Library Manager • C11
