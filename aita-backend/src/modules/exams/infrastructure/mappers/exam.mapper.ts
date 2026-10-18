@@ -75,6 +75,7 @@ export class ExamMapper {
     if (raw.ExamAttachment) {
       (exam as any).ExamAttachment = raw.ExamAttachment
     }
+    if (raw.TestCase) (exam as any).TestCase = raw.TestCase
     if (raw.ExamSection) {
       (exam as any).ExamSection = raw.ExamSection
     }

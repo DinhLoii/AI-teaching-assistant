@@ -13,7 +13,7 @@ export class PrismaExamRepository implements IExamRepository {
           Class: {
             include: {
               InstructorClass: {
-                include: { User: true }
+                include: { User: { select: { Id: true, FullName: true, Avatar: true } } }
               },
               // Used only to match a viewing student to the class they belong to, so they see
               // that class's lecturer. Never serialised — ExamResponseDto maps named fields.
@@ -24,8 +24,10 @@ export class PrismaExamRepository implements IExamRepository {
       },
       ExamAttachment: true,
       ExamSection: {
+        orderBy: { SortOrder: 'asc' },
         include: {
           RubricRule: {
+            orderBy: { SortOrder: 'asc' },
             include: {
               RubricCriterion: {
                 orderBy: { SortOrder: 'asc' }
@@ -38,7 +40,7 @@ export class PrismaExamRepository implements IExamRepository {
     }
   }
 
-  async findMany(filter?: ExamFilter, options?: { skip?: number; take?: number }): Promise<Exam[]> {
+  async findMany(filter?: ExamFilter, options?: { skip?: number; take?: number; summary?: boolean }): Promise<Exam[]> {
     const where: any = {
       NOT: [
         { IsDeleted: true },
@@ -60,22 +62,49 @@ export class PrismaExamRepository implements IExamRepository {
     if (filter?.examType) {
       where.ExamType = filter.examType
     }
-    // Handle complex auth filters if needed here or passed correctly via UI
+    if (filter?.lecturerScope) {
+      where.AND = [{ OR: [
+        { CreatedBy: filter.lecturerScope.userId },
+        { SubjectId: { in: filter.lecturerScope.subjectIds } },
+      ] }]
+    }
+    if (filter?.studentScope) {
+      where.AND = [
+        { Status: { in: ['Published', 'published', 'PUBLISHED'] } },
+        { OR: [
+          { ExamClass: { some: { ClassId: { in: filter.studentScope.classIds } } } },
+          { SubjectId: { in: filter.studentScope.subjectIds }, ExamClass: { none: {} } },
+        ] },
+      ]
+    }
 
     const rawExams = await this.client.exam.findMany({
       where,
       skip: options?.skip,
       take: options?.take,
-      include: this.include
+      ...(options?.summary ? {
+        select: {
+          Id: true, Title: true, Description: true, SubjectId: true, ExamType: true,
+          Duration: true, StartDate: true, DueDate: true, TotalPoints: true,
+          WeightPercentage: true, Status: true, CreatedBy: true,
+          GradingStrategy: true, AllowLateSubmission: true, LatePenaltyType: true,
+          LatePenaltyValue: true, IsDeleted: true,
+          Subject: { select: { SubjectCode: true, SubjectName: true } },
+          ExamClass: { select: { ClassId: true } },
+          _count: { select: { Submission: true } },
+        }
+      } : { include: this.include })
     })
 
-    return rawExams.map(ExamMapper.toDomain)
+    return rawExams.map((raw: any) => ExamMapper.toDomain(options?.summary
+      ? { ...raw, Description: raw.Description?.slice(0, 300) }
+      : raw))
   }
 
   async findById(id: string): Promise<Exam | null> {
     const raw = await this.client.exam.findUnique({
       where: { Id: id },
-      include: this.include
+      include: { ...this.include, TestCase: { orderBy: { SortOrder: 'asc' } } }
     })
     return raw ? ExamMapper.toDomain(raw) : null
   }

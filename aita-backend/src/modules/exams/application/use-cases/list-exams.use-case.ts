@@ -17,16 +17,15 @@ export class ListExamsUseCase implements IUseCase<{ user: AuthUser; params: any 
 
     // Synchronize check with PublishedAssignment table (handles any assignments soft-deleted in grading engine)
     const softDeletedPublishedIds = new Set<string>();
-    try {
-      const deletedPublished = await (prisma as any).publishedAssignment.findMany({
+    const deletedPublishedRequest = (prisma as any).publishedAssignment.findMany({
         where: { IsDeleted: true },
         select: { Id: true }
-      });
-      for (const p of deletedPublished) {
-        if (p.Id) softDeletedPublishedIds.add(p.Id);
-      }
-      // Reads must not schedule background writes that can race a later restore.
-    } catch (e) { }
+      }).catch(() => []);
+    const roleClassesRequest = user.role === 'LECTURER' || user.role === 'STUDENT'
+      ? this.uow.resolve<any>(Symbol.for('ClassRepository')).findMany(user.role === 'LECTURER'
+        ? { instructorId: user.id } : { studentId: user.id })
+      : Promise.resolve([]);
+    const roleClasses = await roleClassesRequest;
 
     // Base filter
     const filter: any = {}
@@ -39,8 +38,17 @@ export class ListExamsUseCase implements IUseCase<{ user: AuthUser; params: any 
     }
     if (type) filter.examType = String(type) as ExamTypeValue
     if (status) filter.status = String(status) as ExamStatusValue
+    if (user.role === 'LECTURER') filter.lecturerScope = {
+      userId: user.id, subjectIds: roleClasses.map((c: any) => c.subjectId).filter(Boolean),
+    }
+    if (user.role === 'STUDENT') filter.studentScope = {
+      classIds: roleClasses.map((c: any) => c.id), subjectIds: roleClasses.map((c: any) => c.subjectId).filter(Boolean),
+    }
 
-    let exams = await this.examRepo.findMany(filter)
+    let exams = await this.examRepo.findMany(filter, { summary: params.view === 'summary' })
+    for (const p of await deletedPublishedRequest) {
+      if (p.Id) softDeletedPublishedIds.add(p.Id)
+    }
     exams = exams.filter(exam => {
       const isDel = (exam as any).isDeleted || (exam as any).IsDeleted;
       const statusLower = (exam.status || (exam as any).Status || '')?.toLowerCase();
@@ -51,9 +59,7 @@ export class ListExamsUseCase implements IUseCase<{ user: AuthUser; params: any 
 
     // Role-based filtering (in-memory for now to reuse legacy repo logic)
     if (user.role === 'LECTURER') {
-      const classes = await this.uow.resolve<any>(Symbol.for('ClassRepository')).findMany({
-        instructorId: user.id
-      })
+      const classes = roleClasses
       const allowedSubjectIds = new Set(classes.map((c: any) => c.subjectId))
       // Lecturer sees exams for subjects they teach OR exams explicitly assigned to their classes OR created by them
       exams = exams.filter(exam => 
@@ -63,7 +69,7 @@ export class ListExamsUseCase implements IUseCase<{ user: AuthUser; params: any 
     }
 
     if (user.role === 'STUDENT') {
-      const enrolled = await this.uow.resolve<any>(Symbol.for('ClassRepository')).findMany({ studentId: user.id })
+      const enrolled = roleClasses
       const enrolledClassIds = new Set(enrolled.map((c: any) => c.id))
       const enrolledSubjectIds = new Set(enrolled.map((c: any) => c.subjectId).filter(Boolean))
 

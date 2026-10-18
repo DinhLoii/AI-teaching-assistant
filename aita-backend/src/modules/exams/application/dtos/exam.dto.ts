@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { criterionView } from '../exam-criteria-view.js'
 
 export const CreateExamSchema = z.object({
   subjectId: z.string().optional(),
@@ -142,25 +143,9 @@ export class ExamResponseDto {
         return section.RubricRule.flatMap((rule: any) => {
           const criteriaList = rule.RubricCriterion || [];
           if (criteriaList.length > 0) {
-            return criteriaList.map((c: any, idx: number) => ({
-              id: c.Id || c.id || `c_${idx}`,
-              title: c.Description || c.description || `Tiêu chí ${idx + 1}`,
-              name: c.Description || c.description || `Tiêu chí ${idx + 1}`,
-              description: c.Description || c.description || '',
-              maxPoints: Number(c.MaxPoints ?? c.maxPoints ?? 0),
-              weight: Number(c.MaxPoints ?? c.maxPoints ?? 0),
-              scoringStrategy: 'Manual'
-            }));
+            return criteriaList.map((c: any) => criterionView(rule, c));
           }
-          return [{
-            id: rule.Id || rule.id,
-            title: rule.Description || rule.description || 'Tiêu chí',
-            name: rule.Description || rule.description || 'Tiêu chí',
-            description: rule.Description || rule.description || '',
-            maxPoints: Number(rule.MaxPoints ?? rule.maxPoints ?? 10),
-            weight: Number(rule.MaxPoints ?? rule.maxPoints ?? 10),
-            scoringStrategy: 'Manual'
-          }];
+          return [criterionView(rule)];
         });
       });
     }

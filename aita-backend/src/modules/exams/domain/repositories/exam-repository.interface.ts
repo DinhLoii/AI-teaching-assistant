@@ -7,10 +7,12 @@ export interface ExamFilter {
   examType?: ExamTypeValue
   instructorId?: string
   classIds?: string[]
+  lecturerScope?: { userId: string; subjectIds: string[] }
+  studentScope?: { classIds: string[]; subjectIds: string[] }
 }
 
 export interface IExamRepository {
-  findMany(filter?: ExamFilter, options?: { skip?: number; take?: number }): Promise<Exam[]>
+  findMany(filter?: ExamFilter, options?: { skip?: number; take?: number; summary?: boolean }): Promise<Exam[]>
   findById(id: string): Promise<Exam | null>
   create(exam: Exam): Promise<void>
   update(exam: Exam): Promise<void>

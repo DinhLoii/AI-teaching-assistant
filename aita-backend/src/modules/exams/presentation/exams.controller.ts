@@ -33,15 +33,10 @@ export class ExamsController extends BaseController {
       status: req.query.status as any,
       type: req.query.type as any,
       tab: req.query.tab as string | undefined,
+      view: req.query.view === 'summary' ? 'summary' : 'full',
     }
     const cacheKey = `exams_list_${req.user?.id}_${req.user?.role}_${JSON.stringify(params)}`
-    const cached = memoryCache.get(cacheKey)
-    if (cached) {
-      this.ok(res, cached, MESSAGES.SUCCESS)
-      return
-    }
-    const result = await this.listExamsUseCase.execute({ user: req.user!, params })
-    memoryCache.set(cacheKey, result, 60)
+    const result = await memoryCache.wrap(cacheKey, 60, () => this.listExamsUseCase.execute({ user: req.user!, params }))
     this.ok(res, result, MESSAGES.SUCCESS)
   }
 
@@ -66,15 +61,8 @@ export class ExamsController extends BaseController {
   async getOne(req: Request, res: Response): Promise<void> {
     const id = req.params.id as string
     this.logger.debug(`Received request to get exam details: ${id}`)
-    const cacheKey = `exam_detail_${id}_${req.user?.id || 'anon'}`
-    const cached = memoryCache.get(cacheKey)
-    if (cached) {
-      this.ok(res, cached, MESSAGES.SUCCESS)
-      return
-    }
-    // Pass the caller so a student sees the lecturer of the class they belong to.
-    const result = await this.getExamUseCase.execute(id, req.user?.id)
-    memoryCache.set(cacheKey, result, 30)
+    const cacheKey = `exam_detail_${id}_${req.user?.id || 'anon'}_${req.user?.role || ''}`
+    const result = await memoryCache.wrap(cacheKey, 30, () => this.getExamUseCase.execute(id, req.user?.id, req.user?.role))
     this.ok(res, result, MESSAGES.SUCCESS)
   }
 

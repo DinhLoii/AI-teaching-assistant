@@ -5,6 +5,8 @@ import { NotFoundError } from '../../../../shared/application/app.error.js'
 import { MESSAGES } from '../../../../shared/constants/messages.js'
 
 import { prisma } from '../../../../database/prisma.js'
+import { examTestCasesView } from '../exam-criteria-view.js'
+import { examConfiguration } from '../../../submissions/application/submission-language.js'
 
 export class GetExamUseCase implements IUseCase<string, ExamResponseDto> {
   constructor(private readonly examRepo: IExamRepository) {}
@@ -15,7 +17,7 @@ export class GetExamUseCase implements IUseCase<string, ExamResponseDto> {
    *   whichever class happens to be attached first. Omitting it keeps the previous behaviour,
    *   which is what lecturers and admins continue to get.
    */
-  async execute(id: string, viewerId?: string): Promise<ExamResponseDto> {
+  async execute(id: string, viewerId?: string, viewerRole?: string): Promise<ExamResponseDto> {
     const exam = await this.examRepo.findById(id)
     if (!exam) {
       throw new NotFoundError(MESSAGES.EXAM_NOT_FOUND)
@@ -109,6 +111,12 @@ export class GetExamUseCase implements IUseCase<string, ExamResponseDto> {
       console.error('Error fetching PublishedAssignment:', err)
     }
     
-    return ExamResponseDto.from(exam as any)
+    const dto = ExamResponseDto.from(exam as any)
+    const config = examConfiguration(exam as any)
+    const staff = ['ADMIN', 'LECTURER'].includes(String(viewerRole || '').toUpperCase())
+    const storedTests = (exam as any).TestCase
+    ;(dto as any).testCases = examTestCasesView(storedTests?.length ? storedTests : config.testCases || [], staff)
+    ;(dto as any).runtimeLanguage = config.submissionFormat?.requiredLanguage || config.runtimeConfig?.language || null
+    return dto
   }
 }
