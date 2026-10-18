@@ -198,18 +198,12 @@ export default function StudentAssignmentsPage() {
     URL.revokeObjectURL(url)
   }, [])
 
+  const loadSequence = React.useRef(0)
   const loadData = React.useCallback(async (background = false) => {
-    if (!background) setLoading(true)
-    try {
-      const [dashboard, subs, allAssignments] = await Promise.all([
-        studentPortalApi.getStudentDashboard().catch((err) => { if (background) throw err; return null }),
-        submissionsApi.getSubmissions().catch((err) => { if (background) throw err; return [] }),
-        assignmentsApi.getAssignments().catch((err) => { if (background) throw err; return [] }),
-      ])
-
-      const validSubs = subs || []
-      setSubmissions(validSubs)
-
+    const sequence = ++loadSequence.current
+    let latestAssignments: any = [], latestDashboard: any = null
+    const updateTasks = (allAssignments: any, dashboard: any) => {
+      if (sequence !== loadSequence.current) return
       // Merge upcoming assignments from dashboard with general assignments
       const upcoming = dashboard?.upcomingAssignments || []
       const taskMap = new Map<string, any>()
@@ -249,12 +243,36 @@ export default function StudentAssignmentsPage() {
 
       const loadedTasks = Array.from(taskMap.values())
       setTasks(loadedTasks)
+    }
+    if (!background) setLoading(true)
+    try {
+      const [dashboard, subs, allAssignments] = await Promise.all([
+        studentPortalApi.getStudentDashboard().then(value => {
+          latestDashboard = value
+          updateTasks(latestAssignments, latestDashboard)
+          if (sequence === loadSequence.current) setLoading(false)
+          return value
+        }).catch((err) => { if (background) throw err; return null }),
+        submissionsApi.getSubmissions().catch((err) => { if (background) throw err; return [] }),
+        assignmentsApi.getAssignments().then(value => {
+          latestAssignments = value
+          updateTasks(latestAssignments, latestDashboard)
+          if (sequence === loadSequence.current) setLoading(false)
+          return value
+        }).catch((err) => { if (background) throw err; return [] }),
+      ])
+
+      if (sequence !== loadSequence.current) return
+      const validSubs = subs || []
+      setSubmissions(validSubs)
+
+      updateTasks(allAssignments, dashboard)
     } catch (err) {
       if (background) throw err
       console.error('Failed to load student assignments:', err)
       setTasks([])
     } finally {
-      setLoading(false)
+      if (sequence === loadSequence.current) setLoading(false)
     }
   }, [isVi])
 

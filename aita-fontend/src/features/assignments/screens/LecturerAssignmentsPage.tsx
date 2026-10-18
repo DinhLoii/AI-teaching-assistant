@@ -10,9 +10,9 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { ErrorNotice } from '@/components/ui/feedback'
-import { assignmentsApi } from '@/lib/api/modules/assignments'
+import { assignmentsApi, ASSIGNMENT_LIST_PATH } from '@/lib/api/modules/assignments'
 import { classesApi } from '@/lib/api/modules/classes'
-import { peekClientApiCache } from '@/lib/api/client'
+import { peekClientApiCache, setClientApiCache } from '@/lib/api/client'
 import { CardGridSkeleton } from '@/components/ui/skeleton'
 import { formatDate } from '@/lib/utils'
 import { useLanguage } from '@/providers/language-provider'
@@ -59,27 +59,25 @@ export default function LecturerAssignmentsPage({ defaultCreate = false }: { def
   const loadAssignments = React.useCallback(async (fresh = false) => {
     const version = dataVersion.current, requestId = ++activeLoadId.current
     try {
-      const [assigns, cls] = await Promise.all([
-        assignmentsApi.getAssignments(undefined, fresh),
-        classesApi.getClasses(1, 1000),
-      ])
+      const assigns = await assignmentsApi.getAssignments(undefined, fresh)
       if (version !== dataVersion.current || requestId !== activeLoadId.current) return
       setAssignments(assigns || [])
-      setClasses(cls || [])
+      if (fresh) setClientApiCache(ASSIGNMENT_LIST_PATH, assigns || [])
       setLoadError(null)
     } catch (err) {
       if (version !== dataVersion.current || requestId !== activeLoadId.current) return
       setLoadError(errorMessage(err))
-    } finally { setLoading(false) }
+    } finally { if (requestId === activeLoadId.current) setLoading(false) }
   }, [])
 
-  const loadTrash = React.useCallback(async () => {
+  const loadTrash = React.useCallback(async (fresh = false) => {
     const version = dataVersion.current, requestId = ++trashLoadId.current
     setTrashLoading(true)
     try {
-      const trash = await assignmentsApi.getTrashAssignments()
+      const trash = await assignmentsApi.getTrashAssignments(fresh)
       if (version !== dataVersion.current || requestId !== trashLoadId.current) return
       setTrashAssignments(trash || [])
+      setClientApiCache('/grading/assignments/trash', trash || [])
       setTrashLoaded(true)
       setTrashError(null)
     } catch (err) {
@@ -91,7 +89,7 @@ export default function LecturerAssignmentsPage({ defaultCreate = false }: { def
   React.useEffect(() => {
     try {
       if (typeof peekClientApiCache === 'function') {
-        const cachedA = peekClientApiCache<any[]>('/assignments')
+        const cachedA = peekClientApiCache<any[]>(ASSIGNMENT_LIST_PATH)
         const cachedC = peekClientApiCache<any[]>('/classes?page=1&limit=1000')
         if (cachedA) {
           setAssignments(cachedA)
@@ -104,8 +102,9 @@ export default function LecturerAssignmentsPage({ defaultCreate = false }: { def
     } catch {}
 
     void loadAssignments()
-    void loadTrash()
-  }, [loadAssignments, loadTrash])
+    // Class options are only needed by the creation dialog; they must not block the list.
+    void classesApi.getClasses(1, 1000).then(cls => setClasses(cls || [])).catch(() => {})
+  }, [loadAssignments])
 
   React.useEffect(() => {
     if (viewMode === 'trash') void loadTrash()
@@ -135,7 +134,7 @@ export default function LecturerAssignmentsPage({ defaultCreate = false }: { def
         const row = sourceRows.find(item => item.id === id)
         if (action === 'trash') {
           setAssignments(previous => previous.filter(item => item.id !== id))
-          if (row) setTrashAssignments(previous => [{ ...row, status: 'deleted', isDeleted: true }, ...previous.filter(item => item.id !== id)])
+          if (row) setTrashAssignments(previous => [{ ...row, trashPreviousStatus: row.status, status: 'deleted', isDeleted: true }, ...previous.filter(item => item.id !== id)])
         } else {
           setTrashAssignments(previous => previous.filter(item => item.id !== id))
           if (action === 'restore' && row) setAssignments(previous => [...previous.filter(item => item.id !== id), { ...row, status: String(row.trashPreviousStatus || 'published').toLowerCase(), isDeleted: false }])
@@ -149,12 +148,14 @@ export default function LecturerAssignmentsPage({ defaultCreate = false }: { def
         ? 'Đã chuyển ' + successful + ' bài tập vào thùng rác. Bạn có thể khôi phục trong tab Thùng rác.'
         : action === 'restore' ? 'Đã khôi phục ' + successful + ' bài tập.' : 'Đã xóa vĩnh viễn ' + successful + ' bài tập.')
       if (failed.length) setActionError(failed.length + (action === 'trash' ? ' bài tập chưa chuyển được: ' : ' bài tập chưa xử lý được: ') + errorMessage(failed[0].reason))
-      await Promise.all([loadAssignments(true), loadTrash()])
     } finally {
       movingRef.current = false
       setMovingToTrash(false)
       setPendingAction(null)
     }
+    // The write has completed. Reconcile server data without keeping actions locked.
+    void loadAssignments(true)
+    void loadTrash(true)
   }
 
   async function moveToTrash(ids: string[]) { await performAction(ids, 'trash') }
@@ -400,7 +401,7 @@ export default function LecturerAssignmentsPage({ defaultCreate = false }: { def
         </div>
 
         {/* Grid */}
-        {(viewMode === 'active' && loading && assignments.length === 0) || (viewMode === 'trash' && trashLoading && !trashLoaded) ? (
+        {(viewMode === 'active' && loading && assignments.length === 0) || (viewMode === 'trash' && trashLoading && !trashLoaded && trashAssignments.length === 0) ? (
           <CardGridSkeleton count={6} />
         ) : viewMode === 'trash' && trashError && filtered.length === 0 ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-8 text-center text-sm text-rose-700">

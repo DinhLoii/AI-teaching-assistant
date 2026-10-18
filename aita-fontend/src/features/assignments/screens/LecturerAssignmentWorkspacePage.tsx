@@ -11,6 +11,7 @@ import { Modal } from '@/components/ui/modal'
 import { assignmentsApi } from '@/lib/api/modules/assignments'
 import { rubricApi } from '@/lib/api/modules/rubric'
 import { gradingApi } from '@/lib/api/modules/grading'
+import { ConfiguredTestCases } from '../components/ConfiguredTestCases'
 import { useLanguage } from '@/providers/language-provider'
 import LecturerSubmissionsPage from '@/features/submissions/screens/LecturerSubmissionsPage'
 import {
@@ -1343,6 +1344,7 @@ function AIRubricTab({ assignment, assignmentId, onUpdateAssignment }: { assignm
   if (hasPublishedRules && !showGenerator) {
     return (
       <div className="space-y-6 w-full animate-in fade-in duration-200">
+        <ConfiguredTestCases tests={assignment?.testCases} language={assignment?.runtimeLanguage} executionSelected={publishedRubric.rules.some((rule: { scoringStrategy?: string }) => rule.scoringStrategy === 'StdInOutProbe')} />
         {/* Header Card */}
         <div className="p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -1465,6 +1467,7 @@ function AIRubricTab({ assignment, assignmentId, onUpdateAssignment }: { assignm
   // 2. AI Rubric Generator & Editor View
   return (
     <div className="space-y-6 w-full">
+      <ConfiguredTestCases tests={assignment?.testCases} language={assignment?.runtimeLanguage} executionSelected={Boolean(publishedRubric?.rules?.some((rule: { scoringStrategy?: string }) => rule.scoringStrategy === 'StdInOutProbe'))} />
       {hasPublishedRules && (
         <div className="flex items-center justify-between p-4 bg-orange-50/60 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800/40 rounded-2xl">
           <div className="flex items-center gap-2 text-xs text-orange-800 dark:text-orange-300">
@@ -2120,7 +2123,7 @@ export default function LecturerAssignmentWorkspacePage() {
               )}
 
               {/* SQL Answer key button */}
-              <label className="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-2xl text-xs font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors shadow-xs h-9">
+              {(assignment?.runtimeLanguage === 'SQL' || assignment?.rubrics?.some(rule => rule.scoringStrategy === 'SqlExecutionProbe')) && <label className="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-2xl text-xs font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors shadow-xs h-9">
                 {uploadingAnswerKey ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
                 <span>{uploadingAnswerKey ? t('lecturer.workspace.uploading_sql', 'Đang cập nhật SQL...') : t('lecturer.workspace.upload_sql_btn', 'Cập nhật SQL Answer Key')}</span>
                 <input
@@ -2130,7 +2133,7 @@ export default function LecturerAssignmentWorkspacePage() {
                   disabled={uploadingAnswerKey}
                   onChange={handleAnswerKeyUpload}
                 />
-              </label>
+              </label>}
 
               <div className="flex gap-4 text-center shrink-0">
                 {assignment?.maxScore !== undefined && (

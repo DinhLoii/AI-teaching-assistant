@@ -13,6 +13,7 @@ import { EvaluationReportViewer } from '@/features/submissions/components/Evalua
 import { StudentSubmissionModal } from '@/features/assignments/components/StudentSubmissionModal'
 import { AssignmentDocument } from '../components/AssignmentDocument'
 import { assignmentDocumentContent } from '../document-content'
+import { assignmentRubricRules, assignmentMaxScore } from '../rubric-content'
 import { assignmentsApi } from '@/lib/api/modules/assignments'
 import { submissionsApi } from '@/lib/api/modules/submissions'
 import { gradingApi } from '@/lib/api/modules/grading'
@@ -203,7 +204,8 @@ export default function StudentAssignmentDetailPage() {
         latePenaltyValue: summary?.latePenaltyValue || 0,
         lateSubmitHours: summary?.lateSubmitHours !== undefined ? Number(summary.lateSubmitHours) : null,
         allowLateSubmission: allowLate,
-        rubricRules: grading?.rubric?.rules || summary?.aiRubrics || summary?.rubrics || [],
+        rubricRules: assignmentRubricRules(summary, grading),
+        maxScore: assignmentMaxScore(summary, grading),
         sqlSetupScript: grading?.sqlSetupScript || null,
         attachments: summary?.attachments || [],
         lecturer: summary?.lecturer || null,
@@ -384,7 +386,7 @@ export default function StudentAssignmentDetailPage() {
       if (elapsed % (elapsed > 60 ? 8 : 2) === 0 && !checking) {
         checking = true
         try {
-          const latest = await submissionsApi.getSubmissionDetail(initialSubId)
+          const latest = await submissionsApi.getSubmissionDetail(initialSubId, true)
           if (latest) {
             setSubmission(latest)
             const status = String(latest.gradingStatus || '').toLowerCase()
@@ -1079,7 +1081,7 @@ export default function StudentAssignmentDetailPage() {
                   </h3>
                 </div>
                 <span className="text-xs text-slate-500 dark:text-slate-400">
-                  {isVi ? 'Thang điểm tối đa' : 'Max points'}: <strong className="text-orange-600 dark:text-orange-400 font-bold">10.0 {isVi ? 'điểm' : 'pts'}</strong>
+                  {isVi ? 'Thang điểm tối đa' : 'Max points'}: <strong className="text-orange-600 dark:text-orange-400 font-bold">{Number(assignment.maxScore).toFixed(1)} {isVi ? 'điểm' : 'pts'}</strong>
                 </span>
               </div>
 
@@ -1126,7 +1128,7 @@ export default function StudentAssignmentDetailPage() {
                 </div>
               ) : (
                 <p className="text-xs text-slate-400 italic">
-                  {isVi ? 'Đang cập nhật barem chấm điểm chi tiết...' : 'Rubric criteria will be updated soon.'}
+                  {isVi ? 'Giảng viên chưa công bố tiêu chí chấm điểm chi tiết cho bài tập này. Vui lòng xem yêu cầu trong đề bài hoặc liên hệ giảng viên.' : 'Detailed grading criteria have not been published. Please refer to the assignment brief or contact your lecturer.'}
                 </p>
               )}
             </div>

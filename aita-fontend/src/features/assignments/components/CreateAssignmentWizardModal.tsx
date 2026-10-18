@@ -487,7 +487,7 @@ export function CreateAssignmentWizardModal({
           setDirectoryStructure(data.submissionFormat.directoryStructure || '')
         }
         setTestCases([]); setRubricCriteria([])
-        if (!data.testCases?.length) setStep2Tab('rubric')
+        setStep2Tab(data.testCases?.length ? 'testcases' : 'rubric')
 
         if (data.testCases && Array.isArray(data.testCases)) {
           setTestCases(data.testCases.map((tc: any, idx: number) => ({
@@ -1004,13 +1004,19 @@ export function CreateAssignmentWizardModal({
               </div>
             </div>
 
+            {testCases.length > 0 && !rubricCriteria.some(rule => rule.method === 'test_runner') && (
+              <div className="p-3 rounded-xl border border-amber-200 bg-amber-50 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200" role="status">
+                Đã có {testCases.length} testcase nhưng chưa có tiêu chí dùng phương thức Test tự động. Lưu testcase không đồng nghĩa chương trình đã được chạy kiểm thử. Hãy chọn phương thức chấm phù hợp trong tab Tiêu chí chấm Rubric; điểm vẫn tính theo barem, không cộng testcase thêm lần nữa.
+              </div>
+            )}
+
             {/* NỘI DUNG TAB 1: TEST CASES */}
             {step2Tab === 'testcases' && (
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h4 className="text-xs font-bold text-slate-900 dark:text-white">Danh sách kịch bản kiểm thử (Stdin / Stdout)</h4>
-                    <p className="text-[11px] text-slate-500">Mã nguồn sinh viên sẽ được biên dịch và chạy trong Docker Sandbox để so khớp đầu ra</p>
+                    <p className="text-[11px] text-slate-500">Các cặp stdin/stdout được lưu cùng đề. Chỉ thực thi khi tiêu chí chọn Test tự động và Docker Sandbox đã sẵn sàng.</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button type="button" variant="outline" size="sm" onClick={distributeTestCasePoints} className="text-xs gap-1">
@@ -1029,7 +1035,7 @@ export function CreateAssignmentWizardModal({
                       <div>
                         <p className="font-bold mb-1">Chưa có testcase thực thi được xác minh từ đề bài</p>
                         <p className="text-sky-700/80 dark:text-sky-400">
-                          Tình huống Android/Web/Desktop cần môi trường kiểm thử phù hợp hoặc giảng viên kiểm tra. Không chuyển thao tác giao diện thành stdin/stdout. Chỉ thêm testcase ở đây khi bài có hợp đồng nhập/xuất dòng lệnh rõ ràng.
+                          Với bài C/C++ hoặc console, dùng cặp Input/Expected output trong đề hoặc bấm Thêm Test Case. Với Android/Web/Desktop, cần môi trường kiểm thử phù hợp; không chuyển thao tác giao diện thành stdin/stdout.
                         </p>
                       </div>
                     </div>
