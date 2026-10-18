@@ -7,9 +7,9 @@ export class PrismaClassRepository implements IClassRepository {
 
   private get include() {
     return {
-      InstructorClass: { include: { User: true } },
-      Subject: true,
-      Semester: true,
+      InstructorClass: { include: { User: { select: { Id: true, FullName: true, Email: true, Avatar: true } } } },
+      Subject: { select: { SubjectName: true, SubjectCode: true } },
+      Semester: { select: { Code: true, Season: true } },
       _count: { select: { StudentClass: true } }
     }
   }

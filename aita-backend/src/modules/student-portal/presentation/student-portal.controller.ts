@@ -5,6 +5,7 @@ import { MESSAGES } from '../../../shared/constants/messages.js'
 import { prisma } from '../../../database/prisma.js'
 import { memoryCache } from '../../../shared/infrastructure/memory-cache.js'
 import { NotFoundError } from '../../../shared/application/app.error.js'
+import { dashboardResultSummaries } from '../application/dashboard-result-view.js'
 
 export class StudentPortalController extends BaseController {
   constructor(private readonly logger: ILogger) {
@@ -16,11 +17,7 @@ export class StudentPortalController extends BaseController {
     this.logger.debug(`Fetching student dashboard for ${studentId}`)
 
     const cacheKey = `student_dash_${studentId}`
-    const cached = memoryCache.get(cacheKey)
-    if (cached) {
-      this.ok(res, cached, MESSAGES.SUCCESS)
-      return
-    }
+    const snapshot = await memoryCache.wrap(cacheKey, 20, async () => {
 
     // Run all 6 independent queries concurrently via Promise.all to minimize Neon DB round-trip latency
     const [
@@ -272,9 +269,7 @@ export class StudentPortalController extends BaseController {
           : 'Môn học',
         score: Number(recentGradedSubmission.FinalScore ?? recentGradedSubmission.TotalScore ?? 0),
         maxScore: Number(recentGradedSubmission.Exam?.TotalPoints ?? 10),
-        testcases: report?.testcasesSummary || (recentGradedSubmission.ExecutionResult?.[0] ? 'Đã hoàn thành kiểm thử Docker Sandbox' : 'Chưa có thông tin testcase'),
-        execution: report?.executionSummary || 'Thực thi an toàn trong Sandbox',
-        review: recentGradedSubmission.InstructorFeedback || report?.aiSummary || 'Đã hoàn thành đánh giá Rubric AI',
+        ...dashboardResultSummaries(report, recentGradedSubmission.InstructorFeedback),
       }
 
       if (recentGradedSubmission.ExecutionResult?.[0]?.RuleScore) {
@@ -333,8 +328,9 @@ export class StudentPortalController extends BaseController {
       unreadNotifications
     }
 
-    memoryCache.set(cacheKey, result, 20)
-    this.ok(res, result, MESSAGES.SUCCESS)
+    return result
+    })
+    this.ok(res, snapshot, MESSAGES.SUCCESS)
   }
 
   async getSubjects(req: Request, res: Response): Promise<void> {
@@ -344,11 +340,7 @@ export class StudentPortalController extends BaseController {
     // Optional season filter: ?semester=SUMMER2026 (normalized season name without spaces)
     const seasonFilter = req.query.semester as string | undefined
     const cacheKey = `student_subjects_${studentId}_${seasonFilter || 'all'}`
-    const cached = memoryCache.get(cacheKey)
-    if (cached) {
-      this.ok(res, cached, MESSAGES.SUCCESS)
-      return
-    }
+    const snapshot = await memoryCache.wrap(cacheKey, 20, async () => {
 
     // Find all classes the student is enrolled in, then map to unique subjects
     const enrolledClasses = await prisma.class.findMany({
@@ -451,8 +443,9 @@ export class StudentPortalController extends BaseController {
     }
 
     const result = Array.from(subjectsMap.values())
-    memoryCache.set(cacheKey, result, 20)
-    this.ok(res, result, MESSAGES.SUCCESS)
+    return result
+    })
+    this.ok(res, snapshot, MESSAGES.SUCCESS)
   }
 
   async getClassDetail(req: Request, res: Response): Promise<void> {

@@ -46,13 +46,7 @@ export class ClassesController extends BaseController {
     const page = parseInt(req.query.page as string) || 1
     const limit = parseInt(req.query.limit as string) || 10
     const cacheKey = `classes_list_${req.user!.id}_${req.user!.role}_${page}_${limit}`
-    const cached = memoryCache.get(cacheKey)
-    if (cached) {
-      this.ok(res, cached, MESSAGES.CLASS_LIST_SUCCESS)
-      return
-    }
-    const result = await this.listClassesUseCase.execute({ user: req.user!, page, limit })
-    memoryCache.set(cacheKey, result, 60)
+    const result = await memoryCache.wrap(cacheKey, 60, () => this.listClassesUseCase.execute({ user: req.user!, page, limit }))
     this.ok(res, result, MESSAGES.CLASS_LIST_SUCCESS)
   }
 
@@ -79,9 +73,9 @@ export class ClassesController extends BaseController {
     const raw = await prisma.class.findUnique({
       where: { Id: classId },
       include: {
-        InstructorClass: { include: { User: true } },
-        Subject: true,
-        Semester: true,
+        InstructorClass: { include: { User: { select: { Id: true, FullName: true, Email: true, Avatar: true } } } },
+        Subject: { select: { SubjectName: true, SubjectCode: true } },
+        Semester: { select: { Code: true, Season: true } },
         _count: { select: { StudentClass: true } }
       }
     })
@@ -101,13 +95,7 @@ export class ClassesController extends BaseController {
     const classId = req.params.id as string
     this.logger.info(`Fetching students for class ${classId}`)
     const cacheKey = `class_students_${classId}`
-    const cached = memoryCache.get(cacheKey)
-    if (cached) {
-      this.ok(res, cached, MESSAGES.SUCCESS)
-      return
-    }
-    const result = await this.getClassStudentsUseCase.execute(classId)
-    memoryCache.set(cacheKey, result, 20)
+    const result = await memoryCache.wrap(cacheKey, 20, () => this.getClassStudentsUseCase.execute(classId))
     this.ok(res, result, MESSAGES.SUCCESS)
   }
 

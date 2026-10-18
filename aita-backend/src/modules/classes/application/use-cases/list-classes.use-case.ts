@@ -1,3 +1,4 @@
+import { syncPendingEnrollments } from '../pending-enrollment-sync.js'
 import type { IUseCase } from '../../../../shared/application/base-use-case.js'
 import type { IClassRepository, ClassFilter } from '../../domain/repositories/class-repository.interface.js'
 import type { AuthUser } from '../../../../types/express.js'
@@ -22,52 +23,8 @@ export class ListClassesUseCase implements IUseCase<{ user: AuthUser, page?: num
     const skip = (page - 1) * limit
     const classes = await this.classRepo.findMany(filter, { skip, take: limit })
 
-    // Background sync pending enrollments retroactively (do not await)
-    if (user.role !== 'STUDENT') {
-      import('../../../../database/prisma.js').then(async ({ prisma }) => {
-        try {
-          const pending = await (prisma as any).pendingEnrollment.findMany({ where: { Status: 'Pending' } });
-          for (const pe of pending) {
-            const potentialClasses = await (prisma as any).class.findMany({
-              where: {
-                ClassCode: pe.ClassCode
-              },
-              include: { Semester: true, Subject: true }
-            });
-            
-            const peSemNumMatch = pe.SemesterCode?.match(/\d+/)
-            const peSemNum = peSemNumMatch ? parseInt(peSemNumMatch[0], 10) : null
-
-            for (const cls of potentialClasses) {
-              const clsSemNumMatch = cls.Semester?.Code?.match(/\d+/)
-              const clsSemNum = clsSemNumMatch ? parseInt(clsSemNumMatch[0], 10) : null
-              
-              const isSemesterMatch = cls.Semester?.Code === pe.SemesterCode || (peSemNum !== null && peSemNum === clsSemNum)
-              const isSubjectMatch = pe.SubjectCode ? (cls.Subject?.SubjectCode?.toLowerCase() === pe.SubjectCode.toLowerCase()) : true
-
-              if (isSemesterMatch && isSubjectMatch) {
-                const alreadyEnrolledInSubject = await (prisma as any).studentClass.findFirst({
-                  where: {
-                    UserId: pe.UserId,
-                    Class: {
-                      SubjectId: cls.SubjectId,
-                      SemesterId: cls.SemesterId
-                    }
-                  }
-                });
-                if (!alreadyEnrolledInSubject) {
-                  await (prisma as any).studentClass.create({
-                    data: { UserId: pe.UserId, ClassId: cls.Id, EnrolledAt: new Date() }
-                  });
-                }
-              }
-            }
-          }
-        } catch (err) {
-          console.error('Background sync failed:', err);
-        }
-      }).catch(console.error);
-    }
+    // Reconcile in a coalesced batch without competing per row with interactive reads.
+    if (user.role !== 'STUDENT') void syncPendingEnrollments().catch(err => console.error('Background sync failed:', err))
 
     // Internal note is visible only to staff; never expose it to students.
     const includeNote = user.role !== 'STUDENT'
