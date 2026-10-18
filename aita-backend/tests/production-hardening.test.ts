@@ -13,6 +13,79 @@ const { requireRoles, authenticate } = await import('../src/middleware/auth.js')
 const { protectSubmissionUploads, resolveSubmissionFile, readSubmissionFile } = await import('../src/modules/submissions/infrastructure/submission-storage.js')
 const { safeLogData, safeUrl } = await import('../src/shared/infrastructure/redact-secrets.js')
 const { canSeedDemoAccounts } = await import('../src/database/dev-seed-policy.js')
+const { assertSubmissionLanguage, assertDirectorySubmissionLanguage, examConfiguration } = await import('../src/modules/submissions/application/submission-language.js')
+const { criterionView, examTestCasesView } = await import('../src/modules/exams/application/exam-criteria-view.js')
+const { studentReportView } = await import('../src/modules/submissions/application/student-report-view.js')
+
+test('published student reports retain hidden-case outcomes without exposing hidden input/output or compiler diagnostics', () => {
+  const source = { consoleVerification: { caseResults: [{ caseId: 'hidden', isHidden: true, passed: false, input: 'secret-input', expected: 'secret-answer', actual: 'secret-output', stderr: 'secret-path' }, { caseId: 'public', isHidden: false, passed: true, input: '1', expected: '2' }] } }
+  const view = studentReportView(source)
+  assert.equal(JSON.stringify(view).includes('secret'), false)
+  assert.equal(view.consoleVerification.caseResults[0].passed, false)
+  assert.equal(view.consoleVerification.caseResults[1].expected, '2')
+  assert.equal(source.consoleVerification.caseResults[0].input, 'secret-input')
+})
+
+test('console tests execute for an AI-only rubric as verification without changing the rubric score budget', async () => {
+  const { verifyConsoleTests } = await import('../src/modules/grading/engine/application/evaluator/console-verification.js')
+  const { StdInOutProbeEngine } = await import('../src/modules/grading/engine/application/evaluator/StdInOutProbeEngine.js')
+  const original = StdInOutProbeEngine.prototype.evaluateAsync
+  let calls = 0
+  StdInOutProbeEngine.prototype.evaluateAsync = async () => { calls++; return { passed: false, totalCases: 1, passedCases: 0, confidence: 0, caseResults: [] } }
+  try {
+    const exam = { Description: 'Ngôn ngữ: C++\nĐọc stdin, ghi stdout một dòng.\nDòng đầu chứa số nguyên Q.', AiGeneratedContent: JSON.stringify({ runtimeConfig: { language: 'C++' } }), TestCase: [{ Id: 't1', Input: '1\nTOTAL', ExpectedOutput: 'TOTAL 0', IsHidden: false }] }
+    const result = await verifyConsoleTests(exam, [{ scoringStrategy: 'AICodeReview', weight: 10 }], 'fixture')
+    assert.equal(result?.status, 'completed')
+    assert.equal(result?.scoringImpact, 'none')
+    assert.equal(calls, 1)
+    exam.TestCase[0].Input = 'mô tả đề bài bị trích nhầm'
+    assert.equal((await verifyConsoleTests(exam, [], 'fixture'))?.status, 'invalid_tests')
+    assert.equal(calls, 1)
+    assert.equal(await verifyConsoleTests(exam, [{ scoringStrategy: 'StdInOutProbe' }], 'fixture'), null)
+  } finally { StdInOutProbeEngine.prototype.evaluateAsync = original }
+})
+
+test('declared assignment language rejects C for C++, Java for Python and headers without implementation', () => {
+  const cpp = examConfiguration({ AiGeneratedContent: JSON.stringify({ submissionFormat: { requiredLanguage: 'C++', entryFile: 'main.cpp' } }) })
+  assert.throws(() => assertSubmissionLanguage(cpp, ['src/main.c']), /yêu cầu C\+\+/)
+  assert.throws(() => assertSubmissionLanguage(cpp, ['include/main.hpp']), /Sai ngôn ngữ/)
+  assert.throws(() => assertSubmissionLanguage(cpp, ['node_modules/fake/main.cpp', 'main.c']), /Sai ngôn ngữ/)
+  assert.doesNotThrow(() => assertSubmissionLanguage(cpp, ['project/main.cpp', 'project/helpers.c']))
+  assert.throws(() => assertSubmissionLanguage({ runtimeConfig: { language: 'Python' } }, ['Main.java']), /yêu cầu Python/)
+  assert.throws(() => assertSubmissionLanguage({ runtimeConfig: { language: 'C' } }, ['main.cpp']), /yêu cầu C,/)
+  assert.doesNotThrow(() => assertSubmissionLanguage({ runtimeConfig: { language: 'Java' } }, ['src/Main.java']))
+  assert.doesNotThrow(() => assertSubmissionLanguage({}, ['legacy.txt']))
+})
+
+test('worker verifies extracted source and C++ runner never chooses a C program from a mixed ZIP', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'aita-language-'))
+  try {
+    await fs.writeFile(path.join(root, 'main.c'), 'int main(){return 0;}')
+    await assert.rejects(assertDirectorySubmissionLanguage({ runtimeConfig: { language: 'C++' } }, root), /Sai ngôn ngữ/)
+    await fs.writeFile(path.join(root, 'main.cpp'), 'int main(){return 0;}')
+    await assertDirectorySubmissionLanguage({ runtimeConfig: { language: 'C++' } }, root)
+    const { StdInOutProbeEngine } = await import('../src/modules/grading/engine/application/evaluator/StdInOutProbeEngine.js')
+    const engine = new StdInOutProbeEngine() as any
+    const detection = await engine.detectLanguage(root, 'C++')
+    assert.equal(detection.language, 'cpp')
+    const candidates = await engine.findProgramCandidates(root, detection)
+    assert.deepEqual(candidates.map((candidate: any) => candidate.label), ['main.cpp'])
+    assert.match(candidates[0].buildCommand, /^g\+\+/)
+  } finally {
+    assert.ok(root.startsWith(path.resolve(os.tmpdir()) + path.sep))
+    await fs.rm(root, { recursive: true, force: true })
+  }
+})
+
+test('saved tests survive staff API projection; students cannot see hidden input/output and AI is not labelled manual', () => {
+  const tests = [{ Id: 'public', Input: '1', ExpectedOutput: '2', IsHidden: false }, { Id: 'hidden', Input: 'secret-input', ExpectedOutput: 'secret-answer', IsHidden: true }, { Id: 'unknown', Input: 'private', IsHidden: null }]
+  assert.equal(examTestCasesView(tests, true).length, 3)
+  assert.deepEqual(examTestCasesView(tests, false).map(test => test.id), ['public'])
+  const rule = { Id: 'r', Description: 'Inventory', MaxPoints: 2 }
+  assert.equal(criterionView(rule, { ValidationType: 'AI', MaxPoints: 2 }).scoringStrategy, 'AICodeReview')
+  assert.equal(criterionView(rule, { ValidationType: 'TestCase', MaxPoints: 2 }).scoringStrategy, 'StdInOutProbe')
+  assert.equal(criterionView({ ...rule, IsManualOnly: true }, { ValidationType: 'AI' }).scoringStrategy, 'Manual')
+})
 
 test('assignment HTTP authorization blocks student writes and foreign instructor IDs before controller execution', async () => {
   let writes = 0
@@ -44,10 +117,13 @@ test('publishing validates every class; student views never expose hidden tests,
   await assert.rejects(assertClassAccess([], teacher), /lớp học/)
   await assert.rejects(assertClassesMatchSubject(['class'], 'wrong-subject', { class: { count: async () => 0 } }), /không khớp/)
   assert.throws(() => assignmentScope({ ...teacher, role: 'STUDENT' }, true))
-  const visible = studentAssignmentView({ id: 'x', sqlSetupScript: 'secret', testSuites: ['hidden'], stats: { averageScore: 7 }, rubric: { rules: [{ id: 'r', title: 'CRUD', weight: 3, referenceAnswer: 'secret', requiredEvidence: ['hidden'] }] } })
+  const visible = studentAssignmentView({ id: 'x', metadata: { totalPoints: 20 }, sqlSetupScript: 'secret', testSuites: ['hidden'], stats: { averageScore: 7 }, rubric: { rules: [{ id: 'r', title: 'CRUD', weight: 3, passCondition: 'Data persists offline', failCondition: 'Data lost on restart', referenceAnswer: 'secret', requiredEvidence: ['hidden'] }] } })
   assert.equal(JSON.stringify(visible).includes('secret'), false)
   assert.equal(JSON.stringify(visible).includes('hidden'), false)
   assert.equal(visible.rubric.rules[0].title, 'CRUD')
+  assert.equal(visible.rubric.rules[0].passCondition, 'Data persists offline')
+  assert.equal(visible.rubric.rules[0].failCondition, 'Data lost on restart')
+  assert.equal(visible.metadata.totalPoints, 20)
 })
 
 test('legacy public ZIP URLs are blocked, including encoded paths; public avatars still work', async () => {
