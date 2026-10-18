@@ -18,13 +18,7 @@ export class SettingsController extends BaseController {
 
     async getSystemConfig(_req: Request, res: Response): Promise<void> {
         this.logger.debug('Fetching system config')
-        const cached = memoryCache.get('system_config_global')
-        if (cached) {
-            this.ok(res, cached, MESSAGES.SETTINGS_GET_SUCCESS)
-            return
-        }
-        const result = await this.getSystemConfigUseCase.execute()
-        memoryCache.set('system_config_global', result, 120)
+        const result = await memoryCache.wrap('system_config_global', 120, () => this.getSystemConfigUseCase.execute())
         this.ok(res, result, MESSAGES.SETTINGS_GET_SUCCESS)
     }
 
@@ -38,35 +32,17 @@ export class SettingsController extends BaseController {
     async classOptions(req: Request, res: Response): Promise<void> {
         const user = (req as any).user
         const cacheKey = `options_classes_${user?.id || 'all'}_${user?.role || 'anon'}`
-        const cached = memoryCache.get(cacheKey)
-        if (cached) {
-            this.ok(res, cached, MESSAGES.OPTIONS_CLASSES_SUCCESS)
-            return
-        }
-        const result = await this.getOptionsUseCase.getClassOptions(user)
-        memoryCache.set(cacheKey, result, 90)
+        const result = await memoryCache.wrap(cacheKey, 90, () => this.getOptionsUseCase.getClassOptions(user))
         this.ok(res, result, MESSAGES.OPTIONS_CLASSES_SUCCESS)
     }
 
     async lecturerOptions(_req: Request, res: Response): Promise<void> {
-        const cached = memoryCache.get('options_lecturers_list')
-        if (cached) {
-            this.ok(res, cached, MESSAGES.OPTIONS_LECTURERS_SUCCESS)
-            return
-        }
-        const result = await this.getOptionsUseCase.getLecturerOptions()
-        memoryCache.set('options_lecturers_list', result, 120)
+        const result = await memoryCache.wrap('options_lecturers_list', 120, () => this.getOptionsUseCase.getLecturerOptions())
         this.ok(res, result, MESSAGES.OPTIONS_LECTURERS_SUCCESS)
     }
 
     async assignmentOptions(_req: Request, res: Response): Promise<void> {
-        const cached = memoryCache.get('options_assignments_list')
-        if (cached) {
-            this.ok(res, cached, MESSAGES.OPTIONS_EXAMS_SUCCESS)
-            return
-        }
-        const result = await this.getOptionsUseCase.getAssignmentOptions()
-        memoryCache.set('options_assignments_list', result, 90)
+        const result = await memoryCache.wrap('options_assignments_list', 90, () => this.getOptionsUseCase.getAssignmentOptions())
         this.ok(res, result, MESSAGES.OPTIONS_EXAMS_SUCCESS)
     }
 }

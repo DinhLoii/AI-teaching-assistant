@@ -27,13 +27,7 @@ export class StatsController extends BaseController {
         const user = (req as any).user
         this.logger.debug(`Fetching overview for user: ${user.id}`)
         const cacheKey = `stats_overview_${user.id}_${user.role}`
-        const cached = memoryCache.get(cacheKey)
-        if (cached) {
-            this.ok(res, cached, MESSAGES.STATS_OVERVIEW_SUCCESS)
-            return
-        }
-        const result = await this.getOverviewUseCase.execute(user)
-        memoryCache.set(cacheKey, result, 20)
+        const result = await memoryCache.wrap(cacheKey, 20, () => this.getOverviewUseCase.execute(user))
         this.ok(res, result, MESSAGES.STATS_OVERVIEW_SUCCESS)
     }
 
@@ -41,16 +35,10 @@ export class StatsController extends BaseController {
         const query = req.query as any
         this.logger.debug('Fetching activity logs')
         const cacheKey = `stats_activity_${query.action || 'all'}_${query.limit || 50}`
-        const cached = memoryCache.get(cacheKey)
-        if (cached) {
-            this.ok(res, cached, MESSAGES.STATS_ACTIVITY_SUCCESS)
-            return
-        }
-        const result = await this.getActivityLogsUseCase.execute({
+        const result = await memoryCache.wrap(cacheKey, 10, () => this.getActivityLogsUseCase.execute({
             action: query.action,
             limit: Number(query.limit || 50)
-        })
-        memoryCache.set(cacheKey, result, 10)
+        }))
         this.ok(res, result, MESSAGES.STATS_ACTIVITY_SUCCESS)
     }
 
@@ -59,13 +47,7 @@ export class StatsController extends BaseController {
         const classId = req.query.classId as string | undefined
         this.logger.debug(`Fetching lecturer report for: ${lecturerId}`)
         const cacheKey = `stats_lecturer_${lecturerId}_${classId || 'all'}`
-        const cached = memoryCache.get(cacheKey)
-        if (cached) {
-            this.ok(res, cached, MESSAGES.STATS_LECTURER_SUCCESS)
-            return
-        }
-        const result = await this.getLecturerReportUseCase.execute(lecturerId, classId)
-        memoryCache.set(cacheKey, result, 20)
+        const result = await memoryCache.wrap(cacheKey, 20, () => this.getLecturerReportUseCase.execute(lecturerId, classId))
         this.ok(res, result, MESSAGES.STATS_LECTURER_SUCCESS)
     }
 
@@ -73,13 +55,7 @@ export class StatsController extends BaseController {
         const studentId = (req as any).user.id
         this.logger.debug(`Fetching student progress for: ${studentId}`)
         const cacheKey = `stats_student_progress_${studentId}`
-        const cached = memoryCache.get(cacheKey)
-        if (cached) {
-            this.ok(res, cached, MESSAGES.STATS_STUDENT_PROGRESS_SUCCESS)
-            return
-        }
-        const result = await this.getStudentProgressUseCase.execute(studentId)
-        memoryCache.set(cacheKey, result, 20)
+        const result = await memoryCache.wrap(cacheKey, 20, () => this.getStudentProgressUseCase.execute(studentId))
         this.ok(res, result, MESSAGES.STATS_STUDENT_PROGRESS_SUCCESS)
     }
 
@@ -87,13 +63,7 @@ export class StatsController extends BaseController {
         const studentId = (req as any).user.id
         this.logger.debug(`Fetching student history for: ${studentId}`)
         const cacheKey = `stats_student_history_${studentId}`
-        const cached = memoryCache.get(cacheKey)
-        if (cached) {
-            this.ok(res, cached, MESSAGES.STATS_STUDENT_HISTORY_SUCCESS)
-            return
-        }
-        const result = await this.getStudentHistoryUseCase.execute(studentId)
-        memoryCache.set(cacheKey, result, 20)
+        const result = await memoryCache.wrap(cacheKey, 20, () => this.getStudentHistoryUseCase.execute(studentId))
         this.ok(res, result, MESSAGES.STATS_STUDENT_HISTORY_SUCCESS)
     }
 }

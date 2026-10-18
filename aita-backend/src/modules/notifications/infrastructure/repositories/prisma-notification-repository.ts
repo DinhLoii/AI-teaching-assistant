@@ -22,7 +22,7 @@ export class PrismaNotificationRepository implements INotificationRepository {
             },
             take: params.limit ?? 50,
             skip: params.offset ?? 0,
-            orderBy: [{ CreatedAt: 'desc' }, { Id: 'desc' }],
+            orderBy: [{ CreatedAt: { sort: 'desc', nulls: 'last' } }, { Id: 'desc' }],
             include: {
                 NotificationRecipient: {
                     where: { UserId: userId },

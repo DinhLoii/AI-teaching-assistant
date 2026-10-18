@@ -107,7 +107,7 @@ export class BroadcastNotificationUseCase {
             notificationType: n.Type,
             referenceId: n.ReferenceId ?? null,
             referenceType: n.ReferenceType ?? null,
-            createdAt: n.CreatedAt instanceof Date ? n.CreatedAt.toISOString() : (n.CreatedAt ?? new Date().toISOString()),
+            createdAt: n.CreatedAt instanceof Date ? n.CreatedAt.toISOString() : (n.CreatedAt ?? null),
             isRead: false,
         }
     }

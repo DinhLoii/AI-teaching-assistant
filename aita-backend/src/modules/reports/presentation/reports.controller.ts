@@ -31,13 +31,7 @@ export class ReportsController extends BaseController {
     async systemHealth(_req: Request, res: Response): Promise<void> {
         this.logger.debug('Fetching system health')
         const cacheKey = 'reports_system_health'
-        const cached = memoryCache.get(cacheKey)
-        if (cached) {
-            this.ok(res, cached, MESSAGES.REPORTS_HEALTH_SUCCESS)
-            return
-        }
-        const result = await this.getSystemHealthUseCase.execute()
-        memoryCache.set(cacheKey, result, 15)
+        const result = await memoryCache.wrap(cacheKey, 15, () => this.getSystemHealthUseCase.execute())
         this.ok(res, result, MESSAGES.REPORTS_HEALTH_SUCCESS)
     }
 }

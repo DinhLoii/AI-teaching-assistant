@@ -124,7 +124,7 @@ export class NotificationsController extends BaseController {
         const limit = Math.min(Number((req.query as any).limit) || 50, 200)
         const rows = await prisma.notification.findMany({
             where: { CreatedBy: userId },
-            orderBy: { CreatedAt: 'desc' },
+            orderBy: { CreatedAt: { sort: 'desc', nulls: 'last' } },
             take: limit,
             select: {
                 Id: true, Title: true, Message: true, Type: true, CreatedAt: true,

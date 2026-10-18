@@ -32,13 +32,7 @@ export class SemestersController extends BaseController {
 
   async list(req: Request, res: Response): Promise<void> {
     this.logger.info(`Fetching semesters by user ${req.user!.id}`)
-    const cached = memoryCache.get('semesters_list')
-    if (cached) {
-      this.ok(res, cached, MESSAGES.SUCCESS)
-      return
-    }
-    const result = await this.listSemestersUseCase.execute()
-    memoryCache.set('semesters_list', result, 60)
+    const result = await memoryCache.wrap('semesters_list', 60, () => this.listSemestersUseCase.execute())
     this.ok(res, result, MESSAGES.SUCCESS)
   }
 

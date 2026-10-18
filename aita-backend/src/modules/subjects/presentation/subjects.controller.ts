@@ -28,13 +28,7 @@ export class SubjectsController extends BaseController {
 
   async list(_req: Request, res: Response): Promise<void> {
     this.logger.debug('Fetching list of subjects')
-    const cached = memoryCache.get('subjects_list')
-    if (cached) {
-      this.ok(res, cached, MESSAGES.SUBJECT_LIST_SUCCESS)
-      return
-    }
-    const result = await this.listSubjectsUseCase.execute()
-    memoryCache.set('subjects_list', result, 60)
+    const result = await memoryCache.wrap('subjects_list', 60, () => this.listSubjectsUseCase.execute())
     this.ok(res, result, MESSAGES.SUBJECT_LIST_SUCCESS)
   }
 
@@ -42,13 +36,7 @@ export class SubjectsController extends BaseController {
     const id = req.params.id as string
     this.logger.debug(`Fetching subject by id: ${id}`)
     const cacheKey = `subject_detail_${id}`
-    const cached = memoryCache.get(cacheKey)
-    if (cached) {
-      this.ok(res, cached, 'Lấy chi tiết môn học thành công')
-      return
-    }
-    const result = await this.getSubjectByIdUseCase.execute(id)
-    memoryCache.set(cacheKey, result, 60)
+    const result = await memoryCache.wrap(cacheKey, 60, () => this.getSubjectByIdUseCase.execute(id))
     this.ok(res, result, 'Lấy chi tiết môn học thành công')
   }
 
