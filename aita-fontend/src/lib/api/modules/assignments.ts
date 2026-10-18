@@ -1,10 +1,12 @@
 import { request } from '../client'
 import type { AssignmentRow } from '../contracts'
 
+export const ASSIGNMENT_LIST_PATH = '/assignments?view=summary'
+
 export const assignmentsApi = {
   getDocumentFile: (attachmentId: string) => request<Blob>(`/assignments/attachments/${encodeURIComponent(attachmentId)}/download`, { cache: 'no-store' }, 'blob'),
   getAssignments: (params?: Record<string, string>, fresh = false) => {
-    const q = new URLSearchParams(params).toString()
+    const q = new URLSearchParams({ view: 'summary', ...params }).toString()
     return request<AssignmentRow[]>(`/assignments${q ? `?${q}` : ''}`, fresh ? { cache: 'no-store' } : undefined)
   },
 
@@ -23,7 +25,7 @@ export const assignmentsApi = {
   deleteAssignment: (id: string) =>
     request<void>(`/grading/assignments/${id}`, { method: 'DELETE' }),
 
-  getTrashAssignments: () => request<any[]>('/grading/assignments/trash', { cache: 'no-store' }),
+  getTrashAssignments: (fresh = false) => request<any[]>('/grading/assignments/trash', fresh ? { cache: 'no-store' } : undefined),
 
   restoreAssignment: (id: string) =>
     request<void>(`/grading/assignments/${id}/restore`, { method: 'POST' }),

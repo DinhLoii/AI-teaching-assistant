@@ -24,7 +24,7 @@ interface CacheEntry<T> {
 
 const inFlightGetRequests = new Map<string, Promise<any>>();
 const clientGetCache = new Map<string, CacheEntry<any>>();
-let cacheGeneration = 0;
+const requestVersions = new Map<string, object>();
 let cacheSession: string | null = null;
 
 function synchronizeCacheSession() {
@@ -36,10 +36,10 @@ function synchronizeCacheSession() {
 }
 
 export function clearClientApiCache(pattern?: string) {
-  cacheGeneration++;
   if (!pattern) {
     clientGetCache.clear();
     inFlightGetRequests.clear();
+    requestVersions.clear();
     return;
   }
   for (const key of clientGetCache.keys()) {
@@ -48,7 +48,10 @@ export function clearClientApiCache(pattern?: string) {
     }
   }
   for (const key of inFlightGetRequests.keys()) {
-    if (key.includes(pattern)) inFlightGetRequests.delete(key);
+    if (key.includes(pattern)) {
+      inFlightGetRequests.delete(key);
+      requestVersions.delete(key);
+    }
   }
 }
 
@@ -65,6 +68,10 @@ export function peekClientApiCache<T>(path: string): T | undefined {
 
 export function setClientApiCache<T>(path: string, data: T): void {
   synchronizeCacheSession();
+  if (clientGetCache.size >= 200 && !clientGetCache.has(path)) {
+    const oldest = clientGetCache.keys().next().value;
+    if (oldest !== undefined) clientGetCache.delete(oldest);
+  }
   const { staleMs, expireMs } = getCacheTtl(path);
   clientGetCache.set(path, {
     data,
@@ -288,7 +295,25 @@ export async function request<T>(path: string, options: RequestInit = {}, respon
       clearClientApiCache('/notifications');
       clearClientApiCache('/student-portal/dashboard');
     } else {
-      clearClientApiCache();
+      const domain = path.split('/')[1];
+      const related: Record<string, string[]> = {
+        assignments: ['/assignments', '/grading', '/exams', '/submissions', '/classes', '/student-portal', '/notifications'],
+        exams: ['/assignments', '/exams', '/grading', '/submissions', '/classes', '/student-portal', '/notifications'],
+        grading: ['/grading', '/assignments', '/exams', '/submissions', '/classes', '/student-portal', '/notifications'],
+        submissions: ['/submissions', '/grading', '/assignments', '/exams', '/student-portal', '/notifications'],
+        appeals: ['/appeals', '/submissions', '/grading', '/student-portal', '/notifications'],
+        classes: ['/classes', '/subjects', '/assignments', '/exams', '/submissions', '/student-portal', '/settings/options', '/notifications'],
+        subjects: ['/subjects', '/classes', '/assignments', '/exams', '/student-portal', '/settings/options'],
+        semesters: ['/semesters', '/subjects', '/classes', '/assignments', '/exams', '/student-portal', '/settings/options'],
+        users: ['/users', '/auth/me', '/profile', '/classes', '/subjects', '/assignments', '/exams', '/submissions', '/student-portal', '/settings/options', '/notifications'],
+        prompts: ['/prompts'],
+        rubric: ['/rubric', '/assignments', '/exams', '/grading'],
+        settings: ['/settings', '/ai/config'],
+        ai: ['/ai', '/assignments', '/exams', '/grading', '/submissions'],
+      };
+      const prefixes = related[domain];
+      if (!prefixes) clearClientApiCache();
+      else for (const prefix of [...prefixes, '/dashboard', '/stats', '/analytics', '/reports', '/audit']) clearClientApiCache(prefix);
     }
   };
   if (!isGet) {
@@ -305,16 +330,20 @@ export async function request<T>(path: string, options: RequestInit = {}, respon
 
   if (noCache) return exec();
 
-  const generation = cacheGeneration;
   const session = getStoredItem(AUTH_STORAGE_KEYS.token);
   const fetchAndCache = (): Promise<T> => {
+    const version = {};
+    requestVersions.set(path, version);
     const promise = exec().then((result) => {
-      if (generation === cacheGeneration && session === getStoredItem(AUTH_STORAGE_KEYS.token)) {
+      if (requestVersions.get(path) === version && session === getStoredItem(AUTH_STORAGE_KEYS.token)) {
         setClientApiCache(path, result);
       }
       return result;
     }).finally(() => {
-      if (inFlightGetRequests.get(path) === promise) inFlightGetRequests.delete(path);
+      if (inFlightGetRequests.get(path) === promise) {
+        inFlightGetRequests.delete(path);
+        requestVersions.delete(path);
+      }
     });
     inFlightGetRequests.set(path, promise);
     return promise;

@@ -29,3 +29,12 @@ export function notificationTime(createdAt: string | null, now: number, locale: 
   if (Math.abs(seconds) < 86400) return relative.format(Math.trunc(seconds / 3600), 'hour')
   return relative.format(Math.trunc(seconds / 86400), 'day')
 }
+
+export function notificationAbsoluteTime(createdAt: string | null | undefined, locale: string): string {
+  const time = createdAt ? Date.parse(createdAt) : NaN
+  if (!Number.isFinite(time)) return ''
+  return new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-GB', {
+    timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+  }).format(time) + ' (UTC+7)'
+}

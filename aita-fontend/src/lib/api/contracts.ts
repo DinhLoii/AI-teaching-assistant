@@ -113,6 +113,8 @@ export interface StudentRow {
 }
 
 export interface AssignmentRow {
+  runtimeLanguage?: string | null
+  testCases?: { id: string; input: string; expectedOutput: string; points: number; isHidden: boolean }[]
   documentContent?: string
   documentAnalysis?: {
     language?: string | null
@@ -152,6 +154,7 @@ export interface AssignmentRow {
   }[]
   rubrics?: {
     id: string
+    scoringStrategy?: string
     description: string
     maxPoints: number
     criteria: {
@@ -205,6 +208,7 @@ export interface SubmissionRow {
 export interface SubmissionListQuery {
   assignmentId?: string
   examId?: string
+  classId?: string
   status?: string
 }
 

@@ -15,8 +15,8 @@ export interface NotificationItem {
 }
 
 export function normalizeNotification(raw: any): NotificationItem {
-  const date = raw.createdAt ?? raw.CreatedAt
-  const parsed = date ? new Date(date) : null
+  const parsed = [raw.createdAt, raw.CreatedAt].filter(value => value !== null && value !== undefined && value !== '')
+    .map(value => new Date(value)).find(date => Number.isFinite(date.getTime()))
   const read = raw.isRead ?? raw.read ?? false
   return {
     ...raw, id: String(raw.id ?? raw.Id ?? ''), title: raw.title ?? raw.Title ?? '',
@@ -63,7 +63,9 @@ export class NotificationFeed {
         ])
         const rows = batches.flat()
         if (epoch !== this.epoch) { this.refreshAgain = true; return }
-        this.update({ items: sorted(rows.map(normalizeNotification)), unreadCount: count, hasMore: batches[batches.length - 1]?.length === 50, error: this.snapshot.error.startsWith('Thao tác') ? this.snapshot.error : '' })
+        const knownDates = new Map(this.snapshot.items.map(item => [item.id, item.createdAt]))
+        const items = rows.map(normalizeNotification).map(item => ({ ...item, createdAt: item.createdAt || knownDates.get(item.id) || null }))
+        this.update({ items: sorted(items), unreadCount: count, hasMore: batches[batches.length - 1]?.length === 50, error: this.snapshot.error.startsWith('Thao tác') ? this.snapshot.error : '' })
       } catch {
         this.update({ error: 'Không thể đồng bộ thông báo. Dữ liệu hiện có được giữ lại; vui lòng thử lại.' })
       } finally { this.update({ loading: false }) }
@@ -92,6 +94,7 @@ export class NotificationFeed {
       const item = normalizeNotification(p)
       if (item.id && !['REMINDER', 'DEADLINE_WARNING'].includes(item.type.toUpperCase())) {
         const previous = this.snapshot.items.find(n => n.id === item.id)
+        if (!item.createdAt && previous) item.createdAt = previous.createdAt
         if (!previous || p.updated) {
           const increment = (!item.isRead ? 1 : 0) - (previous && !previous.isRead ? 1 : 0)
           this.update({ items: sorted([item, ...this.snapshot.items.filter(n => n.id !== item.id)]), unreadCount: Math.max(0, this.snapshot.unreadCount + increment) })

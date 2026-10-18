@@ -11,14 +11,14 @@ export const submissionsApi = {
     return (rows || []).map(normalizeSubmissionRow)
   },
 
-  async getSubmissions(params?: SubmissionListQuery) {
+  async getSubmissions(params?: SubmissionListQuery, fresh = false) {
     const q = new URLSearchParams(params as Record<string, string>).toString()
-    const rows = await request<any[]>(`/submissions${q ? `?${q}` : ''}`)
+    const rows = await request<any[]>(`/submissions${q ? `?${q}` : ''}`, fresh ? { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } } : undefined)
     return (rows || []).map(normalizeSubmissionRow)
   },
 
-  getSubmissionDetail: async (id: string) => {
-    const row = await request<any>(`/submissions/${id}`)
+  getSubmissionDetail: async (id: string, fresh = false) => {
+    const row = await request<any>(`/submissions/${id}`, fresh ? { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } } : undefined)
     return normalizeSubmissionRow(row)
   },
 
