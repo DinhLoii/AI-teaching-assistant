@@ -13,15 +13,16 @@ const root = path.resolve(__dirname, '..')
   const browser = await chromium.launch({ channel: 'msedge', headless: true })
   const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } })
   const errors = []; page.on('pageerror', error => errors.push(error.message))
+  page.on('console', message => { if (message.type() === 'error' && /same key/.test(message.text())) errors.push(message.text()) })
   const analysis = {
     suggestedTitle: 'Personal Expense Tracker', description: fs.readFileSync(path.join(root, 'tests/fixtures/personal-expense-tracker.txt'), 'utf8'), detectedLanguage: 'Kotlin',
     runtimeConfig: { language: 'Kotlin', version: 'Android · Cần cấu hình môi trường kiểm thử', buildCommand: '', runCommand: '' },
     submissionFormat: { submissionType: 'project_archive', allowedFormats: ['.zip'], entryFile: '', directoryStructure: 'Android Studio project' },
+    acceptanceTests: ['TC04', 'TC04', 'TC00', 'TC00', 'TC03', 'TC03', 'TC01', 'TC01'].map((id, index) => ({ id, steps: 'Legacy scenario ' + index, expectedResult: 'Expected result ' + index, level: 'required' })),
     testCases: [], rubricCriteria: [3, 1.5, 1.5, 1, 1.5, 1.5].map((points, index) => ({ id: `r${index}`, name: `Android criterion ${index + 1}`, description: 'Actual source criterion', maxPoints: points, method: 'ai_assessment', evidence: 'Room Database', aiGuidance: 'Only original requirement' })),
     analysisReview: { profile: { platform: 'Android', mode: 'project' }, status: 'needs_teacher_review', warnings: ['Chưa có bộ kiểm thử tự động đã xác minh.'] },
     provenanceReport: { rubricSourceType: 'ORIGINAL_DOCUMENT', documentHash: 'actual-doc-hash' },
     requirementGroups: { required: [{ text: 'CRUD giao dịch' }], advanced: [{ text: 'Ngân sách tháng' }], excluded: [{ text: 'Đăng nhập, cloud backend, Firebase' }] },
-    acceptanceTests: [{ id: 'TC01', steps: 'Thêm thu 5.000.000', expectedResult: 'Tổng thu tăng đúng', level: 'required' }],
   }
   try {
     const cssDir = path.join(root, '.next/static')
@@ -37,6 +38,7 @@ const root = path.resolve(__dirname, '..')
     await page.waitForFunction(() => document.querySelector('select:has(option[value="Kotlin"])')?.value === 'Kotlin')
     await page.getByText('Bước 2: Barem điểm (Rubric) & Test Cases', { exact: true }).click()
     await page.getByText('Rubric: 10/10 điểm', { exact: true }).waitFor()
+    for (let index = 0; index < 8; index++) assert.equal(await page.getByText('Legacy scenario ' + index, { exact: true }).count(), 1)
     await page.getByText('Xuất bản & Giao bài ngay', { exact: true }).click()
     assert.equal(await page.evaluate(() => window.saved.length), 0)
     await page.getByRole('checkbox', { name: /Tôi đã đối chiếu/ }).check()

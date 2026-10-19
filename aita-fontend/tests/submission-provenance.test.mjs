@@ -121,6 +121,37 @@ test('AI line references extract original source; malformed scores and invented 
   for (const percentageComplete of [undefined, NaN, -1, 10, '0.75']) assert.throws(() => resolveCodeReviewResult(files, { ...review, percentageComplete }), /AI_REVIEW_INVALID/)
 })
 
+test('Windows ZIP references recover original evidence consistently across languages and legacy provider formats', () => {
+  const { resolveCodeReviewResult, normalizeSourcePath } = backendModule('modules/grading/engine/application/evaluator/source-evidence.ts')
+  for (const extension of ['c', 'cpp', 'java', 'kt', 'py', 'cs', 'ts', 'sql']) {
+    const relative = 'Bài nộp/src/main.' + extension
+    const content = 'first real line\r\nsecond real line\r\nthird real line'
+    const files = [{ relativePath: '\\' + relative.replaceAll('/', '\\'), fileId: 'F1', content }]
+    const base = { percentageComplete: .6, reasoning: 'Đáp ứng một phần tiêu chí theo mã nguồn.' }
+    const ranged = resolveCodeReviewResult(files, { ...base, relevantSnippets: [{ filePath: './' + relative, startLine: 'L2', endLine: '2' }] })
+    assert.equal(ranged.relevantSnippets[0].codeSnippet, 'second real line')
+    assert.equal(ranged.relevantSnippets[0].filePath, relative)
+    const fallback = resolveCodeReviewResult(files, { ...base, relevantSnippets: [{ filePath: relative, startLine: 1, endLine: 99 }], relevantFiles: [relative] })
+    assert.equal(fallback.relevantSnippets[0].codeSnippet, content)
+    assert.ok(fallback.reviewWarning)
+    const byId = resolveCodeReviewResult(files, { ...base, relevantSnippets: [{ fileId: 'F1', startLine: 1, endLine: 2 }] })
+    assert.equal(byId.relevantSnippets[0].filePath, relative)
+    assert.throws(() => resolveCodeReviewResult(files, { ...base, relevantSnippets: [{ fileId: 'F99', startLine: 1, endLine: 2 }] }), /AI_CODE_EVIDENCE_MISSING/)
+    assert.throws(() => resolveCodeReviewResult(files, { ...base, relevantSnippets: [{ fileId: 'F1', filePath: '../main.' + extension, startLine: 1, endLine: 2 }] }), /AI_CODE_EVIDENCE_MISSING/)
+  }
+  assert.equal(normalizeSourcePath('../bad.c'), null)
+  assert.equal(normalizeSourcePath('C:\\private\\main.c'), null)
+})
+
+test('an exact archive path wins over a nested basename; file IDs cannot contradict the cited file', () => {
+  const { resolveCodeReviewResult } = backendModule('modules/grading/engine/application/evaluator/source-evidence.ts')
+  const files = [{ fileId: 'F1', relativePath: 'src/Main.java', content: 'first' }, { fileId: 'F2', relativePath: 'other/src/Main.java', content: 'second' }]
+  const base = { percentageComplete: 1, reasoning: 'Đã đối chiếu mã gốc.' }
+  assert.equal(resolveCodeReviewResult(files, { ...base, relevantFiles: ['src/Main.java'] }).relevantSnippets[0].codeSnippet, 'first')
+  assert.throws(() => resolveCodeReviewResult(files, { ...base, relevantFiles: ['Main.java'] }), /AI_CODE_EVIDENCE_MISSING/)
+  assert.throws(() => resolveCodeReviewResult(files, { ...base, relevantSnippets: [{ fileId: 'F2', filePath: 'src/Main.java', startLine: 1, endLine: 1 }] }), /AI_CODE_EVIDENCE_MISSING/)
+})
+
 test('missing evidence and a transient provider outage recover before the full six-criterion rubric completes', async () => {
   const evidence = backendModule('modules/grading/engine/application/evaluator/source-evidence.ts')
   let calls = 0

@@ -29,6 +29,18 @@ const contract = plain('modules/ai/infrastructure/analysis/assignment-contract.t
 const fixture = fs.readFileSync('tests/fixtures/personal-expense-tracker.txt', 'utf8')
 const libraryFixture = fs.readFileSync('tests/fixtures/mini-library-manager.txt', 'utf8')
 const inventoryFixture = fs.readFileSync('tests/fixtures/mini-inventory-manager.txt', 'utf8')
+
+test('acceptance extraction never interprets console input counts, output zero or later sections as test IDs', () => {
+  const consoleDocument = 'Test cases\nTC01 – Input sample\nInput\n4\nADD A 1 2\nQUERY A\nOutput\n0\nNOT_FOUND\nTOTAL 0\n4\nADD B 2 3\nQUERY B'
+  assert.equal(contract.extractAcceptanceScenarios(consoleDocument).length, 0)
+  const document = '8. Acceptance tests\n01\nCreate a record\nRecord is visible\n9. Submission rules\n04\nUpload source code\nREADME is required'
+  const scenarios = contract.extractAcceptanceScenarios(document)
+  assert.equal(scenarios.length, 1)
+  assert.equal(scenarios[0].id, 'TC01')
+  assert.equal(scenarios[0].steps, 'Create a record')
+  const explicitZero = contract.extractAcceptanceScenarios('Acceptance tests\nTC00 | Open empty list | Empty state is shown')
+  assert.equal(explicitZero[0].id, 'TC00')
+})
 function useCase(aiResponse, unavailable = false) {
   let prompt = ''
   const load = loader({
