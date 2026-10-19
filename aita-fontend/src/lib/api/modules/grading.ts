@@ -239,7 +239,7 @@ export const gradingApi = {
     return subscribeProgressStream(BASE + '/grading/submissions/' + encodeURIComponent(submissionId) + '/stream', onProgress, onComplete, onError)
   },
 
-  getSubmissionResult: (submissionId: string) => request<any>('/grading/submissions/' + submissionId + '/result'),
+  getSubmissionResult: (submissionId: string) => request<any>('/grading/submissions/' + encodeURIComponent(submissionId) + '/result', { cache: 'no-store' }),
 
   submitFeedback: (submissionId: string, feedback: string) => request<{ success: boolean, feedback: string }>(`/submissions/${submissionId}/feedback`, {
     method: 'POST',
