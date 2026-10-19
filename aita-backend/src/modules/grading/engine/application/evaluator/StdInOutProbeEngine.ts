@@ -6,6 +6,7 @@ import { canonicalSubmissionLanguage } from '../../../../submissions/application
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { StdInOutProbeSpec, StdInOutTestCase } from '../../core/domain/rubric/EvidenceMatcher';
+import { executionFailureMessage, type ExecutionObserver } from './execution-events.js';
 
 export interface StdInOutCaseResult {
   isHidden?: boolean;
@@ -57,17 +58,27 @@ export class StdInOutProbeEngine {
   public async evaluateAsync(
     submissionPath: string,
     probeSpec: StdInOutProbeSpec,
-    contextHint?: string
+    contextHint?: string,
+    onEvent?: ExecutionObserver
   ): Promise<StdInOutResult> {
+    let executionStarted = false;
+    try {
+    onEvent?.({ stage: 1, status: 'started', message: '[Runner console] Đang kiểm tra cấu hình và nhận diện trình biên dịch từ bài nộp.' });
     assertStdioSandboxExecution();
     // Auto-detect language if build/run commands not specified
     const detection = await this.detectLanguage(submissionPath, probeSpec.requiredLanguage);
     const dockerImage = detection.dockerImage;
+    onEvent?.({ stage: 1, status: 'info', runtime: detection.language, message: `[Runtime console] Nhận diện: ${detection.language}; yêu cầu đề: ${probeSpec.requiredLanguage || 'không chỉ định'}; image: ${dockerImage}.` });
+    onEvent?.({ stage: 1, status: 'info', message: '[Docker] Đang kiểm tra kết nối Engine trên máy chạy worker.' });
+    await this.docker.ping();
+    onEvent?.({ stage: 1, status: 'info', message: '[Docker] Engine đã phản hồi; đang chuẩn bị image thực thi.' });
 
     console.log(`[StdInOutProbe] Detected: ${detection.language} | Image: ${dockerImage}`);
 
     // Ensure Docker image exists
-    await this.pullImage(dockerImage);
+    await this.pullImage(dockerImage, onEvent);
+    const imageInfo = await this.docker.getImage(dockerImage).inspect();
+    onEvent?.({ stage: 1, status: 'completed', message: `[Docker] Image sẵn sàng: ${dockerImage}; ID: ${imageInfo.Id}.` });
 
     // Students often zip several problems into one submission. Discover every
     // runnable program, try the one matching this rule's problem number first,
@@ -77,24 +88,32 @@ export class StdInOutProbeEngine {
       await this.findProgramCandidates(submissionPath, detection),
       `${contextHint || ''} ${probeSpec.description || ''}`
     ).slice(0, 8);
+    onEvent?.({ stage: 2, status: 'started', message: `[Kế hoạch kiểm thử] ${probeSpec.testCases.length} testcase; ${candidates.length} chương trình ứng viên; đối chiếu output theo chế độ của từng testcase.` });
+    executionStarted = true;
 
     let best: StdInOutResult | null = null;
+    let bestLabel = '';
     for (const candidate of candidates) {
       const buildCmd = probeSpec.buildCommand || candidate.buildCommand;
       const runCmd = probeSpec.runCommand || candidate.runCommand;
+      onEvent?.({ stage: 2, status: 'info', message: `[Chương trình] ${candidate.label}; thư mục tương đối: ${candidate.projectDir}; build: ${buildCmd || '(không có bước biên dịch)'}; chạy: ${runCmd}.` });
       console.log(`[StdInOutProbe] Trying program "${candidate.label}" | Build: ${buildCmd} | Run: ${runCmd}`);
 
       const caseResults: StdInOutCaseResult[] = [];
       for (const testCase of probeSpec.testCases) {
+        onEvent?.({ stage: 2, status: 'info', message: `[Test ${testCase.id}] ${testCase.isHidden ? 'Test ẩn' : 'Công khai'}; giới hạn chạy ${testCase.timeoutMs || 5000} ms; so khớp ${testCase.comparisonMode || 'chuẩn hóa'}; đang chuẩn bị thực thi.` });
         const result = await this.runTestCase(
           submissionPath,
           candidate.projectDir,
           testCase,
           buildCmd,
           runCmd,
-          dockerImage
+          dockerImage,
+          onEvent
         );
         caseResults.push(result);
+        onEvent?.({ stage: 2, status: result.passed === true ? 'info' : 'warning', message: `[Test ${testCase.id}] ${result.passed === null ? 'CHƯA CHẠY (biên dịch hoặc khởi động chưa hoàn tất)' : result.passed ? 'PASS' : 'FAIL'}; biên dịch: ${result.compilationPassed === true ? 'thành công' : result.compilationPassed === false ? 'thất bại' : 'không có kết quả riêng'}; ${result.executionMs} ms${result.timedOut ? '; vượt thời gian' : ''}.` });
+        if (result.compilationPassed === false && result.stderr) onEvent?.({ stage: 2, status: 'warning', message: `[Chẩn đoán biên dịch ${testCase.id}] ${result.stderr.slice(0, 1200)}` });
         console.log(`[StdInOutProbe] Case ${testCase.id}: ${result.passed ? '✓ PASS' : '✗ FAIL'} (${result.executionMs}ms)${result.timedOut ? ' [TIMEOUT]' : ''}`);
       }
 
@@ -109,11 +128,19 @@ export class StdInOutProbeEngine {
         caseResults
       };
 
-      if (!best || result.passedCases > best.passedCases) best = result;
+      if (!best || result.passedCases > best.passedCases) { best = result; bestLabel = candidate.label; }
       if (result.passed) break; // all cases passed — no need to try other programs
     }
 
-    return best || { passed: false, confidence: 0, totalCases: 0, passedCases: 0, caseResults: [] };
+    const finalResult = best || { passed: false, confidence: 0, totalCases: 0, passedCases: 0, caseResults: [] };
+    const executed = finalResult.caseResults.filter(test => typeof test.passed === 'boolean').length;
+    onEvent?.({ stage: 2, status: finalResult.passed ? 'completed' : 'warning', message: `[Tổng kết testcase] Chương trình được chọn: ${bestLabel || '(không có)'}; ${finalResult.passedCases}/${executed} test đã chạy đạt yêu cầu; ${finalResult.totalCases - executed} test chưa chạy. Kết quả được lưu cùng báo cáo.` });
+    return finalResult;
+    } catch (error) {
+      onEvent?.({ stage: executionStarted ? 2 : 1, status: 'failed', message: `[Runner] ${executionFailureMessage(error)}` });
+      if (!executionStarted) onEvent?.({ stage: 2, status: 'skipped', message: '[Testcase] Không chạy vì môi trường thực thi chưa sẵn sàng. Không tạo kết quả Pass/Fail.' });
+      throw error;
+    }
   }
 
   /**
@@ -230,7 +257,8 @@ export class StdInOutProbeEngine {
     testCase: StdInOutTestCase,
     buildCmd: string,
     runCmd: string,
-    dockerImage: string
+    dockerImage: string,
+    onEvent?: ExecutionObserver
   ): Promise<StdInOutCaseResult> {
     const timeoutMs = testCase.timeoutMs || 5000;
     const startTime = Date.now();
@@ -276,7 +304,14 @@ export class StdInOutProbeEngine {
         AttachStderr: true,
       });
 
+      if (onEvent) {
+        const actualConfig = await container.inspect();
+        const limits = actualConfig.HostConfig;
+        onEvent({ stage: 1, status: 'info', message: `[Container ${testCase.id}] Đã tạo ${container.id}; image ${dockerImage}; RAM ${limits.Memory / 1024 / 1024} MiB; CPU ${limits.NanoCpus / 1e9} core; tối đa ${limits.PidsLimit} PID; mạng: ${limits.NetworkMode}; root chỉ đọc: ${limits.ReadonlyRootfs ? 'có' : 'không'}; nguồn chỉ đọc: ${limits.Binds?.some(bind => bind.endsWith(':/app:ro')) ? 'có' : 'không'}; user ${actualConfig.Config.User}.` });
+      }
+
       await container.start();
+      onEvent?.({ stage: 2, status: 'info', message: `[Thực thi ${testCase.id}] Container đã khởi động; ${buildCmd ? 'biên dịch rồi ' : ''}chạy chương trình với stdin đã cấu hình.` });
 
       // Wait for completion with timeout
       const waitPromise = container.wait();
@@ -355,8 +390,9 @@ export class StdInOutProbeEngine {
       if (container) {
         try {
           await container.remove({ force: true });
+          onEvent?.({ stage: 1, status: 'info', message: `[Dọn dẹp ${testCase.id}] Đã xóa container ${container.id} của testcase.` });
         } catch (e) {
-          // Container may already be removed
+          onEvent?.({ stage: 1, status: 'warning', message: `[Dọn dẹp ${testCase.id}] Chưa xác nhận xóa được container ${container.id}; cần kiểm tra Docker Engine.` });
         }
       }
     }
@@ -674,8 +710,16 @@ export class StdInOutProbeEngine {
     return results;
   }
 
-  private async pullImage(imageName: string): Promise<void> {
+  private async pullImage(imageName: string, onEvent?: ExecutionObserver): Promise<void> {
     const docker = this.docker;
+    try {
+      await docker.getImage(imageName).inspect();
+      onEvent?.({ stage: 1, status: 'info', message: `[Docker image] Đã tìm thấy ${imageName} trên worker; sử dụng image cục bộ.` });
+      return;
+    } catch (error: any) {
+      if (error.statusCode !== 404) throw error;
+    }
+    onEvent?.({ stage: 1, status: 'info', message: `[Docker image] Worker chưa có ${imageName}; đang tải image từ registry.` });
     return new Promise((resolve, reject) => {
       docker.pull(imageName, (err: any, stream: any) => {
         if (err) return reject(err);
