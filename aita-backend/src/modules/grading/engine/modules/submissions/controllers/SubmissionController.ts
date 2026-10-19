@@ -32,6 +32,9 @@ import { memoryCache } from '../../../../../../shared/infrastructure/memory-cach
 import { assertDirectorySubmissionLanguage, examConfiguration } from '../../../../../submissions/application/submission-language.js';
 import { verifyConsoleTests } from '../../../application/evaluator/console-verification.js';
 import { studentReportView } from '../../../../../submissions/application/student-report-view.js';
+import { detectAssignmentProfile } from '../../../../../ai/infrastructure/analysis/assignment-contract.js';
+import { createHash } from 'node:crypto';
+import { createReadStream } from 'node:fs';
 
 import { BaseController } from '../../../../../../shared/presentation/base-controller.js';
 
@@ -337,13 +340,21 @@ export class SubmissionController extends BaseController {
         }
 
         // 1. Download file to temp directory
+        globalJobManager.initJob(submissionId, 'Đang tiếp nhận bài nộp để chấm...');
+        globalJobManager.recordEvent(submissionId, { stage: 0, status: 'started', message: `[Tiếp nhận] Bài nộp ${submissionId}; tệp: ${originalFileName}.` });
         const tempZipPath = path.join(process.cwd(), 'temp', 'uploads', `${submissionId}_${originalFileName}`);
         await this.downloadFile(submissionRecord.ZipFileUrl, tempZipPath);
+        const archiveHash = createHash('sha256');
+        let archiveSize = 0;
+        for await (const chunk of createReadStream(tempZipPath)) { archiveSize += chunk.length; archiveHash.update(chunk); }
+        globalJobManager.recordEvent(submissionId, { stage: 0, status: 'info', message: `[Tệp gốc] Đã đọc ${archiveSize.toLocaleString('vi-VN')} byte; SHA-256: ${archiveHash.digest('hex')}.` });
 
         // 2. Unzip file or copy
         const extractDir = path.join(process.cwd(), 'temp', 'submissions', submissionId + '_' + uuidv4());
+        globalJobManager.recordEvent(submissionId, { stage: 0, status: 'info', message: `[Giải nén] Đang mở tệp và các ZIP lồng nhau trong thư mục riêng của lượt chấm.` });
         await this.extractOrCopyFile(tempZipPath, extractDir, originalFileName);
         await this.extractNestedZips(extractDir);
+        globalJobManager.recordEvent(submissionId, { stage: 0, status: 'info', message: '[Giải nén] Đã hoàn tất đọc tệp nộp; tiếp tục kiểm tra ngôn ngữ và mã nguồn.' });
 
         // 3. Update status to 'Processing'
         await prisma.submission.update({
@@ -362,8 +373,6 @@ export class SubmissionController extends BaseController {
             currentState: SubmissionState.Queued,
             statusHistory: []
         };
-
-        globalJobManager.initJob(submissionId);
 
         if (queue === null) {
             // Inline: the caller already holds a continuous-queue slot and must keep holding it
@@ -569,6 +578,7 @@ export class SubmissionController extends BaseController {
         const job = async () => {
             let sandboxHandle: SandboxHandle | null = null;
             let evaluationTimer: ReturnType<typeof setTimeout> | undefined;
+            const executionEvidence: any = {};
             try {
                 const checkCancelled = () => {
                     const job = globalJobManager.getJob(submissionId);
@@ -580,16 +590,29 @@ export class SubmissionController extends BaseController {
                     const sourceExam = await prisma.exam.findUnique({ where: { Id: submission.assignmentId }, select: { AiGeneratedContent: true, Description: true, TestCase: { orderBy: { SortOrder: 'asc' } } } });
                     const sourceConfig = examConfiguration(sourceExam);
                     const languageConfig = { ...publishedAssignment.metadata, ...sourceConfig };
+                    globalJobManager.updateProgress(submissionId, 3, 'Đang kiểm tra mã nguồn trong bài nộp...');
+                    globalJobManager.recordEvent(submissionId, { stage: 0, status: 'started', message: '[Nhận diện] Đối chiếu ngôn ngữ yêu cầu của đề với các tệp thực tế.' });
                     await assertDirectorySubmissionLanguage(languageConfig, extractDir);
                     const requiredLanguage = languageConfig.submissionFormat?.requiredLanguage || languageConfig.runtimeConfig?.language || languageConfig.requiredLanguage || languageConfig.language;
+                    globalJobManager.recordEvent(submissionId, { stage: 0, status: 'info', message: `[Ngôn ngữ] Yêu cầu: ${requiredLanguage || 'Đề không khai báo ngôn ngữ bắt buộc'}; kiểm tra tệp đã hoàn tất.` });
+                    const sourceSnapshot = await this.buildSourceSnapshot(extractDir, publishedAssignment.metadata?.projectType || 'unknown');
+                    const sourceExtensions = [...new Set(sourceSnapshot.files.map(file => path.extname(file.relativePath).toLowerCase() || '(không phần mở rộng)'))];
+                    globalJobManager.recordEvent(submissionId, { stage: 0, status: 'info', message: `[Mã nguồn] Đọc được ${sourceSnapshot.files.length} tệp; phần mở rộng: ${sourceExtensions.join(', ') || 'không có'}.` });
+                    for (const file of sourceSnapshot.files.slice(0, 8)) globalJobManager.recordEvent(submissionId, { stage: 0, status: 'info', message: `[Tệp nguồn] ${file.relativePath.replace(/\\/g, '/').replace(/^\//, '')}; ${Buffer.byteLength(file.content, 'utf8')} byte.` });
+                    if (sourceSnapshot.files.length > 8) globalJobManager.recordEvent(submissionId, { stage: 0, status: 'info', message: `[Mã nguồn] Còn ${sourceSnapshot.files.length - 8} tệp trong snapshot; danh sách xem tại trình đọc mã nguồn.` });
+                    globalJobManager.recordEvent(submissionId, { stage: 0, status: 'completed', message: '[Nhận diện] Hoàn tất lập snapshot mã nguồn từ bài nộp này.' });
+                    const isConsole = detectAssignmentProfile(sourceExam?.Description || '').mode === 'console';
                     for (const rule of publishedAssignment.rubric?.rules || []) {
                         for (const evidence of rule.requiredEvidence || []) {
                             if (evidence.stdInOutProbe && requiredLanguage) evidence.stdInOutProbe.requiredLanguage = requiredLanguage;
                         }
                     }
-                    globalJobManager.updateProgress(submissionId, 5, 'Initialize the execution environment (Sandbox)...');
+                    globalJobManager.updateProgress(submissionId, 5, 'Đang chuẩn bị môi trường thực thi...');
                     try {
-                        const startSandboxPromise = this.sandboxService.startAsync(extractDir, publishedAssignment.metadata?.projectType as any);
+                        if (!isConsole) globalJobManager.recordEvent(submissionId, { stage: 1, status: 'started', message: '[Môi trường] Đang nhận diện runtime và khởi tạo sandbox ứng dụng.' });
+                        const startSandboxPromise = isConsole
+                            ? Promise.resolve({ containerId: null, baseUrl: null, projectType: 'algorithm', runtimeStack: 'unknown', isReady: false, crashLogs: 'Bài console dùng runner stdin/stdout riêng; không khởi động máy chủ Web.' })
+                            : this.sandboxService.startAsync(extractDir, publishedAssignment.metadata?.projectType as any);
                         let sandboxStartTimer: ReturnType<typeof setTimeout> | undefined;
                         let sandboxStartTimedOut = false;
                         const startTimeoutPromise = new Promise<never>((_, reject) => {
@@ -626,22 +649,25 @@ export class SubmissionController extends BaseController {
                         };
                     }
 
+                    if (!isConsole) globalJobManager.recordEvent(submissionId, { stage: 1, status: sandboxHandle.isReady ? 'completed' : 'warning', message: sandboxHandle.isReady
+                        ? `[Môi trường] Sandbox sẵn sàng; runtime: ${sandboxHandle.runtimeStack}; container: ${sandboxHandle.containerId || 'không có container ID'}.`
+                        : `[Môi trường] Runtime: ${sandboxHandle.runtimeStack}; chưa thể chạy ứng dụng. ${sandboxHandle.crashLogs || 'Không có runner phù hợp với loại dự án này.'}` });
+
                     if (sandboxHandle.isReady && sandboxHandle.baseUrl) {
                         checkCancelled();
-                        globalJobManager.updateProgress(submissionId, 10, 'Running Migration / Build DB...');
+                        globalJobManager.updateProgress(submissionId, 10, 'Đang kiểm tra kết nối ứng dụng trong sandbox...');
                         try {
                             await fetch(sandboxHandle.baseUrl);
                         } catch (err) { }
                     }
 
                     checkCancelled();
-                    globalJobManager.updateProgress(submissionId, 15, 'Running Source Analysis (Source Snapshot)...');
-                    const sourceSnapshot = await this.buildSourceSnapshot(extractDir, sandboxHandle.projectType);
+                    globalJobManager.updateProgress(submissionId, 15, 'Đã chuẩn bị snapshot; đang chọn các bước kiểm chứng phù hợp...');
 
                     let playwrightEvidence: any[] = [];
                     if (sandboxHandle.isReady && sandboxHandle.baseUrl) {
                         checkCancelled();
-                        globalJobManager.updateProgress(submissionId, 25, 'Running AI Vision / UI Tests...');
+                        globalJobManager.updateProgress(submissionId, 25, 'Đang thu thập bằng chứng kiểm thử giao diện...');
                         playwrightEvidence = await this.playwrightExecutor.executeAsync(
                             submissionId,
                             extractDir,
@@ -649,10 +675,11 @@ export class SubmissionController extends BaseController {
                             sandboxHandle.baseUrl,
                             sandboxHandle.additionalUrls
                         );
+                        globalJobManager.recordEvent(submissionId, { stage: 2, status: 'info', message: `[Kiểm chứng giao diện] Đã thu thập ${playwrightEvidence.length} bản ghi bằng chứng từ trình thực thi.` });
                     }
 
                     checkCancelled();
-                    globalJobManager.updateProgress(submissionId, 40, 'Reading report document (DOCX/PDF)...');
+                    globalJobManager.updateProgress(submissionId, 40, 'Đang kiểm tra tài liệu bổ sung trong bài nộp...');
                     let extractedDoc: any = undefined;
                     try {
                         async function findDocx(dir: string): Promise<string | null> {
@@ -679,8 +706,11 @@ export class SubmissionController extends BaseController {
 
                             const extractor = new DocumentExtractor();
                             extractedDoc = await extractor.extractAsync(buf, mime);
+                            globalJobManager.recordEvent(submissionId, { stage: 0, status: 'info', message: `[Tài liệu] Đã trích đọc ${path.basename(docPath)} (${buf.length} byte).` });
+                        } else {
+                            globalJobManager.recordEvent(submissionId, { stage: 0, status: 'info', message: '[Tài liệu] Bài nộp không có báo cáo DOCX/PDF/DOC/TXT; sử dụng mã nguồn đã đọc.' });
                         }
-                    } catch (docErr) { }
+                    } catch (docErr) { globalJobManager.recordEvent(submissionId, { stage: 0, status: 'warning', message: `[Tài liệu] Không trích đọc được tài liệu bổ sung: ${docErr.message || 'Lỗi đọc tệp'}.` }); }
 
                     checkCancelled();
                     const context: EvaluationContext = {
@@ -694,12 +724,19 @@ export class SubmissionController extends BaseController {
                         assignmentTitle: publishedAssignment.metadata?.title || (publishedAssignment as any).title,
                         projectType: sandboxHandle.projectType || publishedAssignment.metadata?.projectType
                     };
+                    context.onExecutionEvent = event => globalJobManager.recordEvent(submissionId, event);
 
                     globalJobManager.updateProgress(submissionId, 45, 'Biên dịch và kiểm chứng testcase đã lưu...');
-                    const consoleVerification = sourceExam ? await verifyConsoleTests(sourceExam, publishedAssignment.rubric.rules, extractDir) : null;
+                    const consoleVerification = sourceExam ? await verifyConsoleTests(sourceExam, publishedAssignment.rubric.rules, extractDir, context.onExecutionEvent) : null;
+                    if (consoleVerification) {
+                        executionEvidence.consoleVerification = consoleVerification;
+                        if (typeof consoleVerification.compilationPassed === 'boolean') executionEvidence.compilationSummary = { passed: consoleVerification.compilationPassed };
+                        executionEvidence.executionSummary = { runtimeStack: 'console', ready: consoleVerification.status === 'completed', limitation: consoleVerification.status === 'completed' ? null : consoleVerification.error || 'Chưa thực thi testcase.' };
+                    }
                     if (consoleVerification) context.crashLogs = undefined; // An unavailable web server is not a console-program crash.
                     if (consoleVerification?.status === 'completed') context.runtimeTestSummary = JSON.stringify({ compilationPassed: consoleVerification.compilationPassed, passed: consoleVerification.passedCases, total: consoleVerification.totalCases });
-                    globalJobManager.updateProgress(submissionId, 50, 'Starting evaluation of criteria...');
+                    globalJobManager.updateProgress(submissionId, 50, 'Đang đánh giá các tiêu chí theo barem...');
+                    globalJobManager.recordEvent(submissionId, { stage: 3, status: 'started', message: `[Barem] Bắt đầu đánh giá ${publishedAssignment.rubric.rules.length} tiêu chí của đề; dùng bằng chứng mã nguồn và kết quả thực thi hiện có.` });
                     const evaluatedReport = await this.evaluator.evaluateAsync(
                         submissionId,
                         publishedAssignment.id,
@@ -729,6 +766,9 @@ export class SubmissionController extends BaseController {
                 if (report.consoleVerification?.status === 'completed') report.executionSummary = { runtimeStack: 'console', ready: true, limitation: null };
                 // --- Save to History DB ---
                 try {
+                    globalJobManager.updateProgress(submissionId, 99, 'Đang lưu báo cáo đánh giá...');
+                    globalJobManager.recordEvent(submissionId, { stage: 4, status: 'started', message: '[Lưu báo cáo] Đang lưu điểm, tiêu chí và nhật ký của lượt chấm này; chưa tự công bố điểm.' });
+                    report.gradingLogs = [...(globalJobManager.getJob(submissionId)?.logs || [])];
                     await this.historyRepo.saveAsync({
                         id: submissionId,
                         assignmentId: publishedAssignment.id,
@@ -758,9 +798,11 @@ export class SubmissionController extends BaseController {
 
             } catch (err: any) {
                 console.error(`[SubmissionController] Job ${submissionId} failed:`, err);
+                const failedStage = globalJobManager.getJob(submissionId)?.currentStage || 0;
+                globalJobManager.recordEvent(submissionId, { stage: failedStage, status: 'failed', message: `[Lỗi lượt chấm] ${err.message || 'Không xác định được nguyên nhân.'}` });
 
                 try {
-                    await this.historyRepo.saveAsync({ id: submissionId, assignmentId: publishedAssignment.id, studentId: submission.studentId, score: 0, maxScore: publishedAssignment.rubric.totalWeight || 0, assessedAt: new Date().toISOString(), report: { ...(err.partialReport || {}), submissionId, assignmentId: publishedAssignment.id, error: err.message || 'Grading failed' } });
+                    await this.historyRepo.saveAsync({ id: submissionId, assignmentId: publishedAssignment.id, studentId: submission.studentId, score: 0, maxScore: publishedAssignment.rubric.totalWeight || 0, assessedAt: new Date().toISOString(), report: { ...(err.partialReport || {}), ...executionEvidence, submissionId, assignmentId: publishedAssignment.id, gradingLogs: [...(globalJobManager.getJob(submissionId)?.logs || [])], error: err.message || 'Grading failed' } });
                     memoryCache.invalidatePrefix('sub_detail_'); memoryCache.invalidatePrefix('subs_list_'); memoryCache.invalidatePrefix('subs_recent_');
                 } catch (dbErr) { console.error('[Grading] Failed to persist error state:', dbErr); }
 
@@ -788,8 +830,8 @@ export class SubmissionController extends BaseController {
         const access = await this.assertSubmissionAccess(id, req.user, false);
         const hideUnpublishedResult = access.role === 'STUDENT' && !access.isPublished;
         const visibleJob = (value: any) => hideUnpublishedResult
-            ? { ...value, result: undefined, meta: undefined, ...(value?.error ? { error: 'Không thể hoàn tất lượt chấm. Giảng viên sẽ kiểm tra và chấm lại.' } : {}) }
-            : value;
+            ? { ...value, result: undefined, meta: undefined, logs: undefined, currentTask: value.state === 'completed' ? 'Đã xử lý bài nộp. Chờ giảng viên công bố.' : 'Đang xử lý bài nộp...', ...(value?.error ? { error: 'Không thể hoàn tất lượt chấm. Giảng viên sẽ kiểm tra và chấm lại.' } : {}) }
+            : access.role === 'STUDENT' ? { ...value, logs: undefined, meta: undefined } : value;
 
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache, no-transform');
@@ -1013,6 +1055,7 @@ export class SubmissionController extends BaseController {
             executionSummary: report.executionSummary || null,
             consoleVerification: visibleReport.consoleVerification || null,
             compilationSummary: visibleReport.compilationSummary || null,
+            gradingLogs: req.user?.role?.toUpperCase() === 'STUDENT' ? [] : visibleReport.lastGradingError ? visibleReport.lastGradingLogs || [] : visibleReport.gradingLogs || [],
             rules: visibleReport.passedRules || [],
             failedRules: visibleReport.failedRules || [],
             manualReviewNotes: report.manualReviewNotes || [],
@@ -1529,7 +1572,7 @@ export class SubmissionController extends BaseController {
                     const ext = path.extname(entry.name).toLowerCase();
                     if (UNIVERSAL_SOURCE_EXTENSIONS.has(ext) || entry.name.toLowerCase() === 'dockerfile' || entry.name.toLowerCase() === 'makefile') {
                         const content = await fs.readFile(fullPath, 'utf8');
-                        files.push({ relativePath: fullPath.replace(dir, ''), content });
+                        files.push({ relativePath: path.relative(dir, fullPath).split(path.sep).join('/'), content });
                     }
                 }
             }

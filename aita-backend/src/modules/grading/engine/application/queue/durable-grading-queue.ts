@@ -94,6 +94,8 @@ export class DurableGradingQueue {
     if (existing) {
       let partial: any = {}
       try { partial = JSON.parse(existing.ReportData || '{}') } catch {}
+      const activeJob = globalJobManager.getJob(id)
+      if (activeJob && ['queued', 'processing'].includes(activeJob.state) && activeJob.logs?.length) partial = { ...partial, error: message, gradingLogs: [...activeJob.logs] }
       const updated = await this.db.submission.updateMany({ where: { Id: id, GradingTask: { is: { Status: status } } }, data: failedGradingUpdate(existing, message, partial) })
       if (updated.count) globalJobManager.failJob(id, message)
     }
