@@ -11,12 +11,19 @@ test('real Docker runner separates stdout/stderr, rejects nonzero exits and reco
   try {
     const engine = new StdInOutProbeEngine()
     const spec = { description: 'fixture', requiredLanguage: 'C++', testCases: [{ id: 'fixture', input: '', expectedOutput: '4', comparisonMode: 'exact' as const }] }
+    const events: any[] = []
     await fs.writeFile(path.join(root, 'main.cpp'), '#include <iostream>\nint main(){std::cout<<"4\\n";std::cerr<<"diagnostic\\n";return 0;}')
-    const good = await engine.evaluateAsync(root, spec)
+    const good = await engine.evaluateAsync(root, spec, undefined, event => events.push(event))
     assert.equal(good.passedCases, 1)
     assert.equal(good.compilationPassed, true)
     assert.equal(good.caseResults[0].actual, '4')
     assert.match(good.caseResults[0].stderr || '', /diagnostic/)
+    assert.ok(events.some(event => event.stage === 1 && /ID: sha256:/.test(event.message)))
+    assert.ok(events.some(event => event.stage === 1 && /Đã tạo [a-f0-9]{12,}/.test(event.message)))
+    assert.ok(events.some(event => event.stage === 2 && /build: g\+\+/.test(event.message)))
+    assert.ok(events.some(event => event.stage === 2 && /PASS; biên dịch: thành công/.test(event.message)))
+    assert.ok(events.some(event => /Đã xóa container/.test(event.message)))
+    assert.ok(events.every(event => !event.message.includes('diagnostic') && !event.message.includes('sha256:d89a1c')))
     await fs.writeFile(path.join(root, 'main.cpp'), '#include <iostream>\nint main(){std::cout<<"4 \\n";return 0;}')
     const spacing = await engine.evaluateAsync(root, spec)
     assert.equal(spacing.passedCases, 0)
