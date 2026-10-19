@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 import { config } from '../../config';
 import { AiClientManager } from '../../infrastructure/ai/AiClientManager';
 import * as crypto from 'crypto';
-import { resolveCodeReviewResult } from './source-evidence.js';
+import { normalizeSourcePath, resolveCodeReviewResult } from './source-evidence.js';
 
 export interface ProjectSourceSnapshot {
   projectType: string;
@@ -138,7 +138,7 @@ export class AICodeReviewEngine {
       };
     }
 
-    const relevantFiles = this.selectRelevantFiles(snapshot.files, semanticDescription);
+    const relevantFiles = this.selectRelevantFiles(snapshot.files, semanticDescription).map((file, index) => ({ ...file, relativePath: normalizeSourcePath(file.relativePath) || file.relativePath, fileId: `F${index + 1}` }));
     const maxContextLengths = [80000, 40000, 20000];
     let attempt = 0;
     let lastError: any = null;
@@ -146,19 +146,22 @@ export class AICodeReviewEngine {
     for (const MAX_CONTEXT_LENGTH of maxContextLengths) {
       attempt++;
       let filesContext = "";
+      const presentedFiles: typeof relevantFiles = [];
 
       for (const f of relevantFiles) {
         const numberedSource = f.content.split(/\r?\n/).map((line, index) => `[L${index + 1}] ${line}`).join("\n");
-        const fileStr = `// FILE: ${f.relativePath}\n${numberedSource}\n\n---\n\n`;
+        const fileStr = `// FILE: ${f.relativePath}\n// FILE_ID: ${f.fileId}\n${numberedSource}\n\n---\n\n`;
         if (filesContext.length + fileStr.length > MAX_CONTEXT_LENGTH) {
           if (filesContext.length === 0) {
             filesContext = fileStr.substring(0, MAX_CONTEXT_LENGTH) + "\n\n... [CONTENT TRUNCATED DUE TO SIZE LIMIT]";
+            presentedFiles.push(f);
           } else {
             filesContext += `// [Skipped remaining files due to context size limit...]`;
           }
           break;
         }
         filesContext += fileStr;
+        presentedFiles.push(f);
       }
 
       const isArchitectural = ['architecture', 'repository', 'dependency injection', 'clean architecture', 'layered', 'mvc']
@@ -189,6 +192,9 @@ ${crashLogs.substring(0, 2000)} // Truncated to 2000 chars
       }
 
       const prompt = `Evidence response attempt: ${attempt}. Use exact file paths from FILE headers and valid [Lx] line numbers. Return startLine/endLine (at most 40 lines) instead of copying source strings. If a previous response lacked evidence, correct the file/line references.
+${lastError ? `Previous validation failure: ${lastError.message?.slice(0, 400)}. Repair the references using the allowed file IDs below; do not lower or invent a score to bypass validation.` : ''}
+ALLOWED FILE REFERENCES: ${JSON.stringify(presentedFiles.map(file => ({ fileId: file.fileId, filePath: file.relativePath, totalLines: file.content.split(/\r?\n/).length })))}
+Use fileId to identify a file reliably even if archive folders contain spaces, Unicode or Windows separators. A snippet may identify its file with fileId alone; do not invent a path. If the line range is uncertain, include the exact filePath in relevantFiles for teacher review.
 You are an academic code grader for a university-level programming assignment.
 
 ═══════════════════════════════════════
@@ -228,6 +234,7 @@ OUTPUT FORMAT — Return ONLY valid JSON:
   "reasoning": "one paragraph explaining what you found and your conclusion",
   "relevantSnippets": [
     {
+      "fileId": "copy the FILE_ID of this file, for example F1",
       "startLine": 1,
       "endLine": 15,
       "filePath": "relative path to the file containing this snippet",
@@ -247,7 +254,7 @@ STRICT RULES:
 8. CRITICAL EVIDENCE REQUIREMENT: If percentageComplete > 0, you MUST ALWAYS provide at least one snippet in 'relevantSnippets'. Even if you only found partial code (like finding the UI Screen but missing the ViewModel), you MUST extract the partial code you did find as proof! Empty arrays [] are ABSOLUTELY FORBIDDEN if the score is greater than 0.`;
 
       try {
-        const cacheKey = "code_evidence_v3_" + crypto.createHash('sha256').update(prompt).digest('hex');
+        const cacheKey = "code_evidence_v4_" + crypto.createHash('sha256').update(prompt).digest('hex');
         let response: any;
 
         const finalParsed = await AiClientManager.executeWithFallback(async (client, model) => {
@@ -302,13 +309,13 @@ STRICT RULES:
             }
 
             // Validate before the provider manager caches a response. Invalid evidence must be retried.
-            return resolveCodeReviewResult(snapshot.files, JSON.parse(text));
+            return resolveCodeReviewResult(presentedFiles, JSON.parse(text));
           } finally {
             clearTimeout(timeoutId);
           }
         }, cacheKey);
 
-        return resolveCodeReviewResult(snapshot.files, finalParsed);
+        return resolveCodeReviewResult(presentedFiles, finalParsed);
       } catch (error: any) {
         lastError = error;
         const isTimeoutOrRateLimit = error.code === 'AI_UNAVAILABLE' || error.code === 'AI_TIMEOUT' ||

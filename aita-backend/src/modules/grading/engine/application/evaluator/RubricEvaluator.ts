@@ -17,6 +17,7 @@ import { globalJobManager } from '../queue/SubmissionJobManager';
 import { normaliseSubjectCode } from '../../core/domain/rubric/SubjectProjectTypes';
 import { config } from '../../config/index.js';
 import { assertRealGradingMode } from '../../config/grading-mode.js';
+import type { ExecutionObserver } from './execution-events.js';
 
 export interface EvaluationContext {
     sandbox: SandboxHandle;
@@ -32,6 +33,7 @@ export interface EvaluationContext {
     subjectCode?: string;
     assignmentTitle?: string;
     projectType?: string;
+    onExecutionEvent?: ExecutionObserver;
 }
 
 interface RuleScore {
@@ -1147,7 +1149,8 @@ export class RubricEvaluator {
                     const stdResult = await this.stdInOutProbe.evaluateAsync(
                         context.submissionPath,
                         spec.stdInOutProbe,
-                        rule.title
+                        rule.title,
+                        context.onExecutionEvent
                     );
                     // Proportional scoring: (passed / total) * weight
                     const proportionalScore = stdResult.totalCases > 0
