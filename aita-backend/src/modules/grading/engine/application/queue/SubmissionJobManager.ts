@@ -4,6 +4,12 @@ import { gradingLease } from './grading-lease.js';
 import { realtimeBus } from '../../../../../shared/infrastructure/realtime-bus.js';
 
 export type JobState = 'queued' | 'processing' | 'completed' | 'failed';
+export interface GradingEvent {
+    stage: 0 | 1 | 2 | 3 | 4;
+    status: 'started' | 'completed' | 'failed' | 'skipped' | 'info' | 'warning';
+    message: string;
+    runtime?: string;
+}
 
 export interface JobProgress {
     submissionId: string;
@@ -18,13 +24,16 @@ export interface JobProgress {
     generationStartedAt?: number;
     requestVersion?: number;
     attempt?: number;
+    logs?: ({ id: string; timestamp: string; message: string; state: JobState; progress: number } & Partial<GradingEvent>)[];
+    currentStage?: number;
+    eventSequence?: number;
 }
 
 class SubmissionJobManager extends EventEmitter {
     private jobs: Map<string, JobProgress> = new Map();
     private expirations = new Map<string, ReturnType<typeof setTimeout>>();
 
-    public initJob(submissionId: string, message = 'Waiting in queue...', version?: { requestVersion: number; attempt: number }) {
+    public initJob(submissionId: string, message = 'Đang chờ đến lượt chấm...', version?: { requestVersion: number; attempt: number }) {
         const current = this.jobs.get(submissionId);
         const lease = gradingLease.getStore();
         const requestVersion = version?.requestVersion ?? lease?.requestVersion ?? lease?.startedAt ?? Date.now();
@@ -60,12 +69,23 @@ class SubmissionJobManager extends EventEmitter {
         }
     }
 
+    public recordEvent(submissionId: string, event: GradingEvent) {
+        const job = this.jobs.get(submissionId);
+        if (!job || (gradingLease.getStore() && job.generation !== gradingLease.getStore()?.owner)) return;
+        if (event.status === 'started') job.currentStage = event.stage;
+        const logs = job.logs ||= [];
+        job.eventSequence = (job.eventSequence || 0) + 1;
+        logs.push({ ...event, message: event.message.slice(0, 2000), id: `${job.requestVersion}:${job.attempt}:${job.eventSequence}`, timestamp: new Date().toISOString(), state: job.state, progress: job.progressPercent });
+        if (logs.length > 200) logs.shift();
+        this.emitJobUpdate(submissionId, false);
+    }
+
     public completeJob(submissionId: string, result: any) {
         const job = this.jobs.get(submissionId);
         if (job && (!gradingLease.getStore() || job.generation === gradingLease.getStore()?.owner)) {
             job.state = 'completed';
             job.progressPercent = 100;
-            job.currentTask = 'Evaluation complete';
+            job.currentTask = 'Đã hoàn tất đánh giá và lưu báo cáo';
             job.result = result;
             this.emitJobUpdate(submissionId);
             this.expireTerminal(submissionId, job);
@@ -77,7 +97,7 @@ class SubmissionJobManager extends EventEmitter {
         if (job && (!gradingLease.getStore() || job.generation === gradingLease.getStore()?.owner)) {
             job.state = 'failed';
             job.error = error;
-            job.currentTask = 'Failed';
+            job.currentTask = 'Lượt chấm không hoàn tất';
             this.emitJobUpdate(submissionId);
             this.expireTerminal(submissionId, job);
         }
@@ -125,9 +145,17 @@ class SubmissionJobManager extends EventEmitter {
         realtimeBus.publish('assignment-event', { assignmentId, event });
     }
 
-    private emitJobUpdate(submissionId: string) {
+    private emitJobUpdate(submissionId: string, recordCurrent = true) {
         const job = this.jobs.get(submissionId);
         if (job && (!gradingLease.getStore() || job.generation === gradingLease.getStore()?.owner)) {
+            const logs = job.logs ||= [];
+            const message = String(job.error || job.currentTask).slice(0, 2000);
+            const previous = logs[logs.length - 1];
+            if (recordCurrent && (!previous || previous.message !== message || previous.state !== job.state)) {
+                job.eventSequence = (job.eventSequence || 0) + 1;
+                logs.push({ id: `${job.requestVersion}:${job.attempt}:${job.eventSequence}`, timestamp: new Date().toISOString(), message, state: job.state, progress: job.progressPercent });
+                if (logs.length > 200) logs.shift();
+            }
             // Emits an event specific to this submission
             this.emit(`update:${submissionId}`, job);
             // Completed reports are fetched through the authorized result endpoint.

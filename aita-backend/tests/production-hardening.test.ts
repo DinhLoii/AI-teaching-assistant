@@ -17,6 +17,85 @@ const { assertSubmissionLanguage, assertDirectorySubmissionLanguage, examConfigu
 const { criterionView, examTestCasesView } = await import('../src/modules/exams/application/exam-criteria-view.js')
 const { studentReportView } = await import('../src/modules/submissions/application/student-report-view.js')
 
+test('grading event snapshots belong to one run and contain only server-issued messages', async () => {
+  const { globalJobManager } = await import('../src/modules/grading/engine/application/queue/SubmissionJobManager.js')
+  const id = 'log-unit-test'
+  try {
+    globalJobManager.initJob(id, 'Queued', { requestVersion: 1, attempt: 1 })
+    assert.equal(globalJobManager.getJob(id)?.logs?.length, 1)
+    globalJobManager.updateProgress(id, 45, 'Compiling actual source')
+    globalJobManager.updateProgress(id, 45, 'Compiling actual source')
+    const events = globalJobManager.getJob(id)!.logs!
+    assert.equal(events.length, 2)
+    assert.ok(Number.isFinite(Date.parse(events[1].timestamp)))
+    assert.equal(events[1].message, 'Compiling actual source')
+    globalJobManager.recordEvent(id, { stage: 0, status: 'completed', message: 'Đã đọc đúng ZIP' })
+    assert.equal(globalJobManager.getJob(id)?.logs?.at(-1)?.stage, 0)
+    assert.equal(globalJobManager.getJob(id)?.logs?.at(-1)?.status, 'completed')
+    for (let index = 0; index < 210; index++) globalJobManager.recordEvent(id, { stage: 2, status: 'info', message: 'Event ' + index })
+    const retained = globalJobManager.getJob(id)!.logs!
+    assert.equal(retained.length, 200)
+    assert.equal(new Set(retained.map(event => event.id)).size, 200)
+    globalJobManager.initJob(id, 'Retry', { requestVersion: 2, attempt: 1 })
+    assert.equal(globalJobManager.getJob(id)?.logs?.length, 1)
+    assert.equal(globalJobManager.getJob(id)?.logs?.[0].message, 'Retry')
+    globalJobManager.receiveProgress({ submissionId: id, requestVersion: 1, attempt: 1, state: 'completed', currentTask: 'Old result', progressPercent: 100, logs: events })
+    assert.equal(globalJobManager.getJob(id)?.currentTask, 'Retry')
+    assert.equal('gradingLogs' in studentReportView({ gradingLogs: events }), false)
+    assert.equal('lastGradingLogs' in studentReportView({ lastGradingLogs: events }), false)
+  } finally { globalJobManager.clearJob(id) }
+})
+
+test('Docker unavailability emits a stage-2 cause and a stage-3 skip, without fabricated test outcomes', async () => {
+  const { StdInOutProbeEngine } = await import('../src/modules/grading/engine/application/evaluator/StdInOutProbeEngine.js')
+  const engine = new StdInOutProbeEngine() as any
+  engine.detectLanguage = async () => ({ language: 'cpp', dockerImage: 'gcc:13' })
+  engine.docker = { ping: async () => { throw new Error('connect ENOENT //./pipe/docker_engine') } }
+  const previousFlag = process.env.STDIO_SANDBOX_ENABLED
+  process.env.STDIO_SANDBOX_ENABLED = 'true'
+  const events: any[] = []
+  try {
+    await assert.rejects(engine.evaluateAsync('mock-only', { requiredLanguage: 'C++', testCases: [] }, undefined, (event: any) => events.push(event)), /ENOENT/)
+    assert.ok(events.some(event => event.stage === 1 && event.status === 'failed' && /Mở Docker Desktop/.test(event.message)))
+    assert.ok(events.some(event => event.stage === 2 && event.status === 'skipped'))
+    assert.equal(events.some(event => /PASS|Container.*Đã tạo/.test(event.message)), false)
+  } finally { if (previousFlag === undefined) delete process.env.STDIO_SANDBOX_ENABLED; else process.env.STDIO_SANDBOX_ENABLED = previousFlag }
+})
+
+test('a later AI failure preserves the real console execution report instead of losing passed/failed cases', async () => {
+  const { SubmissionController } = await import('../src/modules/grading/engine/modules/submissions/controllers/SubmissionController.js')
+  const { prisma } = await import('../src/database/prisma.js')
+  const { StdInOutProbeEngine } = await import('../src/modules/grading/engine/application/evaluator/StdInOutProbeEngine.js')
+  const { globalJobManager } = await import('../src/modules/grading/engine/application/queue/SubmissionJobManager.js')
+  const originalQuery = prisma.exam.findUnique
+  const originalEvaluate = StdInOutProbeEngine.prototype.evaluateAsync
+  const root = path.resolve('temp', 'ai-failure-evidence-' + Date.now())
+  assert.ok(root.startsWith(path.resolve('temp') + path.sep))
+  const saved: any[] = []
+  const id = 'ai-partial-execution-test'
+  try {
+    await fs.mkdir(root, { recursive: true })
+    await fs.writeFile(path.join(root, 'main.c'), 'int main(void) { return 0; }')
+    ;(prisma.exam.findUnique as any) = async () => ({ Description: 'Ngôn ngữ C. Đọc stdin và ghi stdout.', AiGeneratedContent: JSON.stringify({ runtimeConfig: { language: 'C' } }), TestCase: [{ Id: 'TC01', Input: '1', ExpectedOutput: '2', IsHidden: false }] })
+    StdInOutProbeEngine.prototype.evaluateAsync = async () => ({ compilationPassed: true, passed: false, confidence: .5, totalCases: 2, passedCases: 1, caseResults: [{ caseId: 'TC01', passed: true }, { caseId: 'TC02', passed: false }] } as any)
+    const controller = new SubmissionController({ stopAsync: async () => {} } as any, {} as any, { evaluateAsync: async () => { throw new Error('AI_CODE_EVIDENCE_MISSING: mock provider invalid reference') } } as any) as any
+    controller.historyRepo = { saveAsync: async (record: any) => saved.push(record) }
+    globalJobManager.initJob(id)
+    await controller.enqueueSubmissionJob(id, { id: 'exam', metadata: { projectType: 'algorithm' }, rubric: { rules: [{ scoringStrategy: 'AICodeReview' }], totalWeight: 10 } }, { assignmentId: 'exam', studentId: 'student' }, root, null)
+    assert.equal(saved.length, 1)
+    assert.match(saved[0].report.error, /AI_CODE_EVIDENCE_MISSING/)
+    assert.equal(saved[0].report.consoleVerification.passedCases, 1)
+    assert.equal(saved[0].report.consoleVerification.caseResults.length, 2)
+    assert.equal(saved[0].report.compilationSummary.passed, true)
+    assert.ok(saved[0].report.gradingLogs.length)
+  } finally {
+    prisma.exam.findUnique = originalQuery
+    StdInOutProbeEngine.prototype.evaluateAsync = originalEvaluate
+    globalJobManager.clearJob(id)
+    await fs.rm(root, { recursive: true, force: true })
+  }
+})
+
 test('published student reports retain hidden-case outcomes without exposing hidden input/output or compiler diagnostics', () => {
   const source = { consoleVerification: { caseResults: [{ caseId: 'hidden', isHidden: true, passed: false, input: 'secret-input', expected: 'secret-answer', actual: 'secret-output', stderr: 'secret-path' }, { caseId: 'public', isHidden: false, passed: true, input: '1', expected: '2' }] } }
   const view = studentReportView(source)

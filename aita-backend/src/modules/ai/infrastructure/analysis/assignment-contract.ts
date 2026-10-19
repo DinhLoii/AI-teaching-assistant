@@ -100,19 +100,28 @@ export function extractAcceptanceScenarios(text: string): AcceptanceScenario[] {
   // Accept actual table rows (Markdown, DOCX text tabs), never manufacture stdin/stdout.
   const lines = text.split('\n')
   let inTests = false
+  let numericRowsAllowed = false
+  let inCodeBlock = false
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index].trim()
-    if (/acceptance test|tình huống kiểm thử|test cases?/i.test(line)) inTests = true
+    if (/^```|^~~~/.test(line)) { inCodeBlock = !inCodeBlock; continue }
+    if (inCodeBlock) continue
+    if (/acceptance tests?|tình huống kiểm thử/i.test(line)) { inTests = true; numericRowsAllowed = true; continue }
+    if (/^(?:#{1,6}\s*)?(?:\d+[.)]\s*)?test cases?\b/i.test(line)) { inTests = true; numericRowsAllowed = false; continue }
+    if (/^(?:#{1,6}\s+|\d+[.)]\s+\p{L})/u.test(line)) { inTests = false; continue }
     if (!inTests) continue
     const match = line.match(/^\|?\s*(?:TC\s*)?(\d{1,3})(\*)?\s*(?:\||\t|$)(.*)$/i)
     if (!match) continue
+    // A console input such as Q=4 or output 0 is not an acceptance-test ID.
+    if (Number(match[1]) === 0 && !/^\|?\s*TC\s*0/i.test(line)) continue
+    if (!numericRowsAllowed && !/^\|?\s*TC\s*\d/i.test(line) && !/^\|/.test(line) && !/^\d+\*?\s*(?:\||\t)/.test(line)) continue
     let values = match[3].split(/\||\t/).map(value => value.trim()).filter(Boolean)
     let quote = line
     if (!values.length) {
       const following: string[] = []
       let next = index + 1
       for (; next < lines.length && following.length < 2; next++) if (lines[next].trim()) following.push(lines[next].trim())
-      if (following.length === 2 && !following.some(value => /^\d+\*?$/.test(value))) { values = following; quote = lines.slice(index, next).join('\n'); index = next - 1 }
+      if (following.length === 2 && !following.some(value => /^(?:TC\s*)?\d+\*?$|^#{1,6}\s|^\d+[.)]\s|^```|^~~~/i.test(value))) { values = following; quote = lines.slice(index, next).join('\n'); index = next - 1 }
     }
     if (values.length < 2) continue
     rows.push({ id: `TC${match[1].padStart(2, '0')}`, steps: values[0], expectedResult: values.slice(1).join(' | '), sourceQuote: quote, level: match[2] ? 'advanced' : 'required', execution: 'manual_review' })
