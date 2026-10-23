@@ -2,6 +2,17 @@ import { IExamRepository, ExamFilter } from '../../domain/repositories/exam-repo
 import { Exam } from '../../domain/entities/exam.entity.js'
 import { ExamMapper } from '../mappers/exam.mapper.js'
 
+const summarySelect = {
+  Id: true, Title: true, Description: true, SubjectId: true, ExamType: true,
+  Duration: true, StartDate: true, DueDate: true, TotalPoints: true,
+  WeightPercentage: true, Status: true, CreatedBy: true,
+  GradingStrategy: true, AllowLateSubmission: true, LatePenaltyType: true,
+  LatePenaltyValue: true, IsDeleted: true,
+  Subject: { select: { SubjectCode: true, SubjectName: true } },
+  ExamClass: { select: { ClassId: true } },
+  _count: { select: { Submission: true } },
+}
+
 export class PrismaExamRepository implements IExamRepository {
   constructor(private readonly client: any) { }
 
@@ -83,16 +94,7 @@ export class PrismaExamRepository implements IExamRepository {
       skip: options?.skip,
       take: options?.take,
       ...(options?.summary ? {
-        select: {
-          Id: true, Title: true, Description: true, SubjectId: true, ExamType: true,
-          Duration: true, StartDate: true, DueDate: true, TotalPoints: true,
-          WeightPercentage: true, Status: true, CreatedBy: true,
-          GradingStrategy: true, AllowLateSubmission: true, LatePenaltyType: true,
-          LatePenaltyValue: true, IsDeleted: true,
-          Subject: { select: { SubjectCode: true, SubjectName: true } },
-          ExamClass: { select: { ClassId: true } },
-          _count: { select: { Submission: true } },
-        }
+        select: summarySelect
       } : { include: this.include })
     })
 
@@ -101,12 +103,12 @@ export class PrismaExamRepository implements IExamRepository {
       : raw))
   }
 
-  async findById(id: string): Promise<Exam | null> {
+  async findById(id: string, options?: { summary?: boolean }): Promise<Exam | null> {
     const raw = await this.client.exam.findUnique({
       where: { Id: id },
-      include: { ...this.include, TestCase: { orderBy: { SortOrder: 'asc' } } }
+      ...(options?.summary ? { select: summarySelect } : { include: { ...this.include, TestCase: { orderBy: { SortOrder: 'asc' } } } })
     })
-    return raw ? ExamMapper.toDomain(raw) : null
+    return raw ? ExamMapper.toDomain(options?.summary ? { ...raw, Description: raw.Description?.slice(0, 300) } : raw) : null
   }
 
   async create(exam: Exam): Promise<void> {

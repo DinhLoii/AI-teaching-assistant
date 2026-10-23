@@ -23,7 +23,7 @@ export class ListSubmissionsUseCase implements IUseCase<{ user: AuthUser; query:
       await autoZeroSubmissionService.syncZeroScoresForClass(classId, user.id)
     }
 
-    const filter: any = { latestOnly: query.data.includeHistory !== 'true' }
+    const filter: any = { latestOnly: query.data.includeHistory !== 'true', summary: query.data.view === 'summary' }
     if (targetExamId) filter.examId = targetExamId
     if (classId) filter.classId = classId
     if (status) filter.status = status as GradingStatusValue

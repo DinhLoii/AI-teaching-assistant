@@ -12,7 +12,7 @@ export class GetClassStudentsUseCase implements IUseCase<string, any[]> {
   ) {}
 
   async execute(classId: string): Promise<any[]> {
-    const cls = await this.classRepo.findById(classId)
+    const cls = await this.classRepo.findById(classId, { scopeOnly: true })
     if (!cls) {
       throw new NotFoundError(MESSAGES.CLASS_NOT_FOUND)
     }

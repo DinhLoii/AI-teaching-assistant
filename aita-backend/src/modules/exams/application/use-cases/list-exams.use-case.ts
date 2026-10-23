@@ -23,7 +23,7 @@ export class ListExamsUseCase implements IUseCase<{ user: AuthUser; params: any 
       }).catch(() => []);
     const roleClassesRequest = user.role === 'LECTURER' || user.role === 'STUDENT'
       ? this.uow.resolve<any>(Symbol.for('ClassRepository')).findMany(user.role === 'LECTURER'
-        ? { instructorId: user.id } : { studentId: user.id })
+        ? { instructorId: user.id } : { studentId: user.id }, { scopeOnly: true })
       : Promise.resolve([]);
     const roleClasses = await roleClassesRequest;
 

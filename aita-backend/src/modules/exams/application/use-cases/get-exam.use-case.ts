@@ -17,11 +17,12 @@ export class GetExamUseCase implements IUseCase<string, ExamResponseDto> {
    *   whichever class happens to be attached first. Omitting it keeps the previous behaviour,
    *   which is what lecturers and admins continue to get.
    */
-  async execute(id: string, viewerId?: string, viewerRole?: string): Promise<ExamResponseDto> {
-    const exam = await this.examRepo.findById(id)
+  async execute(id: string, viewerId?: string, viewerRole?: string, summary = false): Promise<ExamResponseDto> {
+    const exam = await this.examRepo.findById(id, { summary })
     if (!exam) {
       throw new NotFoundError(MESSAGES.EXAM_NOT_FOUND)
     }
+    if (summary) return ExamResponseDto.from(exam as any)
 
     if (viewerId) {
       const ownClass = ((exam as any).classLecturers ?? []).find(
@@ -111,7 +112,17 @@ export class GetExamUseCase implements IUseCase<string, ExamResponseDto> {
       console.error('Error fetching PublishedAssignment:', err)
     }
     
-    const dto = ExamResponseDto.from(exam as any)
+    let dto = ExamResponseDto.from(exam as any)
+    if (viewerId && String(viewerRole || '').toUpperCase() === 'STUDENT') {
+      const extension = await prisma.submissionOverride.findUnique({
+        where: { ExamId_StudentId: { ExamId: id, StudentId: viewerId } },
+        select: { ExtendedDueDate: true },
+      })
+      if (extension?.ExtendedDueDate) {
+        const due = extension.ExtendedDueDate.toISOString()
+        dto = { ...dto, dueDate: due, dueAt: due, due }
+      }
+    }
     const config = examConfiguration(exam as any)
     const staff = ['ADMIN', 'LECTURER'].includes(String(viewerRole || '').toUpperCase())
     const storedTests = (exam as any).TestCase

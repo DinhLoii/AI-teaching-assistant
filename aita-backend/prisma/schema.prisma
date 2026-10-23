@@ -1,5 +1,7 @@
 generator client {
   provider = "prisma-client-js"
+  // Fetch related records in one database round trip (PostgreSQL lateral joins).
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {

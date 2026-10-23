@@ -16,6 +16,8 @@ const includeDefault = {
       Title: true,
       Description: true,
       TotalPoints: true,
+      DueDate: true,
+      SubmissionOverride: { select: { StudentId: true, ClassId: true, ExtendedDueDate: true } },
     }
   },
   Class: {
@@ -50,7 +52,11 @@ export class PrismaSubmissionRepository implements ISubmissionRepository {
   async findMany(filter?: SubmissionFilter): Promise<Submission[]> {
     const rawList = await this.client.submission.findMany({
       where: this.mapFilterToWhere(filter),
-      include: includeDefault,
+      ...(filter?.summary ? { omit: { ReportData: true }, include: {
+        ...includeDefault,
+        SubmissionArtifact: false,
+        Exam: { select: { Id: true, Title: true, TotalPoints: true, DueDate: true, SubmissionOverride: includeDefault.Exam.select.SubmissionOverride } },
+      } } : { include: includeDefault }),
       orderBy: { SubmittedAt: 'desc' },
     })
     return rawList.map(SubmissionMapper.toDomain)
