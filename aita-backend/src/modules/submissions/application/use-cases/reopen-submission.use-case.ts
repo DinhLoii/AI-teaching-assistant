@@ -4,18 +4,22 @@ import type { AuthUser } from '../../../../types/express.js'
 import { NotFoundError, ValidationError } from '../../../../shared/application/app.error.js'
 import { ReopenSubmissionRequestDto } from '../dtos/submission.dto.js'
 import { prisma } from '../../../../database/prisma.js'
+import { assertAssignmentAccess } from '../../../grading/engine/assignment/assignment-access.js'
 
 export class ReopenSubmissionUseCase implements IUseCase<{ dto: ReopenSubmissionRequestDto; user: AuthUser }, any> {
+  constructor(private readonly db: any = prisma) {}
   async execute({ dto, user }: { dto: ReopenSubmissionRequestDto; user: AuthUser }) {
+    const prisma = this.db
     const { examId, studentId, classId, extendedDueDate, penaltyMode, customPenaltyRate, flatPenaltyAmount, scoreCap, reason } = dto.data
 
     if (!examId || !studentId) {
       throw new ValidationError('examId và studentId là bắt buộc')
     }
 
+    await assertAssignmentAccess(examId, user, true, prisma)
     const exam = await prisma.exam.findUnique({
       where: { Id: examId },
-      select: { Id: true, Title: true, DueDate: true }
+      select: { Id: true, Title: true, DueDate: true, SubjectId: true, ExamClass: { select: { ClassId: true } } }
     })
     if (!exam) {
       throw new NotFoundError('Không tìm thấy bài tập/đề thi')
@@ -25,9 +29,24 @@ export class ReopenSubmissionUseCase implements IUseCase<{ dto: ReopenSubmission
     if (isNaN(parsedDueDate.getTime())) {
       throw new ValidationError('Ngày gia hạn hạn nộp không hợp lệ')
     }
+    if (parsedDueDate.getTime() <= Date.now()) throw new ValidationError('Hạn gia hạn phải ở tương lai')
+    const student = await prisma.user.findUnique({ where: { Id: studentId }, select: { Id: true } })
+    if (!student) throw new ValidationError('Không tìm thấy tài khoản sinh viên. Vui lòng tải lại danh sách và thử lại.')
+    if (!exam.ExamClass.length && !exam.SubjectId) throw new ValidationError('Bài tập chưa được gắn với lớp học hoặc môn học')
+    const enrollment = await prisma.studentClass.findFirst({
+      where: {
+        UserId: studentId,
+        ...(classId ? { ClassId: classId } : {}),
+        Class: exam.ExamClass.length
+          ? { Id: { in: exam.ExamClass.map((entry: any) => entry.ClassId) } }
+          : { SubjectId: exam.SubjectId },
+      }, select: { ClassId: true },
+    })
+    if (!enrollment) throw new ValidationError('Sinh viên không thuộc lớp được giao bài tập này')
 
+    const override = await prisma.$transaction(async (tx: any) => {
     // Upsert Submission Override record
-    const override = await prisma.submissionOverride.upsert({
+    const override = await tx.submissionOverride.upsert({
       where: {
         ExamId_StudentId: {
           ExamId: examId,
@@ -37,7 +56,7 @@ export class ReopenSubmissionUseCase implements IUseCase<{ dto: ReopenSubmission
       create: {
         ExamId: examId,
         StudentId: studentId,
-        ClassId: classId,
+        ClassId: enrollment.ClassId,
         ExtendedDueDate: parsedDueDate,
         PenaltyMode: penaltyMode,
         CustomPenaltyRate: customPenaltyRate !== undefined ? customPenaltyRate : null,
@@ -47,6 +66,7 @@ export class ReopenSubmissionUseCase implements IUseCase<{ dto: ReopenSubmission
         CreatedBy: user.id,
       },
       update: {
+        ClassId: enrollment.ClassId,
         ExtendedDueDate: parsedDueDate,
         PenaltyMode: penaltyMode,
         CustomPenaltyRate: customPenaltyRate !== undefined ? customPenaltyRate : null,
@@ -58,16 +78,17 @@ export class ReopenSubmissionUseCase implements IUseCase<{ dto: ReopenSubmission
     })
 
     // Update existing submission if present to mark IsReopened = true
-    const existingSubmission = await prisma.submission.findFirst({
+    const existingSubmission = await tx.submission.findFirst({
       where: {
         ExamId: examId,
         StudentId: studentId,
+        ClassId: enrollment.ClassId,
       },
       orderBy: { AttemptNumber: 'desc' }
     })
 
     if (existingSubmission) {
-      await prisma.submission.update({
+      await tx.submission.update({
         where: { Id: existingSubmission.Id },
         data: {
           IsReopened: true,
@@ -75,6 +96,8 @@ export class ReopenSubmissionUseCase implements IUseCase<{ dto: ReopenSubmission
         }
       })
     }
+    return override
+    })
 
     // Create Notification for the student
     try {

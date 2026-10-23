@@ -94,9 +94,6 @@ export class SubmissionsController extends BaseController {
 
     async submit(req: Request, res: Response): Promise<void> {
         this.logger.debug('Received request to create submission')
-        memoryCache.invalidatePrefix('subs_list_')
-        memoryCache.invalidatePrefix('subs_recent_')
-        memoryCache.invalidatePrefix('student_dash_')
         const data = { ...req.body }
         
         // Pass the uploaded file buffer to the usecase
@@ -105,6 +102,9 @@ export class SubmissionsController extends BaseController {
             file: req.file,
             user: req.user! 
         })
+        memoryCache.invalidatePrefix('subs_list_')
+        memoryCache.invalidatePrefix('subs_recent_')
+        memoryCache.invalidatePrefix('student_dash_')
         this.created(res, result, MESSAGES.SUBMISSION_CREATE_SUCCESS)
     }
 
@@ -202,6 +202,7 @@ export class SubmissionsController extends BaseController {
         const dto = ReopenSubmissionRequestDto.from(req.body)
         const useCase = new ReopenSubmissionUseCase()
         const result = await useCase.execute({ dto, user: req.user! })
+        memoryCache.invalidatePrefix('exam_detail_')
         memoryCache.invalidatePrefix('sub_detail_')
         memoryCache.invalidatePrefix('subs_list_')
         memoryCache.invalidatePrefix('subs_recent_')

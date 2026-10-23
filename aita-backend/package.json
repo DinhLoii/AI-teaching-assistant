@@ -16,7 +16,7 @@
     "setup": "npm run db:generate && npm run db:migrate",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate deploy",
-    "test": "node --import tsx --test tests/production-hardening.test.ts tests/performance.test.ts tests/notification-timestamps.test.ts",
+    "test": "node --import tsx --test tests/production-hardening.test.ts tests/performance.test.ts tests/notification-timestamps.test.ts tests/java-sandbox.test.ts tests/submission-extension.test.ts",
     "test:postgres": "node --import dotenv/config scripts/test-postgres.mjs",
     "test:console-docker": "node --import tsx --test tests/console-runner.docker.test.ts"
   },

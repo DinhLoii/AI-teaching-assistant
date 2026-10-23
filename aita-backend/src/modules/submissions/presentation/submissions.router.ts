@@ -65,7 +65,7 @@ export class SubmissionsRouter {
         this.router.get('/duplicates', authenticate, requireRoles('ADMIN', 'LECTURER'), asyncHandler((req: any, res: any) => ctrl.detectDuplicates(req, res)))
         this.router.post('/apply-duplicate-penalty', authenticate, requireRoles('ADMIN', 'LECTURER'), asyncHandler((req: any, res: any) => ctrl.applyDuplicatePenalty(req, res)))
         this.router.post('/bulk-publish', authenticate, asyncHandler((req: any, res: any) => ctrl.bulkPublish(req, res)))
-        this.router.post('/reopen', authenticate, asyncHandler((req: any, res: any) => ctrl.reopen(req, res)))
+        this.router.post('/reopen', authenticate, requireRoles('ADMIN', 'LECTURER'), asyncHandler((req: any, res: any) => ctrl.reopen(req, res)))
         this.router.get('/:id/source', authenticate, asyncHandler((req: any, res: any) => ctrl.source(req, res)))
         this.router.get('/:id/history', authenticate, asyncHandler((req: any, res: any) => ctrl.history(req, res)))
         this.router.get('/:id', authenticate, asyncHandler((req: any, res: any) => ctrl.getOne(req, res)))

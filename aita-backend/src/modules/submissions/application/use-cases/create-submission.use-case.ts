@@ -14,14 +14,17 @@ import fs from 'fs'
 import { privateSubmissionRoot } from '../../infrastructure/submission-storage.js'
 import { inspectSourceArchive } from '../../infrastructure/source-archive.js'
 import { assertSubmissionLanguage, examConfiguration } from '../submission-language.js'
+import { prisma as defaultPrisma } from '../../../../database/prisma.js'
 
 export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmissionRequestDto; file?: Express.Multer.File; user: AuthUser }, ReturnType<typeof SubmissionResponseDto.from>> {
   constructor(
     private readonly submissionRepo: ISubmissionRepository,
-    private readonly uow: IUnitOfWork
+    private readonly uow: IUnitOfWork,
+    private readonly db: any = defaultPrisma
   ) { }
 
   async execute({ dto, file, user }: { dto: CreateSubmissionRequestDto; file?: Express.Multer.File; user: AuthUser }) {
+    const prisma = this.db
     const examId = dto.data.examId ?? dto.data.assignmentId
     if (!examId) throw new ValidationError(MESSAGES.SUBMISSION_MISSING_EXAM_ID)
 
@@ -33,18 +36,16 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
 
     if (!classId) {
       // Find the intersection of ExamClasses and Student Enrollments
-      const { prisma } = await import('../../../../database/prisma.js')
-      const examClasses = await prisma.examClass.findMany({
+      const [examClasses, enrollments] = await Promise.all([prisma.examClass.findMany({
         where: { ExamId: examId },
         select: { ClassId: true }
-      });
-      const enrollments = await prisma.studentClass.findMany({
+      }), prisma.studentClass.findMany({
         where: { UserId: user.id },
         select: { ClassId: true }
-      });
+      })]);
 
-      const enrolledClassIds = new Set(enrollments.map(e => e.ClassId));
-      const matchingClass = examClasses.find(ec => enrolledClassIds.has(ec.ClassId));
+      const enrolledClassIds = new Set(enrollments.map((e: any) => e.ClassId));
+      const matchingClass = examClasses.find((ec: any) => enrolledClassIds.has(ec.ClassId));
 
       if (matchingClass) {
         classId = matchingClass.ClassId;
@@ -89,37 +90,29 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
       throw new ForbiddenError(MESSAGES.SUBMISSION_NOT_ENROLLED)
     }
 
-    // Check for existing submission for this student & exam
-    const existingSubmissionList = await this.submissionRepo.findMany({
-      examId,
-      studentId: user.id,
-      classId,
-    })
-    const existingSubmission = existingSubmissionList && existingSubmissionList.length > 0 ? existingSubmissionList[0] : null
-
-    // Check deadline considering student-specific SubmissionOverride extension and late penalty policy
-    const { prisma } = await import('../../../../database/prisma.js')
-    const examRecord = await (prisma.exam as any).findUnique({
-      where: { Id: examId },
-      select: {
-        Status: true,
-        DueDate: true,
-        AllowLateSubmission: true,
-        LatePenaltyType: true,
-        LatePenaltyValue: true,
-        MaxLatePenalty: true,
-        SubmissionOverride: {
-          where: { StudentId: user.id }
+    // These reads are independent; avoid serial database round trips on the upload path.
+    const [existingSubmission, examRecord, pubRow, classAssignment] = await Promise.all([
+      prisma.submission.findFirst({ where: { ExamId: examId, StudentId: user.id, ClassId: classId }, select: { Id: true } }),
+      prisma.exam.findUnique({
+        where: { Id: examId },
+        select: {
+          Status: true,
+          DueDate: true,
+          AllowLateSubmission: true,
+          LatePenaltyType: true,
+          LatePenaltyValue: true,
+          MaxLatePenalty: true,
+          SubmissionOverride: {
+            where: { StudentId: user.id, OR: [{ ClassId: null }, { ClassId: classId }] }
+          }
         }
-      }
-    })
+      }),
+      prisma.publishedAssignment.findUnique({ where: { Id: examId }, select: { Data: true } }).catch(() => null),
+      prisma.examClass.findUnique({ where: { ExamId_ClassId: { ExamId: examId, ClassId: classId } }, select: { DueDate: true } }),
+    ])
 
     let publishedMeta: any = null
     try {
-      const pubRow = await prisma.publishedAssignment.findUnique({
-        where: { Id: examId },
-        select: { Data: true },
-      })
       if (pubRow?.Data) {
         publishedMeta = JSON.parse(pubRow.Data)?.metadata
       }
@@ -128,7 +121,7 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
     const userOverride = examRecord?.SubmissionOverride?.[0]
     const effectiveDueDate = userOverride?.ExtendedDueDate 
       ? new Date(userOverride.ExtendedDueDate) 
-      : (examRecord?.DueDate ? new Date(examRecord.DueDate) : (exam.dueDate ? new Date(exam.dueDate) : null))
+      : (classAssignment?.DueDate ? new Date(classAssignment.DueDate) : (examRecord?.DueDate ? new Date(examRecord.DueDate) : (exam.dueDate ? new Date(exam.dueDate) : null)))
 
     const allowLateSubmission = examRecord?.AllowLateSubmission ?? publishedMeta?.allowLateSubmission ?? (exam as any)?.allowLateSubmission ?? true
     const rawPenaltyType = examRecord?.LatePenaltyType && examRecord.LatePenaltyType !== 'NONE'
@@ -155,7 +148,8 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
       } catch (e) {}
     }
 
-    if (isClosed) {
+    const hasActiveExtension = !!(userOverride?.ExtendedDueDate && new Date(userOverride.ExtendedDueDate).getTime() > Date.now())
+    if (isClosed && !hasActiveExtension) {
       throw new ValidationError('Bài tập này đã bị đóng bởi giảng viên, không thể nộp bài.')
     }
 
@@ -226,10 +220,28 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
       }
     }
 
-    let persisted = false
     try {
+      // createAttempt commits the ZIP reference and durable grading task together.
       await this.submissionRepo.createAttempt(targetSubmission)
-      persisted = true
+    } catch (dbError) {
+      if (localFilePath) {
+        try { await fs.promises.unlink(localFilePath) }
+        catch (cleanupError) { console.error('Failed to cleanup Local file after DB save failure:', cleanupError) }
+      }
+      throw dbError
+    }
+
+    // Notification latency must not turn an accepted upload into a proxy timeout.
+    void this.afterSubmission({ examId, classId, user, exam, isResubmission, targetSubmission }).catch(error => {
+      console.error('Post-submit notification failed; the accepted submission and grading task are retained.', error)
+    })
+    return SubmissionResponseDto.from(targetSubmission as any, user.role)
+  }
+
+  private async afterSubmission({ examId, classId, user, exam, isResubmission, targetSubmission }: {
+    examId: string; classId: string; user: AuthUser; exam: any; isResubmission: boolean; targetSubmission: Submission
+  }): Promise<void> {
+      const prisma = this.db
 
       // Invalidate student dashboard cache
       try {
@@ -249,7 +261,6 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
       // Gửi thông báo đến Giảng viên khi sinh viên nộp lại bài
       if (examId) {
         try {
-          const { prisma } = await import('../../../../database/prisma.js');
           const studentUser = await prisma.user.findUnique({
             where: { Id: user.id },
             select: { FullName: true, StudentCode: true, Email: true }
@@ -313,7 +324,6 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
 
       // Clean up any deadline warning notifications for this student and assignment
       try {
-        const { prisma } = await import('../../../../database/prisma.js');
         await prisma.notificationRecipient.deleteMany({
           where: {
             UserId: user.id,
@@ -331,48 +341,6 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
         console.error('Failed to cleanup deadline notifications on submission:', notifErr);
       }
 
-      // If continuous queue (Chấm ngầm) is enabled, auto-enqueue grading job immediately
-      const { prisma } = await import('../../../../database/prisma.js');
-      const dbExam = await prisma.exam.findUnique({
-        where: { Id: examId },
-        select: { GradingStrategy: true }
-      });
-      const strat = dbExam?.GradingStrategy || (exam as any).gradingStrategy || (exam as any).GradingStrategy || 'CONTINUOUS_QUEUE';
-      const isContinuousQueue = strat === 'CONTINUOUS_QUEUE';
-      if (isContinuousQueue) {
-        try {
-          const { engineSubmissionController } = await import('../../../grading/engine/modules/submissions/routes/index.js');
-          if (engineSubmissionController) {
-            // Enqueue here, at submit time, so queue position equals submission order.
-            // The slot covers download + unzip + grading, one submission at a time.
-            engineSubmissionController.enqueueContinuousGrading(targetSubmission.id).catch(err => {
-              console.error('[ContinuousQueue] Error executing auto-grading job for submission:', targetSubmission.id, err);
-            });
-          }
-        } catch (statusErr) {
-          console.error('Failed to trigger auto-grading for continuous queue:', statusErr);
-        }
-      } else {
-        console.log(`[BatchPostDeadline] Submission ${targetSubmission.id} held in pending status until lecturer triggers batch grading.`);
-      }
-    } catch (dbError: any) {
-      if (persisted) {
-        console.error('Post-submit side effect failed; the saved archive and durable grading task are retained.')
-        return SubmissionResponseDto.from(targetSubmission as any, user.role)
-      }
-      if (localFilePath) {
-        try {
-          if (fs.existsSync(localFilePath)) {
-            fs.unlinkSync(localFilePath);
-          }
-        } catch (cleanupError) {
-          console.error('Failed to cleanup Local file after DB save failure:', cleanupError)
-        }
-      }
-      throw dbError
-    }
-
-    return SubmissionResponseDto.from(targetSubmission as any, user.role)
   }
 
   private isValidFileUrl(url: string): boolean {
