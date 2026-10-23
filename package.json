@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "fast": "node scripts/local.mjs --port 5174 --api-port 3001",
     "local": "node scripts/local.mjs",
     "local:build": "node scripts/local.mjs --build-only",
     "test:local": "node --test scripts/local-runtime.test.mjs aita-backend/scripts/fix-esm-imports.test.mjs"

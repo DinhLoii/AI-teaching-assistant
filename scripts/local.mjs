@@ -108,7 +108,7 @@ async function main() {
   const readiness = await fetch(`${proxy}/api/ready`, { signal: AbortSignal.any([shutdown.signal, AbortSignal.timeout(30000)]) })
   if (!readiness.ok) throw Error('Cơ sở dữ liệu chưa sẵn sàng. Kiểm tra kết nối và migration trước khi dùng ứng dụng.')
   if (stopping) return
-  const web = launch(next, ['start', '--hostname', '127.0.0.1', '--port', String(port)], frontend, webEnv)
+  const web = launch(next, ['start', '--hostname', '::', '--port', String(port)], frontend, webEnv)
   web.once('error', error => { console.error(error.message); stop(1) })
   web.once('exit', code => { if (!stopping) stop(code || 1) })
   await waitFor(`http://127.0.0.1:${port}/login`, web)
