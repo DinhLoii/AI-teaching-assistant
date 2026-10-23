@@ -42,7 +42,7 @@ export default function StudentResultsPage() {
   const loadSubmissions = React.useCallback(async (background = false) => {
     if (!background) setLoading(true)
     return submissionsApi
-      .getSubmissions()
+      .getSubmissions({ view: 'summary' })
       .then((data: any) => {
         setSubmissions(Array.isArray(data) ? data : [])
       })

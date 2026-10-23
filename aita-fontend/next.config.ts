@@ -5,10 +5,12 @@ const apiTarget = rawApiTarget.replace(/\/api\/?$/, '').replace(/\/+$/, '');
 
 const nextConfig: NextConfig = {
   ...(process.env.AITA_LOCAL_BUILD === '1' ? {
-    distDir: '.next-local',
+    distDir: process.env.AITA_LOCAL_DIST_DIR || '.next-local',
     typescript: { tsconfigPath: 'tsconfig.local.json' },
   } : {}),
   experimental: {
+    // Allow uploads and cold database connections to finish beyond Next's 30s default.
+    proxyTimeout: 120_000,
     optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
   async redirects() {

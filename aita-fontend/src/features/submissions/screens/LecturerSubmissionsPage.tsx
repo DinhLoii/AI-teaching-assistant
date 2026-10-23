@@ -12,9 +12,8 @@ import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { EvaluationReportViewer } from '@/features/submissions/components/EvaluationReportViewer'
 import { LiveGradingRunnerModal } from '@/features/grading/components/LiveGradingRunnerModal'
-import { assignmentsApi } from '@/lib/api/modules/assignments'
 import { submissionsApi } from '@/lib/api/modules/submissions'
-import { classesApi } from '@/lib/api/modules/classes'
+import { loadSubmissionWorkspace } from '../load-workspace'
 import { gradingApi } from '@/lib/api/modules/grading'
 import { formatDate } from '@/lib/utils'
 import { errorMessage } from '@/lib/api/errors'
@@ -56,6 +55,8 @@ export default function LecturerSubmissionsPage() {
   const [submissions, setSubmissions] = React.useState<any[]>([])
   const [roster, setRoster] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [loadError, setLoadError] = React.useState<string | null>(null)
+  const loadVersion = React.useRef(0)
   const [search, setSearch] = React.useState('')
   const [statusFilter, setStatusFilter] = React.useState<'all' | 'submitted' | 'graded' | 'pending' | 'missing'>('all')
   const [publishing, setPublishing] = React.useState(false)
@@ -122,38 +123,27 @@ export default function LecturerSubmissionsPage() {
   const [savingReopen, setSavingReopen] = React.useState(false)
 
   const loadData = React.useCallback(async (background = false) => {
+    const version = ++loadVersion.current
+    if (!background) setLoading(true)
+    setLoadError(null)
+    const current = () => version === loadVersion.current
     try {
-      if (!background) setLoading(true)
-      const [assign, subs] = await Promise.all([
-        assignmentsApi.getAssignment(assignmentId).catch((err) => { if (background) throw err; return null }),
-        submissionsApi.getSubmissions({ assignmentId }).catch((err) => { if (background) throw err; return [] }),
-      ])
-      setAssignment(assign)
-      setSubmissions(subs || [])
-      // The roster supplements missing-student counts; it must not block submitted work.
-      setLoading(false)
-
-      // If assignment has class information, fetch class roster to calculate missing students
-      const classId = assign?.classId || (assign?.classes && assign.classes[0])
-      if (classId) {
-        try {
-          const students = await classesApi.getClassStudents(classId)
-          setRoster(students || [])
-        } catch (err) {
-          if (background) throw err
-          setRoster([])
-        }
-      }
-    } catch (err) {
-      if (background) throw err
-      console.error('Failed to load submissions:', err)
-    } finally {
-      setLoading(false)
+      await loadSubmissionWorkspace(assignmentId, {
+        assignment: value => { if (current()) setAssignment(value) },
+        roster: value => { if (current()) setRoster(value || []) },
+        submissions: value => { if (current()) setSubmissions(value || []) },
+        submissionsError: error => { if (current()) setLoadError(errorMessage(error)) },
+        submissionsSettled: () => { if (current()) setLoading(false) },
+      }, background)
+    } catch (error) {
+      if (background) throw error
+      console.error('Failed to load assignment workspace:', error)
     }
   }, [assignmentId])
 
   React.useEffect(() => {
     loadData()
+    return () => { loadVersion.current++ }
   }, [loadData])
 
   // Polling for active grading jobs
@@ -169,7 +159,7 @@ export default function LecturerSubmissionsPage() {
         if (busy || document.hidden) return
         busy = true
         try {
-          const subs = await submissionsApi.getSubmissions({ assignmentId }, true)
+          const subs = await submissionsApi.getSubmissions({ assignmentId, view: 'summary' }, true)
           if (!cancelled) setSubmissions(subs || [])
         } catch (err) { console.error(err) }
         finally { busy = false }
@@ -316,13 +306,18 @@ export default function LecturerSubmissionsPage() {
   }
 
   // Open Reopen / Extension Modal
-  const handleOpenReopen = (student: any) => {
-    const stId = student.id || student.studentId || ''
+  const handleOpenReopen = (student: any, fromSubmission = false) => {
+    const stId = fromSubmission ? student.studentUserId : student.id
+    if (!stId) {
+      alert('Không xác định được tài khoản sinh viên. Vui lòng tải lại danh sách.')
+      return
+    }
     const stName = student.fullName || student.name || (typeof student.student === 'object' ? student.student?.fullName : student.student) || 'Sinh viên'
     const stCode = student.studentCode || (typeof student.studentId === 'object' ? student.studentId?.studentCode : student.studentId) || ''
 
     // Default to +24 hours from now
-    const nextDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16)
+    const next = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    const nextDate = new Date(next.getTime() - next.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
 
     setReopenModal({
       open: true,
@@ -636,7 +631,7 @@ export default function LecturerSubmissionsPage() {
               ) : filteredSubmissions.length === 0 && filteredMissing.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-slate-400 text-xs">
-                    {t('lecturer.submissions.no_submissions', 'Không tìm thấy bài nộp nào phù hợp.')}
+                    {loadError || t('lecturer.submissions.no_submissions', 'Không tìm thấy bài nộp nào phù hợp.')}
                   </td>
                 </tr>
               ) : (
@@ -778,7 +773,7 @@ export default function LecturerSubmissionsPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleOpenReopen(sub)}
+                              onClick={() => handleOpenReopen(sub, true)}
                               className="text-xs py-1 px-2 text-slate-500 hover:text-orange-500"
                               title="Gia hạn nộp bài cho sinh viên này"
                             >

@@ -172,7 +172,7 @@ test('hover prefetch and page load deduplicate API reads; unknown routes do no w
   assert.equal(calls, 0)
   prefetchPageData('/student/results')
   prefetchPageData('/student/results')
-  const pageLoad = api.request('/submissions')
+  const pageLoad = api.request('/submissions?view=summary')
   assert.equal(calls, 1)
   pending.resolve(response([]))
   await pageLoad

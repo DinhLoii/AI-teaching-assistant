@@ -69,7 +69,7 @@ export default function LecturerClassDetailPage() {
     }).catch(() => {})
     void Promise.all([
       classesApi.getClassStudents(classId).catch(() => []),
-      submissionsApi.getSubmissions({ classId }).catch(() => []),
+      submissionsApi.getSubmissions({ classId, view: 'summary' }).catch(() => []),
       assignmentsRequest,
     ]).then(([studentsData, submissions, filteredAssignments]) => {
       if (cancelled) return

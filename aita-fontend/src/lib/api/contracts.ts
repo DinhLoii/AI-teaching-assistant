@@ -166,6 +166,7 @@ export interface AssignmentRow {
 }
 
 export interface SubmissionRow {
+  studentUserId?: string | null
   gradingError?: string | null
   maxScore?: number | null
   id: string
@@ -206,6 +207,7 @@ export interface SubmissionRow {
 }
 
 export interface SubmissionListQuery {
+  view?: 'summary' | 'full'
   assignmentId?: string
   examId?: string
   classId?: string
