@@ -96,7 +96,7 @@ export default function StudentSubjectsPage() {
           return rows
         }),
         assignmentsApi.getAssignments(),
-        submissionsApi.getSubmissions(),
+        submissionsApi.getSubmissions({ view: 'summary' }),
       ])
 
       if (sequence !== loadSequence.current) return

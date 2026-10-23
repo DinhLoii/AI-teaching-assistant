@@ -186,6 +186,11 @@ export class AutoZeroSubmissionService {
       }
       AutoZeroSubmissionService.lastSyncExam.set(examId, now.getTime())
 
+      // Most workspace visits concern open assignments. Do not load every class,
+      // enrolment and override just to discover that the deadline is still ahead.
+      const deadline = await this.db.exam.findUnique({ where: { Id: examId }, select: { DueDate: true } })
+      if (!deadline?.DueDate || new Date(deadline.DueDate) >= now) return 0
+
       // 1. Tìm thông tin bài thi
       const exam: any = await (this.db.exam as any).findUnique({
         where: { Id: examId },

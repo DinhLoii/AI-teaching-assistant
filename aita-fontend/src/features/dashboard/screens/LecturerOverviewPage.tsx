@@ -128,7 +128,7 @@ export default function LecturerOverviewPage() {
       const [cls, exms, subs] = await Promise.allSettled([
         classesApi.getClasses(1, 1000).then(rows => { setClasses(rows || []); setLoading(false); return rows }).catch(() => []),
         assignmentsApi.getAssignments().then(rows => { setExams(rows || []); return rows }).catch(() => []),
-        submissionsApi.getSubmissions().then(rows => { setSubmissions(rows || []); return rows }).catch(() => []),
+        submissionsApi.getSubmissions({ view: 'summary' }).then(rows => { setSubmissions(rows || []); return rows }).catch(() => []),
       ])
 
       if (cls.status === 'fulfilled') {

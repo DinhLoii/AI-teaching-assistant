@@ -46,6 +46,9 @@ export default function AdminSubmissionsPage() {
   const [submissions, setSubmissions] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
   const [search, setSearch] = React.useState('')
+  const [reportLoading, setReportLoading] = React.useState(false)
+  const [reportError, setReportError] = React.useState('')
+  const reportSequence = React.useRef(0)
 
 
   // Review Rubric Modal State
@@ -60,8 +63,8 @@ export default function AdminSubmissionsPage() {
   const loadData = React.useCallback(async (background = false) => {
     try {
       const [assign, subs] = await Promise.all([
-        assignmentsApi.getAssignment(assignmentId).catch((err) => { if (background) throw err; return null }),
-        submissionsApi.getSubmissions({ assignmentId }).catch((err) => { if (background) throw err; return [] }),
+        assignmentsApi.getAssignmentSummary(assignmentId).catch((err) => { if (background) throw err; return null }),
+        submissionsApi.getSubmissions({ assignmentId, view: 'summary' }).catch((err) => { if (background) throw err; return [] }),
       ])
       setAssignment(assign)
       setSubmissions(subs || [])
@@ -86,13 +89,28 @@ export default function AdminSubmissionsPage() {
     
     if (hasPending) {
       const interval = setInterval(() => {
-        submissionsApi.getSubmissions({ assignmentId })
+        submissionsApi.getSubmissions({ assignmentId, view: 'summary' }, true)
           .then(subs => setSubmissions(subs || []))
           .catch(console.error)
       }, 3000)
       return () => clearInterval(interval)
     }
   }, [submissions, assignmentId])
+
+  const openReport = async (sub: any) => {
+    const sequence = ++reportSequence.current
+    setReviewModal({ open: true, sub })
+    setReportLoading(true)
+    setReportError('')
+    try {
+      const detail = await submissionsApi.getSubmissionDetail(sub.id)
+      if (sequence === reportSequence.current) setReviewModal(current => current.open && current.sub?.id === sub.id ? { open: true, sub: detail } : current)
+    } catch {
+      if (sequence === reportSequence.current) setReportError('Không tải được báo cáo. Vui lòng đóng và mở lại để thử lại.')
+    } finally {
+      if (sequence === reportSequence.current) setReportLoading(false)
+    }
+  }
 
 
   const filtered = submissions.filter((s) => {
@@ -349,7 +367,7 @@ export default function AdminSubmissionsPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => setReviewModal({ open: true, sub })}
+                              onClick={() => void openReport(sub)}
                               className="text-xs py-1 px-2.5 gap-1 border-slate-200 dark:border-slate-800"
                               title="Xem chi tiết phân tích AI & Rubric"
                             >
@@ -396,7 +414,7 @@ export default function AdminSubmissionsPage() {
             }
           >
             <div className="space-y-6">
-              <EvaluationReportViewer submission={reviewModal.sub} />
+              {reportLoading ? <p className="p-6 text-sm text-slate-500" role="status">Đang tải báo cáo chi tiết...</p> : reportError ? <p className="p-6 text-sm text-rose-600" role="alert">{reportError}</p> : <EvaluationReportViewer submission={reviewModal.sub} />}
 
               {/* Bottom Action Footer */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 border-t border-slate-200 dark:border-slate-800">

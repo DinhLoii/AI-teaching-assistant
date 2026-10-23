@@ -11,6 +11,7 @@ export const assignmentsApi = {
   },
 
   getAssignment: (id: string) => request<AssignmentRow>(`/assignments/${id}`),
+  getAssignmentSummary: (id: string) => request<AssignmentRow>(`/assignments/${id}?view=summary`),
 
   getGradingAssignment: (id: string) => request<any>(`/grading/assignments/${id}`),
 

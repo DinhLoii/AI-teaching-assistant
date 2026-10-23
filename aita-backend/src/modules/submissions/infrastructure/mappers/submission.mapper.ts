@@ -67,7 +67,7 @@ export class SubmissionMapper {
     } else if (raw.submissionOverride && !Array.isArray(raw.submissionOverride) && (raw.submissionOverride.StudentId === studentId || raw.submissionOverride.studentId === studentId)) {
       override = raw.submissionOverride;
     } else if (Array.isArray(raw.Exam?.SubmissionOverride)) {
-      override = raw.Exam.SubmissionOverride.find((o: any) => o.StudentId === studentId || o.studentId === studentId) || null;
+      override = raw.Exam.SubmissionOverride.find((o: any) => (o.StudentId === studentId || o.studentId === studentId) && (!o.ClassId || o.ClassId === raw.ClassId)) || null;
     }
     const extDue = raw.ExtendedDueDate || raw.extendedDueDate || override?.ExtendedDueDate || override?.extendedDueDate || null;
     if (extDue) {

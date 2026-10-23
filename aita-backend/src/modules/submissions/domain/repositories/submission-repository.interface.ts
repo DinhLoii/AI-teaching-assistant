@@ -8,6 +8,7 @@ export interface SubmissionFilter {
   instructorId?: string
   status?: GradingStatusValue
   latestOnly?: boolean
+  summary?: boolean
 }
 
 export interface ISubmissionRepository {

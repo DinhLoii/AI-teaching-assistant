@@ -14,6 +14,7 @@ import { StudentSubmissionModal } from '@/features/assignments/components/Studen
 import { AssignmentDocument } from '../components/AssignmentDocument'
 import { assignmentDocumentContent } from '../document-content'
 import { assignmentRubricRules, assignmentMaxScore } from '../rubric-content'
+import { loadStudentAssignment } from '../load-student-assignment'
 import { assignmentsApi } from '@/lib/api/modules/assignments'
 import { submissionsApi } from '@/lib/api/modules/submissions'
 import { gradingApi } from '@/lib/api/modules/grading'
@@ -109,6 +110,10 @@ export default function StudentAssignmentDetailPage() {
   const [assignment, setAssignment] = React.useState<any>(null)
   const [submission, setSubmission] = React.useState<any>(null)
   const [loading, setLoading] = React.useState(true)
+  const [submissionStatusReady, setSubmissionStatusReady] = React.useState(false)
+  const [reportLoading, setReportLoading] = React.useState(false)
+  const [reportError, setReportError] = React.useState('')
+  const loadSequence = React.useRef(0)
   const [uploading, setUploading] = React.useState(false)
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null)
   const [dragActive, setDragActive] = React.useState(false)
@@ -158,18 +163,14 @@ export default function StudentAssignmentDetailPage() {
 
   // Fetch assignment & existing submission
   const loadData = React.useCallback(async () => {
-    try {
-      const [assignSummary, gradingDetail, history] = await Promise.all([
-        assignmentsApi.getAssignment(assignmentId),
-        assignmentsApi.getGradingAssignment(assignmentId).catch(error => {
-          console.warn('Optional grading details could not be loaded, using assignment summary instead:', error)
-          return null
-        }),
-        submissionsApi.getSubmissions({ assignmentId: assignmentId }),
-      ])
-
-      const summary = assignSummary as any
-      const grading = gradingDetail as any
+    const sequence = ++loadSequence.current
+    const current = () => sequence === loadSequence.current
+    const showError = (err: any) => {
+      if (current()) setErrorMsg(err?.message || t('student.assignment.load_error', 'Không thể tải thông tin bài tập'))
+    }
+    await loadStudentAssignment(assignmentId, {
+      assignment: (summary: any, grading: any) => {
+      if (!current()) return
 
       const allowLate = summary?.allowLateSubmission !== undefined
         ? Boolean(summary.allowLateSubmission)
@@ -212,25 +213,24 @@ export default function StudentAssignmentDetailPage() {
       }
 
       setAssignment(mergedAssignment)
-      setErrorMsg(null)
-
-      if (history && history.length > 0) {
-        setSubmission([...history].sort((a, b) => new Date(b.submittedAt ?? 0).getTime() - new Date(a.submittedAt ?? 0).getTime())[0])
-      }
-    } catch (err: any) {
-      if (err?.status !== 401 && err?.message !== 'Unauthorized' && err?.code !== 'SESSION_EXPIRED' && !err?.message?.includes('hết hạn')) {
-        console.error('Failed to load assignment:', err)
-      } else {
-        console.warn('Session expired or unauthorized when loading assignment.')
-      }
-      setErrorMsg(err?.message || t('student.assignment.load_error', 'Không thể tải thông tin bài tập'))
-    } finally {
-      setLoading(false)
-    }
+      },
+      assignmentError: showError,
+      assignmentSettled: () => { if (current()) setLoading(false) },
+      submission: latest => { if (current()) { setSubmission(latest); setSubmissionStatusReady(true) } },
+      submissionError: showError,
+    })
   }, [assignmentId, t])
 
   React.useEffect(() => {
-    loadData()
+    setLoading(true)
+    setSubmissionStatusReady(false)
+    setAssignment(null)
+    setSubmission(null)
+    setErrorMsg(null)
+    setReportError('')
+    setReportLoading(false)
+    void loadData()
+    return () => { loadSequence.current++ }
   }, [loadData])
 
   // Cleanup polling on unmount
@@ -242,7 +242,7 @@ export default function StudentAssignmentDetailPage() {
 
   // Live Countdown & Late Policy calculation (G6.4)
   React.useEffect(() => {
-    if (!assignment?.due) return
+    if (!assignment?.due && !submission?.extendedDueDate) return
 
     const formatRemaining = (days: number, hours: number, minutes: number, seconds: number) => {
       if (days > 0) {
@@ -326,6 +326,19 @@ export default function StudentAssignmentDetailPage() {
       String(submission.reviewStatus || '').toUpperCase() === 'PUBLISHED'
     )
   )
+
+  React.useEffect(() => {
+    if (viewTab !== 'report' || !isPublished || !submission?.id || submission.reportData) return
+    let cancelled = false
+    setReportLoading(true)
+    setReportError('')
+    void submissionsApi.getSubmissionDetail(submission.id).then(detail => {
+      if (!cancelled) setSubmission(detail)
+    }).catch(() => {
+      if (!cancelled) setReportError(isVi ? 'Không tải được báo cáo. Vui lòng mở lại để thử lại.' : 'Could not load the report. Please reopen it to retry.')
+    }).finally(() => { if (!cancelled) setReportLoading(false) })
+    return () => { cancelled = true }
+  }, [viewTab, isPublished, submission?.id, isVi])
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -438,6 +451,10 @@ export default function StudentAssignmentDetailPage() {
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault()
+    if (!submissionStatusReady) {
+      setErrorMsg(isVi ? 'Chưa xác nhận được trạng thái bài nộp. Vui lòng tải lại trang để thử lại.' : 'Submission status is not available. Please reload to retry.')
+      return
+    }
     if (!selectedFile) {
       setErrorMsg(t('student.assignment.select_zip_warning', 'Vui lòng chọn file .zip bài làm trước khi nộp.'))
       return
@@ -668,11 +685,11 @@ export default function StudentAssignmentDetailPage() {
 
         {isPublished && viewTab === 'report' ? (
           <div className="space-y-6">
-            <EvaluationReportViewer
+            {reportLoading ? <p role="status" className="p-6 text-sm text-slate-500">{isVi ? 'Đang tải báo cáo chi tiết...' : 'Loading report...'}</p> : reportError ? <ErrorNotice message={reportError} /> : <EvaluationReportViewer
               submission={submission}
               onResubmit={deadlineStatus !== 'EXPIRED' ? () => setShowUploadForm(true) : undefined}
               onGetHint={handleGetHint}
-            />
+            />}
           </div>
         ) : (
           /* THIẾT KẾ TRONG KHUNG BO TRÒN THEO CHUẨN DESIGN SYSTEM */
@@ -765,6 +782,7 @@ export default function StudentAssignmentDetailPage() {
                     <button
                       type="button"
                       onClick={() => setShowUploadForm(!showUploadForm)}
+                      disabled={!submissionStatusReady}
                       className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer shadow-xs ${
                         submission
                           ? 'text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
@@ -772,7 +790,7 @@ export default function StudentAssignmentDetailPage() {
                       }`}
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
-                      <span>{showUploadForm ? (isVi ? 'Đóng form' : 'Close') : (submission ? (isVi ? 'Nộp lại bài' : 'Resubmit') : (isVi ? 'Nộp bài' : 'Submit'))}</span>
+                      <span>{!submissionStatusReady ? (isVi ? 'Đang kiểm tra bài nộp...' : 'Checking submission...') : showUploadForm ? (isVi ? 'Đóng form' : 'Close') : (submission ? (isVi ? 'Nộp lại bài' : 'Resubmit') : (isVi ? 'Nộp bài' : 'Submit'))}</span>
                     </button>
                   )}
                   {isPublished && (
@@ -830,7 +848,7 @@ export default function StudentAssignmentDetailPage() {
                   <div className="flex justify-end gap-2">
                     <button
                       type="button"
-                      disabled={!selectedFile || uploading}
+                      disabled={!selectedFile || uploading || !submissionStatusReady}
                       onClick={handleSubmit}
                       className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 cursor-pointer"
                     >
@@ -1012,7 +1030,7 @@ export default function StudentAssignmentDetailPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={uploading}
+                        disabled={uploading || !submissionStatusReady}
                         onClick={handleSubmit}
                         className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 cursor-pointer shadow-xs"
                       >

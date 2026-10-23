@@ -27,21 +27,21 @@ export class PrismaClassRepository implements IClassRepository {
     return where
   }
 
-  async findMany(filter?: ClassFilter, options?: { skip?: number; take?: number }): Promise<Class[]> {
+  async findMany(filter?: ClassFilter, options?: { skip?: number; take?: number; scopeOnly?: boolean }): Promise<Class[]> {
     const rawList = await this.client.class.findMany({
       where: this.mapFilterToWhere(filter),
       skip: options?.skip,
       take: options?.take,
-      include: this.include,
+      ...(options?.scopeOnly ? { select: { Id: true, SubjectId: true } } : { include: this.include }),
       orderBy: { ClassCode: 'asc' }
     })
     return rawList.map(ClassMapper.toDomain)
   }
 
-  async findById(id: string): Promise<Class | null> {
+  async findById(id: string, options?: { scopeOnly?: boolean }): Promise<Class | null> {
     const raw = await this.client.class.findUnique({
       where: { Id: id },
-      include: this.include
+      ...(options?.scopeOnly ? { select: { Id: true, SubjectId: true } } : { include: this.include })
     })
     return raw ? ClassMapper.toDomain(raw) : null
   }

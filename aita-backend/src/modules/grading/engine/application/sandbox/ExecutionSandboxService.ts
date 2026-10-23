@@ -4,6 +4,7 @@ import * as path from 'path';
 import Docker from 'dockerode';
 import * as net from 'net';
 import { execSync } from 'child_process';
+import { javaRuntimePlan, decodeSandboxLogs } from './java-runtime.js';
 import * as os from 'os';
 import { sandboxExecutionAllowed } from '../../config/sandbox-policy.js';
 
@@ -444,8 +445,13 @@ export NODE_ENV=development
 
           break;
         case "java":
-          dockerImage = "maven:3.9-eclipse-temurin-21";
-          cmd = ["sh", "-c", `cp -a /app /sandbox && cd "${runDir.replace('/app', '/sandbox')}" && (mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=8080" || (mvn clean package -DskipTests && java -jar target/*.jar))`];
+          const pom = fingerprintFile?.endsWith('pom.xml') ? await fs.readFile(fingerprintFile, 'utf8') : '';
+          const javaPlan = javaRuntimePlan(pom, runDir);
+          dockerImage = javaPlan.image;
+          if (javaPlan.dockerfile) {
+            await this.ensureJavaWarImage(dockerImage, javaPlan.dockerfile);
+          }
+          cmd = ["sh", "-c", javaPlan.command];
           env = ["SERVER_PORT=8080", "PORT=8080"];
           break;
         case "python":
@@ -541,7 +547,7 @@ export NODE_ENV=development
         let crashLogs = "";
         try {
           const logs = await container.logs({ stdout: true, stderr: true, timestamps: false });
-          crashLogs = logs.toString('utf-8');
+          crashLogs = decodeSandboxLogs(logs);
           console.error(`[Sandbox] Container Logs:\n${crashLogs}`);
         } catch (logErr) {
           console.error(`[Sandbox] Could not fetch container logs:`, logErr);
@@ -886,7 +892,7 @@ try {
       try {
         const inspect = await container.inspect();
         if (!inspect.State.Running) {
-          throw new Error(`Container exited prematurely. Exit Code: ${inspect.State.ExitCode}. This usually indicates a compilation error or missing dependencies.`);
+          throw new Error(`Container exited prematurely. Exit Code: ${inspect.State.ExitCode}. Build or application startup failed; see container logs for the cause.`);
         }
 
         const containerIP = inspect.NetworkSettings?.IPAddress ||
@@ -997,6 +1003,34 @@ try {
     } catch (e) {
       console.error(`[Sandbox] Runtime stack detection failed:`, e);
       return "unknown";
+    }
+  }
+
+  private async ensureJavaWarImage(image: string, dockerfile: string): Promise<void> {
+    try {
+      await this.docker.getImage(image).inspect();
+      return;
+    } catch (error: any) {
+      if (error.statusCode !== 404) throw error;
+    }
+    const buildDir = await fs.mkdtemp(path.join(os.tmpdir(), 'aita-java-war-'));
+    try {
+      await fs.writeFile(path.join(buildDir, 'Dockerfile'), dockerfile);
+      console.log(`[Sandbox] Preparing Maven + Tomcat image ${image}...`);
+      const stream = await this.docker.buildImage({ context: buildDir, src: ['Dockerfile'] }, { t: image });
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          stream.destroy();
+          reject(new Error(`Timed out preparing Java WAR image ${image}`));
+        }, 240000);
+        this.docker.modem.followProgress(stream, (error: Error | null) => {
+          clearTimeout(timeout);
+          if (error) reject(error);
+          else resolve();
+        });
+      });
+    } finally {
+      await fs.rm(buildDir, { recursive: true, force: true });
     }
   }
 

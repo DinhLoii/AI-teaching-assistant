@@ -61,8 +61,9 @@ export class ExamsController extends BaseController {
   async getOne(req: Request, res: Response): Promise<void> {
     const id = req.params.id as string
     this.logger.debug(`Received request to get exam details: ${id}`)
-    const cacheKey = `exam_detail_${id}_${req.user?.id || 'anon'}_${req.user?.role || ''}`
-    const result = await memoryCache.wrap(cacheKey, 30, () => this.getExamUseCase.execute(id, req.user?.id, req.user?.role))
+    const summary = req.query.view === 'summary'
+    const cacheKey = `exam_detail_${id}_${req.user?.id || 'anon'}_${req.user?.role || ''}_${summary ? 'summary' : 'full'}`
+    const result = await memoryCache.wrap(cacheKey, 30, () => this.getExamUseCase.execute(id, req.user?.id, req.user?.role, summary))
     this.ok(res, result, MESSAGES.SUCCESS)
   }
 

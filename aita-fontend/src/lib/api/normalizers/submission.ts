@@ -61,6 +61,7 @@ export function normalizeSubmissionRow(raw: any): SubmissionRow {
     assignment: assignmentTitle,
     classId: raw?.classId ?? raw?.ClassId ?? classObj?.id ?? null,
     studentId: String(studentCode),
+    studentUserId: raw?.studentUserId ?? studentObj?.id ?? raw?.studentId ?? raw?.StudentId ?? null,
     student: String(studentName),
     status: raw?.status ?? raw?.gradingStatus ?? raw?.GradingStatus ?? 'pending',
     gradingStatus: raw?.gradingStatus ?? raw?.GradingStatus ?? raw?.status ?? null,

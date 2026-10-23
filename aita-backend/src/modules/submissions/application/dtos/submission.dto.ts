@@ -7,6 +7,7 @@ export const ListSubmissionsQuerySchema = z.object({
   classId: z.string().optional(),
   status: z.string().optional(),
   includeHistory: z.enum(['true', 'false']).optional(),
+  view: z.enum(['summary', 'full']).optional(),
 })
 
 export const CreateSubmissionSchema = z.object({
@@ -99,7 +100,8 @@ export class SubmissionResponseDto {
     // Student privacy: Only show score, reportData & feedback if published by lecturer!
     // Lecturer & Admin always see scores and reportData to review before publishing.
     const isStudent = String(requestingUserRole || '').toUpperCase() === 'STUDENT';
-    const failedReport = typeof reportData?.error === 'string' && !!reportData.error;
+    const failedReport = (typeof reportData?.error === 'string' && !!reportData.error)
+      || ['error', 'failed'].includes(String(submission.gradingStatus || submission.GradingStatus || '').toLowerCase());
     const hideStudentReport = isStudent && !isPublished;
     const shouldHideScores = hideStudentReport || failedReport;
 
@@ -124,7 +126,7 @@ export class SubmissionResponseDto {
     } else if (submission.submissionOverride && !Array.isArray(submission.submissionOverride) && (submission.submissionOverride.StudentId === studentId || submission.submissionOverride.studentId === studentId)) {
       override = submission.submissionOverride;
     } else if (Array.isArray(submission.Exam?.SubmissionOverride)) {
-      override = submission.Exam.SubmissionOverride.find((o: any) => o.StudentId === studentId || o.studentId === studentId) || null;
+      override = submission.Exam.SubmissionOverride.find((o: any) => (o.StudentId === studentId || o.studentId === studentId) && (!o.ClassId || o.ClassId === (submission.classId || submission.ClassId))) || null;
     }
 
     const extDue = submission.extendedDueDate || submission.ExtendedDueDate || override?.ExtendedDueDate || override?.extendedDueDate || null;

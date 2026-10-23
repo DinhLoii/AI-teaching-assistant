@@ -13,7 +13,7 @@ export interface ExamFilter {
 
 export interface IExamRepository {
   findMany(filter?: ExamFilter, options?: { skip?: number; take?: number; summary?: boolean }): Promise<Exam[]>
-  findById(id: string): Promise<Exam | null>
+  findById(id: string, options?: { summary?: boolean }): Promise<Exam | null>
   create(exam: Exam): Promise<void>
   update(exam: Exam): Promise<void>
   save(exam: Exam): Promise<void>

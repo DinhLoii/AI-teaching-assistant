@@ -13,10 +13,50 @@ const { assertAssignmentAccess, assertClassAccess } = await import('../src/modul
 const { RealtimeBus } = await import('../src/shared/infrastructure/realtime-bus.js')
 const { PrismaSubmissionRepository } = await import('../src/modules/submissions/infrastructure/repositories/prisma-submission-repository.js')
 const { Submission } = await import('../src/modules/submissions/domain/entities/submission.entity.js')
+const { PrismaExamRepository } = await import('../src/modules/exams/infrastructure/repositories/prisma-exam-repository.js')
+const { PrismaClassRepository } = await import('../src/modules/classes/infrastructure/repositories/prisma-class-repository.js')
 const db = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL })
 after(async () => { await db.$disconnect() })
 const enabled = !!process.env.TEST_DATABASE_URL
 const fixture = async () => db.submission.create({ data: { Id: randomUUID(), SubmittedAt: new Date(), ZipFileUrl: '/private-submissions/test.zip', ReviewStatus: 'DRAFT' } })
+
+test('joined page reads preserve relational data, scores and scope with fewer database round trips', { skip: !enabled }, async () => {
+  let queries = 0
+  const reads = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL, log: [{ emit: 'event', level: 'query' }] })
+  reads.$on('query', () => { queries++ })
+  try {
+    const teacher = await db.user.create({ data: { FullName: 'Performance instructor' } })
+    const student = await db.user.create({ data: { FullName: 'Performance student', StudentCode: randomUUID() } })
+    const cls = await db.class.create({ data: { ClassCode: randomUUID(), InstructorClass: { create: { UserId: teacher.Id } }, StudentClass: { create: { UserId: student.Id } } } })
+    const exam = await db.exam.create({ data: { Title: 'Relation fixture', Status: 'Published', IsDeleted: false, CreatedBy: teacher.Id, ExamClass: { create: { ClassId: cls.Id } } } })
+    const submission = await db.submission.create({ data: { ExamId: exam.Id, StudentId: student.Id, ClassId: cls.Id, FinalScore: 7.5, ReportData: JSON.stringify({ totalScore: 7.5 }), ReviewStatus: 'DRAFT' } })
+    await db.submissionOverride.create({ data: { ExamId: exam.Id, StudentId: student.Id, ClassId: cls.Id, ExtendedDueDate: new Date('2100-01-01') } })
+    const separate = reads.$extends({ query: { $allModels: { $allOperations({ operation, args, query }) {
+      if (['findMany', 'findFirst', 'findUnique'].includes(operation)) (args as any).relationLoadStrategy = 'query'
+      return query(args)
+    } } } })
+    const cases = [
+      (client: any) => new PrismaExamRepository(client).findById(exam.Id),
+      (client: any) => new PrismaClassRepository(client).findMany({ instructorId: teacher.Id }),
+      (client: any) => new PrismaSubmissionRepository(client).findMany({ examId: exam.Id, instructorId: teacher.Id, summary: true }),
+    ]
+    for (const read of cases) {
+      queries = 0
+      const previous = await read(separate)
+      const separateCount = queries
+      queries = 0
+      const joined = await read(reads)
+      assert.deepEqual(joined, previous)
+      assert.ok(queries < separateCount, `Expected fewer round trips: ${queries} vs ${separateCount}`)
+    }
+    const summary = (await new PrismaSubmissionRepository(reads).findMany({ examId: exam.Id, summary: true }))[0]
+    assert.equal(summary.id, submission.Id)
+    assert.equal(Number(summary.finalScore), 7.5)
+    assert.equal((summary as any).reportData, undefined)
+    assert.deepEqual(await new PrismaSubmissionRepository(reads).findMany({ examId: exam.Id, instructorId: randomUUID(), summary: true }), [])
+    assert.ok((await new PrismaSubmissionRepository(reads).findById(submission.Id) as any)?.reportData)
+  } finally { await reads.$disconnect() }
+})
 
 test('PostgreSQL enforces instructor scope and student enrollment with actual relational data', { skip: !enabled }, async () => {
   const teacher = await db.user.create({ data: { FullName: 'Test instructor' } })

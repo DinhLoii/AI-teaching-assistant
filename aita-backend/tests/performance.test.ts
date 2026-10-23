@@ -6,6 +6,64 @@ import { syncPendingEnrollments } from '../src/modules/classes/application/pendi
 import { AutoZeroSubmissionService } from '../src/modules/submissions/application/services/auto-zero-submission.service.js'
 import { Logger } from '../src/shared/infrastructure/logger.js'
 import { dashboardResultSummaries } from '../src/modules/student-portal/application/dashboard-result-view.js'
+import { PrismaSubmissionRepository } from '../src/modules/submissions/infrastructure/repositories/prisma-submission-repository.js'
+import { PrismaClassRepository } from '../src/modules/classes/infrastructure/repositories/prisma-class-repository.js'
+import { SubmissionResponseDto } from '../src/modules/submissions/application/dtos/submission.dto.js'
+import { GetExamUseCase } from '../src/modules/exams/application/use-cases/get-exam.use-case.js'
+
+test('workspace metadata excludes rubrics, tests and published report reads; full details remain available', async () => {
+  const calls: any[] = []
+  const repo = new PrismaExamRepository({ exam: { findUnique: async (query: any) => { calls.push(query); return { Id: 'exam', Title: 'Workspace', Description: 'x'.repeat(10000), ExamClass: [{ ClassId: 'class' }] } } } })
+  const result = await new GetExamUseCase(repo).execute('exam', 'teacher', 'LECTURER', true)
+  assert.equal(result.title, 'Workspace')
+  assert.equal(result.classId, 'class')
+  assert.equal(result.description?.length, 300)
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0].include, undefined)
+  assert.equal(calls[0].select.ExamSection, undefined)
+  assert.equal(calls[0].select.AiGeneratedContent, undefined)
+  await repo.findById('exam')
+  assert.ok(calls[1].include.TestCase)
+  assert.ok(calls[1].include.ExamSection)
+})
+
+test('open assignment visits check only the deadline and never load rosters or write grades', async () => {
+  const queries: any[] = []
+  const db: any = { exam: { findUnique: async (query: any) => { queries.push(query); return { DueDate: new Date('2100-01-01') } } } }
+  assert.equal(await new AutoZeroSubmissionService(db).syncZeroScoresForExam('future-workspace-fixture'), 0)
+  assert.equal(queries.length, 1)
+  assert.deepEqual(queries[0].select, { DueDate: true })
+  assert.equal(queries[0].include, undefined)
+})
+
+test('submission summaries exclude source reports and artifacts while retaining student scope and full detail reads', async () => {
+  const calls: any[] = []
+  const repo = new PrismaSubmissionRepository({ submission: { findMany: async (query: any) => { calls.push(query); return [] } } })
+  await repo.findMany({ studentId: 'student', latestOnly: true, summary: true })
+  assert.equal(calls[0].where.StudentId, 'student')
+  assert.equal(calls[0].omit.ReportData, true)
+  assert.equal(calls[0].include.SubmissionArtifact, false)
+  assert.equal(calls[0].include.Exam.select.Description, undefined)
+  assert.ok(calls[0].include.Exam.select.SubmissionOverride)
+  await repo.findMany({ studentId: 'student' })
+  assert.equal(calls[1].omit, undefined)
+  assert.equal(calls[1].include.SubmissionArtifact, true)
+  const failed = SubmissionResponseDto.from({ Id: 'failed', GradingStatus: 'Error', TotalScore: 9, FinalScore: 9 }, 'LECTURER')
+  assert.equal(failed.totalScore, null)
+  assert.equal(failed.finalScore, null)
+})
+
+test('assignment visibility reads class IDs without loading rosters, lecturers or counts', async () => {
+  const calls: any[] = []
+  const repo = new PrismaClassRepository({ class: { findMany: async (query: any) => { calls.push(query); return [{ Id: 'class', SubjectId: 'subject' }] } } })
+  const classes = await repo.findMany({ studentId: 'student' }, { scopeOnly: true })
+  assert.deepEqual(calls[0].select, { Id: true, SubjectId: true })
+  assert.equal(calls[0].include, undefined)
+  assert.equal(calls[0].where.StudentClass.some.UserId, 'student')
+  assert.equal(classes[0].subjectId, 'subject')
+  await repo.findMany({ studentId: 'student' })
+  assert.ok(calls[1].include.InstructorClass)
+})
 
 test('dashboard projects structured grading summaries to text without exposing runtime diagnostics', () => {
   const result = dashboardResultSummaries({

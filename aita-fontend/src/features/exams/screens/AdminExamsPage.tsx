@@ -70,6 +70,7 @@ export default function AdminExamsPage() {
 
   const [modalOpen, setModalOpen] = React.useState(false)
   const [editingId, setEditingId] = React.useState<string | null>(null)
+  const [editingLoading, setEditingLoading] = React.useState<string | null>(null)
   const [form, setForm] = React.useState(emptyForm())
   const [saving, setSaving] = React.useState(false)
   const [deleteId, setDeleteId] = React.useState<string | null>(null)
@@ -105,7 +106,12 @@ export default function AdminExamsPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
 
   const openCreate = () => { setEditingId(null); setForm(emptyForm()); setModalOpen(true) }
-  const openEdit = (ex: ExamRow) => {
+  const openEdit = async (row: ExamRow) => {
+    if (editingLoading) return
+    setEditingLoading(row.id)
+    try {
+    // Lists contain a shortened description; edit only the complete saved record.
+    const ex = await examsApi.getExam(row.id)
     setEditingId(ex.id)
     setForm({
       title: ex.title,
@@ -123,6 +129,9 @@ export default function AdminExamsPage() {
       sendNotification: false,
     })
     setModalOpen(true)
+    } catch {
+      alert('Không tải được thông tin chi tiết để chỉnh sửa. Vui lòng thử lại.')
+    } finally { setEditingLoading(null) }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -305,6 +314,7 @@ export default function AdminExamsPage() {
             </select>
             <Button
               onClick={openCreate}
+              disabled={editingLoading !== null}
               className="shrink-0 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 hover:from-orange-600 hover:via-amber-600 hover:to-orange-600 shadow-orange-500/25 text-white font-bold rounded-2xl h-10 px-5 text-xs gap-1.5 cursor-pointer shadow-md active:scale-95 transition-all"
             >
               <Plus className="w-4 h-4" />
@@ -323,7 +333,7 @@ export default function AdminExamsPage() {
           <div className="flex flex-col items-center justify-center py-20 gap-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs">
             <AlertCircle className="w-10 h-10 text-slate-300 dark:text-slate-600" />
             <p className="text-xs text-slate-400 font-semibold">Chưa có đề thi nào. Hãy tạo đề thi đầu tiên.</p>
-            <Button onClick={openCreate} variant="primary">
+            <Button onClick={openCreate} variant="primary" disabled={editingLoading !== null}>
               <Plus className="w-4 h-4 mr-1.5" /> Tạo đề thi mới
             </Button>
           </div>
@@ -396,11 +406,12 @@ export default function AdminExamsPage() {
                         </button>
                       </Link>
                       <button
-                        onClick={() => openEdit(ex)}
+                        onClick={() => void openEdit(ex)}
+                        disabled={editingLoading !== null}
                         className="p-2 rounded-xl text-slate-400 hover:text-[#FA7014] hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                         title="Chỉnh sửa"
                       >
-                        <Edit className="w-4 h-4" />
+                        {editingLoading === ex.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Edit className="w-4 h-4" />}
                       </button>
                       <button
                         onClick={() => handleDelete(ex.id)}

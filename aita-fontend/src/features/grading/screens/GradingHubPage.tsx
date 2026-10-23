@@ -66,7 +66,7 @@ function GradingHubContent() {
   React.useEffect(() => {
     Promise.all([
       assignmentsApi.getAssignments().catch(() => []),
-      submissionsApi.getSubmissions().catch(() => []),
+      submissionsApi.getSubmissions({ view: 'summary' }).catch(() => []),
     ])
       .then(([assignRes, subsRes]) => {
         setAssignments(assignRes || [])

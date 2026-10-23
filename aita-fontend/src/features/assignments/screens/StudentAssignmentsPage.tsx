@@ -253,7 +253,7 @@ export default function StudentAssignmentsPage() {
           if (sequence === loadSequence.current) setLoading(false)
           return value
         }).catch((err) => { if (background) throw err; return null }),
-        submissionsApi.getSubmissions().catch((err) => { if (background) throw err; return [] }),
+        submissionsApi.getSubmissions({ view: 'summary' }).catch((err) => { if (background) throw err; return [] }),
         assignmentsApi.getAssignments().then(value => {
           latestAssignments = value
           updateTasks(latestAssignments, latestDashboard)

@@ -3,7 +3,7 @@ import type { ExamRow, CreateExamBody } from '../contracts'
 
 export const examsApi = {
   getExams: (page = 1, limit = 10, subjectId?: string) => {
-    let url = `/exams?page=${page}&limit=${limit}`;
+    let url = `/exams?page=${page}&limit=${limit}&view=summary`;
     if (subjectId) url += `&classId=${subjectId}`;
     return request<ExamRow[]>(url);
   },

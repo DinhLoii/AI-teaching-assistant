@@ -1993,6 +1993,8 @@ export default function LecturerAssignmentWorkspacePage() {
   const isRubricRoute = pathname?.endsWith('/rubric')
   const [activeTab, setActiveTab] = React.useState(isRubricRoute ? 'rubric' : 'submissions')
   const [assignment, setAssignment] = React.useState<AssignmentRow | null>(null)
+  const [loadedView, setLoadedView] = React.useState<'summary' | 'full' | null>(null)
+  const needsFullAssignment = activeTab === 'settings' || activeTab === 'rubric'
   const [loading, setLoading] = React.useState(true)
   const [uploadingAnswerKey, setUploadingAnswerKey] = React.useState(false)
   const [togglingPublish, setTogglingPublish] = React.useState(false)
@@ -2004,11 +2006,20 @@ export default function LecturerAssignmentWorkspacePage() {
   }, [pathname])
 
   React.useEffect(() => {
-    assignmentsApi.getAssignment(assignmentId)
-      .then(setAssignment)
+    let active = true
+    setLoading(true)
+    const request = needsFullAssignment
+      ? assignmentsApi.getAssignment(assignmentId)
+      : assignmentsApi.getAssignmentSummary(assignmentId)
+    request.then(value => {
+      if (!active) return
+      setAssignment(value)
+      setLoadedView(needsFullAssignment ? 'full' : 'summary')
+    })
       .catch(console.error)
-      .finally(() => setLoading(false))
-  }, [assignmentId])
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [assignmentId, needsFullAssignment])
 
   const handleTogglePublish = async () => {
     if (!assignment || !assignmentId) return
@@ -2200,8 +2211,9 @@ export default function LecturerAssignmentWorkspacePage() {
         {/* Tab content */}
         <div>
           {activeTab === 'submissions' && <LecturerSubmissionsPage />}
-          {activeTab === 'settings' && <SettingsTab assignment={assignment} assignmentId={assignmentId} onUpdateAssignment={(updated) => setAssignment(prev => prev ? { ...prev, ...updated } : prev)} />}
-          {activeTab === 'rubric' && <AIRubricTab assignment={assignment} assignmentId={assignmentId} onUpdateAssignment={(updated) => setAssignment(prev => prev ? { ...prev, ...updated } : prev)} />}
+          {needsFullAssignment && (loading || loadedView !== 'full') && <div className="p-8 text-center text-slate-500" role="status">{t('lecturer.workspace.header_loading', 'Đang tải...')}</div>}
+          {activeTab === 'settings' && !loading && loadedView === 'full' && <SettingsTab assignment={assignment} assignmentId={assignmentId} onUpdateAssignment={(updated) => setAssignment(prev => prev ? { ...prev, ...updated } : prev)} />}
+          {activeTab === 'rubric' && !loading && loadedView === 'full' && <AIRubricTab assignment={assignment} assignmentId={assignmentId} onUpdateAssignment={(updated) => setAssignment(prev => prev ? { ...prev, ...updated } : prev)} />}
           {activeTab === 'plagiarism' && <PlagiarismTab assignmentId={assignmentId} />}
         </div>
       </div>
