@@ -1,12 +1,13 @@
 'use client'
 
 import { emitAnalyticsEvent } from '@/lib/events/analytics'
-import { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { useAuth } from './auth-provider'
 import { NotificationSocket, type ConnectionStatus, type NotificationPayload } from '@/lib/websocket/notification-socket'
 import { NotificationFeed, type NotificationItem } from '@/lib/notifications/feed'
 import { subscribeNotificationEvents, emitNotificationEvent } from '@/lib/events/notifications'
 import { clearClientApiCache } from '@/lib/api/client'
+import { assignmentNoticeVersion, emitAssignmentsChanged } from '@/lib/events/assignments'
 
 export interface NotificationContextValue {
   notifications: NotificationItem[]
@@ -35,6 +36,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const owner = isAuthenticated ? user?.id : undefined
   const feed = useMemo(() => new NotificationFeed(), [owner])
   const snapshot = useSyncExternalStore(feed.subscribe, feed.getSnapshot, feed.getSnapshot)
+  const assignmentNotices = useRef<{ owner?: string; versions: Set<string> }>({ versions: new Set() })
+  useEffect(() => {
+    if (assignmentNotices.current.owner !== owner) assignmentNotices.current = { owner, versions: new Set() }
+    const versions = new Set(snapshot.items.map(assignmentNoticeVersion).filter((version): version is string => version !== null))
+    const changed = [...versions].some(version => !assignmentNotices.current.versions.has(version))
+    assignmentNotices.current.versions = versions
+    // Works for live events and the polling fallback after a missed connection.
+    if (owner && changed) emitAssignmentsChanged()
+  }, [owner, snapshot.items])
   const [connection, setConnection] = useState<{ owner?: string; status: ConnectionStatus; offset: number }>({ status: 'disconnected', offset: 0 })
   const [latest, setLatest] = useState<{ owner?: string; item: NotificationPayload | null; hasNew: boolean }>({ item: null, hasNew: false })
   useEffect(() => {
@@ -52,7 +62,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (!active) return
       if (event.type === 'HEARTBEAT') return
       if (event.type === 'ANALYTICS_INVALIDATED') { emitAnalyticsEvent(); return }
-      if (event.type === 'CONNECTED') emitAnalyticsEvent()
+      if (event.type === 'CONNECTED') { emitAnalyticsEvent(); emitAssignmentsChanged() }
       clearClientApiCache('/notifications')
       const existed = feed.getSnapshot().items.some(n => n.id === event.payload?.id)
       feed.receive(event)

@@ -1,6 +1,7 @@
 'use client'
 
 import { RefreshAction } from '@/components/actions/RefreshAction'
+import { useAssignmentSync } from '../hooks/useAssignmentSync'
 
 import * as React from 'react'
 import Link from 'next/link'
@@ -78,6 +79,11 @@ function formatDeadlineInfo(dueStr: string | Date | null | undefined, isVi: bool
       isOverdue: true,
       isUrgent: false,
     }
+  }
+
+  if (diffMs >= 0 && diffHours < 1) {
+    const minutes = Math.max(1, Math.ceil(diffMs / 60000))
+    return { dateFormatted, remainingText: isVi ? `Còn ${minutes} phút` : `${minutes}m left`, isOverdue: false, isUrgent: true }
   }
 
   if (diffHours < 24) {
@@ -280,6 +286,8 @@ export default function StudentAssignmentsPage() {
     loadData()
   }, [loadData])
 
+  useAssignmentSync(() => loadData(true))
+
   // Map submissions to task IDs
   const submissionMap = React.useMemo(() => {
     const map = new Map<string, any>()
@@ -318,6 +326,7 @@ export default function StudentAssignmentsPage() {
 
       return {
         ...task,
+        due: sub?.extendedDueDate || task.due,
         status,
         score,
       }

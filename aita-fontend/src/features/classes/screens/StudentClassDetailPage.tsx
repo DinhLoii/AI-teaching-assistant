@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { studentPortalApi } from '@/lib/api/modules/student-portal'
+import { useAssignmentSync } from '@/features/assignments/hooks/useAssignmentSync'
 import {
   ArrowLeft,
   BookOpen,
@@ -44,6 +45,7 @@ export default function StudentClassDetailPage() {
   const classId = (params?.id as string) || ''
   const [classData, setClassData] = React.useState<any>(null)
   const [loading, setLoading] = React.useState(true)
+  const loadSequence = React.useRef(0)
   const [activeTab, setActiveTab] = React.useState<'assignments' | 'students' | 'syllabus'>('assignments')
   const [studentSearch, setStudentSearch] = React.useState('')
   const [assignmentSearch, setAssignmentSearch] = React.useState('')
@@ -53,17 +55,25 @@ export default function StudentClassDetailPage() {
   const isVi = language === 'vi'
 
   React.useEffect(() => {
+    const sequence = ++loadSequence.current
     if (classId) {
       setLoading(true)
       studentPortalApi.getStudentClassDetail(classId)
-        .then((data) => setClassData(data))
+        .then((data) => { if (sequence === loadSequence.current) setClassData(data) })
         .catch((err) => {
           console.error('Failed to load class detail:', err)
-          setClassData(null)
+          if (sequence === loadSequence.current) setClassData(null)
         })
         .finally(() => setLoading(false))
     }
   }, [classId])
+
+  useAssignmentSync(async () => {
+    if (!classId) return
+    const sequence = ++loadSequence.current
+    const data = await studentPortalApi.getStudentClassDetail(classId)
+    if (sequence === loadSequence.current) setClassData(data)
+  })
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)

@@ -12,6 +12,36 @@ npm run setup        # prisma + seed
 npm run dev          # http://localhost:3001
 ```
 
+## Lỗi kết nối Neon khi khởi động
+
+Nếu gặp `P1001: Can't reach database server`, thêm `&connect_timeout=20&pool_timeout=20`
+vào URL Neon trong `.env` (dùng `?` nếu URL chưa có tham số).
+Giữ `DATABASE_URL` là URL pooled; `DIRECT_URL` dùng hostname không có `-pooler`.
+Khởi động lại `npm run dev` sau khi sửa `.env`.
+
+Backend chờ kết nối database trước khi mở HTTP và chạy hàng đợi/realtime.
+Lỗi kết nối tạm thời được thử lại tối đa 5 lần; nếu vẫn thất bại, backend dừng
+và báo lỗi để kiểm tra mạng, URL hoặc trạng thái database. Lỗi sai mật khẩu
+hoặc cấu hình sẽ dừng ngay.
+
+Mặc định, các giao dịch dùng chung `DB_TRANSACTION_TIMEOUT=30000` và
+`DB_TRANSACTION_MAX_WAIT=15000` (mili giây), bao gồm gia hạn cho mọi môn,
+nộp bài và các module dùng Prisma trực tiếp hoặc Unit of Work. Có thể chỉnh
+trong `.env`; khởi động lại backend sau khi đổi. Giao dịch gia hạn lưu cả
+hạn mới và thông báo trước khi báo thành công. Nếu giao dịch hết thời gian,
+API trả thông báo dễ hiểu thay vì đưa chi tiết Prisma ra giao diện.
+
+Kiểm tra lỗi giao dịch chậm trên database đang cấu hình (PowerShell):
+
+```powershell
+$env:TEST_DATABASE_LATENCY='true'
+node --import tsx --test tests/transaction-timeouts.postgres.test.ts
+Remove-Item Env:TEST_DATABASE_LATENCY
+```
+
+Hai test cố ý chờ 6 giây, chỉ đọc và dùng bảng tạm tự xóa; không thay đổi
+bài nộp hoặc thông báo thật. Bộ test mặc định bỏ qua kiểm tra kết nối này.
+
 ## Tài khoản demo
 
 | Email | Mật khẩu | Cổng FE |

@@ -9,34 +9,111 @@ import os from 'node:os'
 import path from 'node:path'
 import AdmZip from 'adm-zip'
 import { readSubmissionFile } from '../src/modules/submissions/infrastructure/submission-storage.js'
+import { studentExamDeadlines } from '../src/modules/exams/application/student-deadlines.js'
+import { GetExamUseCase } from '../src/modules/exams/application/use-cases/get-exam.use-case.js'
+import { ListExamsUseCase } from '../src/modules/exams/application/use-cases/list-exams.use-case.js'
+import { memoryCache } from '../src/shared/infrastructure/memory-cache.js'
+import { StudentPortalController } from '../src/modules/student-portal/presentation/student-portal.controller.js'
+import { databaseTransactionOptions } from '../src/database/transaction-options.js'
+import { errorHandler } from '../src/middleware/errorHandler.js'
 
 const future = new Date(Date.now() + 86400000).toISOString()
 const dto: any = { data: { examId: 'exam', studentId: 'student', extendedDueDate: future, penaltyMode: 'WAIVE' } }
 const user: any = { id: 'teacher', role: 'LECTURER' }
 function fixture() {
   const writes: any[] = []
+  const notices: any[] = []
   const tx = {
     submissionOverride: { upsert: async (query: any) => { writes.push(query); return { Id: 'override', ...query.create } } },
-    submission: { findFirst: async () => ({ Id: 'existing' }), update: async (query: any) => { writes.push(query); return {} } },
+    $executeRaw: async (sql: TemplateStringsArray, ...values: any[]) => { writes.push({ sql: sql.join('?'), values }); return 1 },
+    notification: { create: async (query: any) => { notices.push(query); return { Id: 'notice', ...query.data } } },
+    notificationRecipient: { create: async (query: any) => { notices.push(query); return {} } },
   }
   const db: any = {
     exam: { findFirst: async () => ({ Id: 'exam' }), findUnique: async () => ({ Id: 'exam', Title: 'Assignment', ExamClass: [{ ClassId: 'class' }] }) },
     user: { findUnique: async () => ({ Id: 'student' }) },
     studentClass: { findFirst: async () => ({ ClassId: 'class' }) },
-    $transaction: async (fn: any) => fn(tx),
-    notification: { create: async () => ({ Id: 'notice' }) },
-    notificationRecipient: { create: async () => ({}) },
+    $transaction: async (fn: any, options: any) => {
+      assert.deepEqual(options, databaseTransactionOptions)
+      assert.ok(options.timeout >= 30000)
+      assert.ok(options.maxWait >= 15000)
+      return fn(tx)
+    },
   }
-  return { db, writes }
+  return { db, writes, notices, tx }
 }
 test('reopen saves a student extension and marks the existing attempt in one transaction', async () => {
-  const { db, writes } = fixture()
+  const { db, writes, notices } = fixture()
+  memoryCache.set('student_dash_student', { stale: true })
   const result = await new ReopenSubmissionUseCase(db).execute({ dto, user })
   assert.equal(result.success, true)
   assert.equal(writes[0].create.StudentId, 'student')
   assert.equal(writes[0].create.ClassId, 'class')
   assert.equal(writes[0].update.ClassId, 'class')
-  assert.equal(writes[1].data.IsReopened, true)
+  assert.match(writes[1].sql, /SET "IsReopened"=true/)
+  assert.deepEqual(writes[1].values.slice(1), ['exam', 'student', 'class'])
+  assert.equal(notices[0].data.Type, 'ASSIGNMENT_REOPENED')
+  assert.equal(notices[0].data.ReferenceId, 'exam')
+  assert.equal(notices[1].data.UserId, 'student')
+  assert.equal(memoryCache.get('student_dash_student'), null)
+})
+
+test('extensions use the same transaction budget for every subject, including first submissions', async () => {
+  for (const examId of ['mobile-exam', 'java-exam', 'database-exam']) {
+    const { db, tx, writes, notices } = fixture()
+    tx.$executeRaw = async (sql: TemplateStringsArray, ...values: any[]) => { writes.push({ sql: sql.join('?'), values }); return 0 }
+    const result = await new ReopenSubmissionUseCase(db).execute({ dto: { data: { ...dto.data, examId } } as any, user })
+    assert.equal(result.success, true)
+    assert.equal(writes[0].create.ExamId, examId)
+    assert.equal(writes[1].values[1], examId)
+    assert.equal(notices[0].data.ReferenceId, examId)
+  }
+})
+
+test('expired transactions return a readable retry message without leaking Prisma internals', () => {
+  const error = Object.assign(new Error('Invalid tx.submission.findFirst(): transaction expired at C:/source/private.ts'), { name: 'PrismaClientKnownRequestError', code: 'P2028' })
+  let status: number | undefined, payload: any
+  const res: any = { status(value: number) { status = value; return this }, json(value: any) { payload = value } }
+  errorHandler(error, { method: 'POST', originalUrl: '/api/submissions/reopen', body: {}, query: {} } as any, res, () => {})
+  assert.equal(status, 503)
+  assert.match(JSON.stringify(payload), /DATABASE_TIMEOUT/)
+  assert.doesNotMatch(JSON.stringify(payload), /findFirst|private\.ts|P2028/)
+})
+
+test('extension does not report success when its notification cannot be persisted', async () => {
+  const { db, tx } = fixture()
+  tx.notificationRecipient.create = async () => { throw Error('notification unavailable') }
+  await assert.rejects(new ReopenSubmissionUseCase(db).execute({ dto, user }), /notification unavailable/)
+})
+
+test('student deadline reads use the extension before class and original exam deadlines', async () => {
+  const calls: any[] = []
+  const db: any = {
+    examClass: { findMany: async (query: any) => { calls.push(query); return [{ ExamId: 'exam', DueDate: '2020-01-01' }, { ExamId: 'class-only', DueDate: future }] } },
+    submissionOverride: { findMany: async (query: any) => { calls.push(query); return [{ ExamId: 'exam', ExtendedDueDate: future }] } },
+  }
+  const dates = await studentExamDeadlines(db, 'student', ['exam', 'class-only', 'original-only'], 'class')
+  assert.equal(dates.get('exam')?.toISOString(), future)
+  assert.equal(dates.get('class-only')?.toISOString(), future)
+  assert.equal(dates.has('original-only'), false)
+  assert.equal(calls[0].where.Class.StudentClass.some.UserId, 'student')
+  assert.equal(calls[1].where.StudentId, 'student')
+  assert.deepEqual(calls[1].where.OR, [{ ClassId: 'class' }, { ClassId: null }])
+
+  const exam = { id: 'exam', status: 'Published', dueDate: '2020-01-01', classes: ['class'], subjectId: 'subject' }
+  const repo: any = { findById: async () => exam, findMany: async () => [exam] }
+  db.publishedAssignment = { findMany: async () => [] }
+  const uow: any = { resolve: () => ({ findMany: async () => [{ id: 'class', subjectId: 'subject' }] }) }
+  const detail = await new GetExamUseCase(repo, db).execute('exam', 'student', 'STUDENT', true)
+  const [list] = await new ListExamsUseCase(repo, uow, db).execute({ user: { id: 'student', role: 'STUDENT' } as any, params: { view: 'summary' } })
+  for (const response of [detail, list]) {
+    assert.equal(response.due, future)
+    assert.equal(response.dueAt, future)
+    assert.equal(response.dueDate, future)
+  }
+  const staff = await new GetExamUseCase(repo, db).execute('exam', 'teacher', 'LECTURER', true)
+  assert.equal(staff.dueDate, '2020-01-01T00:00:00.000Z')
+  assert.equal(exam.dueDate, '2020-01-01')
 })
 test('submission IDs, unenrolled students and student callers cannot create extensions', async () => {
   const { db, writes } = fixture()
@@ -48,6 +125,29 @@ test('submission IDs, unenrolled students and student callers cannot create exte
   await assert.rejects(new ReopenSubmissionUseCase(db).execute({ dto, user }), /không thuộc lớp/)
   await assert.rejects(new ReopenSubmissionUseCase(db).execute({ dto, user: { ...user, role: 'STUDENT' } }), /quyền/)
   assert.equal(writes.length, 0)
+})
+
+test('dashboard and class cards show an unsubmitted student\'s extension instead of the overdue exam date', async () => {
+  const exam = { Id: 'exam', Title: 'Assignment', DueDate: new Date('2020-01-01'), ExamClass: [{ Class: { Id: 'class' } }] }
+  const db: any = {
+    exam: { findMany: async () => [exam], count: async () => 1 },
+    submission: { findMany: async () => [], findFirst: async () => null },
+    class: { findMany: async () => [], findFirst: async () => ({ Id: 'class', StudentClass: [], ExamClass: [{ Exam: exam }] }) },
+    notification: { findMany: async () => [] },
+    notificationRecipient: { count: async () => 1 },
+    examClass: { findMany: async () => [{ ExamId: 'exam', DueDate: exam.DueDate }] },
+    submissionOverride: { findMany: async () => [{ ExamId: 'exam', ExtendedDueDate: new Date(future) }] },
+  }
+  const controller = new StudentPortalController({ debug() {} } as any, db)
+  const req: any = { user: { id: 'deadline-card-student' }, params: { id: 'class' } }
+  let payload: any
+  const res: any = { status() { return this }, json(body: any) { payload = body.Data ?? body.data; return this } }
+  await controller.getDashboard(req, res)
+  assert.equal(new Date(payload.upcomingAssignments[0].due).toISOString(), future)
+  assert.equal(payload.upcomingAssignments[0].status, 'PENDING')
+  await controller.getClassDetail(req, res)
+  assert.equal(new Date(payload.assignments[0].dueDate).toISOString(), future)
+  assert.equal(payload.assignments[0].isSubmitted, false)
 })
 test('student responses retain only their own extension through repository mapping', async () => {
   const db: any = { submission: { findMany: async (query: any) => {

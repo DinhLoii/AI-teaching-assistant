@@ -6,13 +6,15 @@ import { prisma } from '../../../database/prisma.js'
 import { memoryCache } from '../../../shared/infrastructure/memory-cache.js'
 import { NotFoundError } from '../../../shared/application/app.error.js'
 import { dashboardResultSummaries } from '../application/dashboard-result-view.js'
+import { studentExamDeadlines } from '../../exams/application/student-deadlines.js'
 
 export class StudentPortalController extends BaseController {
-  constructor(private readonly logger: ILogger) {
+  constructor(private readonly logger: ILogger, private readonly db: typeof prisma = prisma) {
     super()
   }
 
   async getDashboard(req: Request, res: Response): Promise<void> {
+    const prisma = this.db
     const studentId = req.user!.id
     this.logger.debug(`Fetching student dashboard for ${studentId}`)
 
@@ -63,6 +65,7 @@ export class StudentPortalController extends BaseController {
           DueDate: true,
           ExamType: true,
           ExamClass: {
+            where: { Class: { StudentClass: { some: { UserId: studentId } } } },
             take: 1,
             select: {
               Class: {
@@ -203,10 +206,12 @@ export class StudentPortalController extends BaseController {
     ]);
 
     const subMap = new Map(studentSubmissions.map(s => [s.ExamId, s]));
+    const deadlines = await studentExamDeadlines(prisma, studentId, rawAssignments.map((a: any) => a.Id))
 
     const upcomingAssignments = (rawAssignments as any[]).map(a => {
       const firstClass = a.ExamClass?.[0]?.Class;
       const sem = firstClass?.Semester;
+      const due = deadlines.get(a.Id) ?? a.DueDate;
       const sub = subMap.get(a.Id);
       const isSubmitted = !!sub;
       const isGraded = sub?.ReviewStatus === 'PUBLISHED' || (sub?.FinalScore !== null && sub?.FinalScore !== undefined);
@@ -216,7 +221,7 @@ export class StudentPortalController extends BaseController {
         status = 'GRADED';
       } else if (isSubmitted) {
         status = 'SUBMITTED';
-      } else if (a.DueDate && new Date(a.DueDate) < new Date()) {
+      } else if (due && new Date(due) < new Date()) {
         status = 'OVERDUE';
       }
 
@@ -224,7 +229,7 @@ export class StudentPortalController extends BaseController {
         id: a.Id,
         title: a.Title,
         description: a.Description,
-        due: a.DueDate,
+        due,
         type: a.ExamType || 'ASSIGNMENT',
         subjectCode: firstClass?.Subject?.SubjectCode || 'SUBJ',
         subjectName: firstClass?.Subject?.SubjectName || 'Môn học',
@@ -449,6 +454,7 @@ export class StudentPortalController extends BaseController {
   }
 
   async getClassDetail(req: Request, res: Response): Promise<void> {
+    const prisma = this.db
     const studentId = req.user!.id
     const classId = req.params.id as string
     this.logger.debug(`Fetching class detail ${classId} for student ${studentId}`)
@@ -586,6 +592,7 @@ export class StudentPortalController extends BaseController {
         })
       }
       const examSub = examSubmissions[0] || null
+      const deadlines = exam ? await studentExamDeadlines(prisma, studentId, [exam.Id]) : new Map<string, Date>()
 
       const result = {
         id: classId,
@@ -613,7 +620,7 @@ export class StudentPortalController extends BaseController {
           title: exam.Title,
           description: exam.Description,
           status: exam.Status,
-          dueDate: exam.DueDate,
+          dueDate: deadlines.get(exam.Id) ?? exam.DueDate,
           totalPoints: exam.TotalPoints,
           type: exam.ExamType,
           isSubmitted: !!examSub,
@@ -682,6 +689,7 @@ export class StudentPortalController extends BaseController {
     }))
 
     const subMap = new Map(submissions.map(s => [s.ExamId, s]))
+    const deadlines = await studentExamDeadlines(prisma, studentId, examIds, c.Id)
 
     const result = {
       id: c.Id,
@@ -717,7 +725,7 @@ export class StudentPortalController extends BaseController {
           title: exam?.Title,
           description: exam?.Description,
           status: exam?.Status,
-          dueDate: ec.DueDate || exam?.DueDate,
+          dueDate: deadlines.get(exam?.Id) ?? ec.DueDate ?? exam?.DueDate,
           totalPoints: exam?.TotalPoints,
           type: exam?.ExamType,
           isSubmitted: !!sub,

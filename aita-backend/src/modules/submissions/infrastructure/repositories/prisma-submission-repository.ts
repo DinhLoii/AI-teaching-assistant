@@ -129,7 +129,7 @@ export class PrismaSubmissionRepository implements ISubmissionRepository {
       if (continuous) await tx.$executeRaw`INSERT INTO "SubmissionGradingTask" ("SubmissionId", "Lane") VALUES (${submission.id}, 'continuous') ON CONFLICT ("SubmissionId") DO NOTHING`
     }
     if (typeof this.client.$transaction === 'function') {
-      await this.client.$transaction(persist, { timeout: 15000 })
+      await this.client.$transaction(persist)
     } else {
       await persist(this.client)
     }
