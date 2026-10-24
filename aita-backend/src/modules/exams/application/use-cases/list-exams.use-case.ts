@@ -5,11 +5,13 @@ import type { AuthUser } from '../../../../types/express.js'
 import { ExamResponseDto } from '../dtos/exam.dto.js'
 import type { ExamStatusValue, ExamTypeValue } from '../../domain/entities/exam.entity.js'
 import { prisma } from '../../../../database/prisma.js'
+import { studentExamDeadlines } from '../student-deadlines.js'
 
 export class ListExamsUseCase implements IUseCase<{ user: AuthUser; params: any }, ExamResponseDto[]> {
   constructor(
     private readonly examRepo: IExamRepository,
-    private readonly uow: IUnitOfWork // For legacy repo access during migration
+    private readonly uow: IUnitOfWork, // For legacy repo access during migration
+    private readonly db: any = prisma,
   ) { }
 
   async execute({ user, params }: { user: AuthUser; params: any }): Promise<ExamResponseDto[]> {
@@ -17,7 +19,7 @@ export class ListExamsUseCase implements IUseCase<{ user: AuthUser; params: any 
 
     // Synchronize check with PublishedAssignment table (handles any assignments soft-deleted in grading engine)
     const softDeletedPublishedIds = new Set<string>();
-    const deletedPublishedRequest = (prisma as any).publishedAssignment.findMany({
+    const deletedPublishedRequest = this.db.publishedAssignment.findMany({
         where: { IsDeleted: true },
         select: { Id: true }
       }).catch(() => []);
@@ -89,6 +91,13 @@ export class ListExamsUseCase implements IUseCase<{ user: AuthUser; params: any 
       })
     }
 
-    return exams.map(exam => ExamResponseDto.from(exam as any))
+    const deadlines = user.role === 'STUDENT'
+      ? await studentExamDeadlines(this.db, user.id, exams.map(exam => exam.id), classId)
+      : new Map<string, Date>()
+    return exams.map(exam => {
+      const result = ExamResponseDto.from(exam as any)
+      const due = deadlines.get(exam.id)?.toISOString()
+      return due ? { ...result, due: due, dueAt: due, dueDate: due } : result
+    })
   }
 }

@@ -5,6 +5,8 @@ import { NotFoundError, ValidationError } from '../../../../shared/application/a
 import { ReopenSubmissionRequestDto } from '../dtos/submission.dto.js'
 import { prisma } from '../../../../database/prisma.js'
 import { assertAssignmentAccess } from '../../../grading/engine/assignment/assignment-access.js'
+import { invalidateAnalytics } from '../../../../shared/infrastructure/analytics-realtime.js'
+import { databaseTransactionOptions } from '../../../../database/transaction-options.js'
 
 export class ReopenSubmissionUseCase implements IUseCase<{ dto: ReopenSubmissionRequestDto; user: AuthUser }, any> {
   constructor(private readonly db: any = prisma) {}
@@ -44,64 +46,49 @@ export class ReopenSubmissionUseCase implements IUseCase<{ dto: ReopenSubmission
     })
     if (!enrollment) throw new ValidationError('Sinh viên không thuộc lớp được giao bài tập này')
 
-    const override = await prisma.$transaction(async (tx: any) => {
-    // Upsert Submission Override record
-    const override = await tx.submissionOverride.upsert({
-      where: {
-        ExamId_StudentId: {
+    const { override, notification } = await prisma.$transaction(async (tx: any) => {
+      // Upsert Submission Override record
+      const override = await tx.submissionOverride.upsert({
+        where: {
+          ExamId_StudentId: {
+            ExamId: examId,
+            StudentId: studentId,
+          }
+        },
+        create: {
           ExamId: examId,
           StudentId: studentId,
-        }
-      },
-      create: {
-        ExamId: examId,
-        StudentId: studentId,
-        ClassId: enrollment.ClassId,
-        ExtendedDueDate: parsedDueDate,
-        PenaltyMode: penaltyMode,
-        CustomPenaltyRate: customPenaltyRate !== undefined ? customPenaltyRate : null,
-        FlatPenaltyAmount: flatPenaltyAmount !== undefined ? flatPenaltyAmount : null,
-        ScoreCap: scoreCap !== undefined ? scoreCap : null,
-        Reason: reason || 'Giảng viên cho phép nộp lại',
-        CreatedBy: user.id,
-      },
-      update: {
-        ClassId: enrollment.ClassId,
-        ExtendedDueDate: parsedDueDate,
-        PenaltyMode: penaltyMode,
-        CustomPenaltyRate: customPenaltyRate !== undefined ? customPenaltyRate : null,
-        FlatPenaltyAmount: flatPenaltyAmount !== undefined ? flatPenaltyAmount : null,
-        ScoreCap: scoreCap !== undefined ? scoreCap : null,
-        Reason: reason || 'Giảng viên cho phép nộp lại',
-        CreatedBy: user.id,
-      }
-    })
-
-    // Update existing submission if present to mark IsReopened = true
-    const existingSubmission = await tx.submission.findFirst({
-      where: {
-        ExamId: examId,
-        StudentId: studentId,
-        ClassId: enrollment.ClassId,
-      },
-      orderBy: { AttemptNumber: 'desc' }
-    })
-
-    if (existingSubmission) {
-      await tx.submission.update({
-        where: { Id: existingSubmission.Id },
-        data: {
-          IsReopened: true,
-          ReopenReason: reason || 'Giảng viên cho phép nộp lại',
+          ClassId: enrollment.ClassId,
+          ExtendedDueDate: parsedDueDate,
+          PenaltyMode: penaltyMode,
+          CustomPenaltyRate: customPenaltyRate !== undefined ? customPenaltyRate : null,
+          FlatPenaltyAmount: flatPenaltyAmount !== undefined ? flatPenaltyAmount : null,
+          ScoreCap: scoreCap !== undefined ? scoreCap : null,
+          Reason: reason || 'Giảng viên cho phép nộp lại',
+          CreatedBy: user.id,
+        },
+        update: {
+          ClassId: enrollment.ClassId,
+          ExtendedDueDate: parsedDueDate,
+          PenaltyMode: penaltyMode,
+          CustomPenaltyRate: customPenaltyRate !== undefined ? customPenaltyRate : null,
+          FlatPenaltyAmount: flatPenaltyAmount !== undefined ? flatPenaltyAmount : null,
+          ScoreCap: scoreCap !== undefined ? scoreCap : null,
+          Reason: reason || 'Giảng viên cho phép nộp lại',
+          CreatedBy: user.id,
         }
       })
-    }
-    return override
-    })
 
-    // Create Notification for the student
-    try {
-      const notif = await prisma.notification.create({
+      // Find and mark the latest attempt in one round trip. Also succeeds when
+      // this student has not submitted yet; scope never crosses exam or class.
+      await tx.$executeRaw`UPDATE "Submission" SET "IsReopened"=true,
+        "ReopenReason"=${reason || 'Giảng viên cho phép nộp lại'}
+        WHERE "Id"=(SELECT "Id" FROM "Submission"
+          WHERE "ExamId"=${examId} AND "StudentId"=${studentId} AND "ClassId"=${enrollment.ClassId}
+          ORDER BY "AttemptNumber" DESC NULLS LAST, "SubmittedAt" DESC NULLS LAST, "Id" DESC LIMIT 1)`
+      // Persist the extension and its notification together so a successful extension
+      // cannot silently lose the student's notification.
+      const notif = await tx.notification.create({
         data: {
           Title: `Gia hạn nộp bài: ${exam.Title}`,
           Message: `Giảng viên đã mở lại bài nộp "${exam.Title}" cho bạn. Hạn nộp mới: ${parsedDueDate.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}.`,
@@ -113,17 +100,19 @@ export class ReopenSubmissionUseCase implements IUseCase<{ dto: ReopenSubmission
         }
       })
 
-      await prisma.notificationRecipient.create({
+      await tx.notificationRecipient.create({
         data: {
           NotificationId: notif.Id,
           UserId: studentId,
           IsRead: false,
         }
       })
-      publishNotification([studentId], notif)
-    } catch (notifErr) {
-      console.error('Failed to create notification for reopened submission:', notifErr)
-    }
+      return { override, notification: notif }
+    }, databaseTransactionOptions)
+
+    // Invalidate snapshots before notifying clients to fetch the new deadline.
+    invalidateAnalytics(['student_', 'exams_list_', 'exam_detail_', 'subs_list_', 'sub_detail_'])
+    publishNotification([studentId], notification)
 
     return {
       success: true,

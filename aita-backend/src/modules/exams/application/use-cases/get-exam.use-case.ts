@@ -7,9 +7,10 @@ import { MESSAGES } from '../../../../shared/constants/messages.js'
 import { prisma } from '../../../../database/prisma.js'
 import { examTestCasesView } from '../exam-criteria-view.js'
 import { examConfiguration } from '../../../submissions/application/submission-language.js'
+import { studentExamDeadlines } from '../student-deadlines.js'
 
 export class GetExamUseCase implements IUseCase<string, ExamResponseDto> {
-  constructor(private readonly examRepo: IExamRepository) {}
+  constructor(private readonly examRepo: IExamRepository, private readonly db: any = prisma) {}
 
   /**
    * @param viewerId optional id of the requesting user. When that user is enrolled in one of
@@ -22,7 +23,14 @@ export class GetExamUseCase implements IUseCase<string, ExamResponseDto> {
     if (!exam) {
       throw new NotFoundError(MESSAGES.EXAM_NOT_FOUND)
     }
-    if (summary) return ExamResponseDto.from(exam as any)
+    const deadlines = viewerId && viewerRole?.toUpperCase() === 'STUDENT'
+      ? await studentExamDeadlines(this.db, viewerId, [id]) : new Map<string, Date>()
+    const response = () => {
+      const result = ExamResponseDto.from(exam as any)
+      const due = deadlines.get(id)?.toISOString()
+      return due ? { ...result, due: due, dueAt: due, dueDate: due } : result
+    }
+    if (summary) return response()
 
     if (viewerId) {
       const ownClass = ((exam as any).classLecturers ?? []).find(
@@ -112,17 +120,7 @@ export class GetExamUseCase implements IUseCase<string, ExamResponseDto> {
       console.error('Error fetching PublishedAssignment:', err)
     }
     
-    let dto = ExamResponseDto.from(exam as any)
-    if (viewerId && String(viewerRole || '').toUpperCase() === 'STUDENT') {
-      const extension = await prisma.submissionOverride.findUnique({
-        where: { ExamId_StudentId: { ExamId: id, StudentId: viewerId } },
-        select: { ExtendedDueDate: true },
-      })
-      if (extension?.ExtendedDueDate) {
-        const due = extension.ExtendedDueDate.toISOString()
-        dto = { ...dto, dueDate: due, dueAt: due, due }
-      }
-    }
+    const dto = response()
     const config = examConfiguration(exam as any)
     const staff = ['ADMIN', 'LECTURER'].includes(String(viewerRole || '').toUpperCase())
     const storedTests = (exam as any).TestCase
