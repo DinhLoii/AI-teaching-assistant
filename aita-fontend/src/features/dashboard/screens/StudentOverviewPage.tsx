@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
 import { studentPortalApi } from '@/lib/api/modules/student-portal'
+import { useAssignmentSync } from '@/features/assignments/hooks/useAssignmentSync'
 import { dashboardSummaryText } from '@/lib/api/normalizers/dashboard'
 import { useNotifications } from '@/providers/notification-provider'
 import { notificationTime, notificationAbsoluteTime } from '@/lib/notifications/presentation'
@@ -77,6 +78,11 @@ function formatDeadlineInfo(dateStr: string | Date | null | undefined, isVi: boo
       isOverdue: true,
       isUrgent: false,
     }
+  }
+
+  if (diffMs >= 0 && diffHours < 1) {
+    const minutes = Math.max(1, Math.ceil(diffMs / 60000))
+    return { dateFormatted, remainingText: isVi ? `Còn ${minutes} phút` : `${minutes}m left`, isOverdue: false, isUrgent: true }
   }
 
   if (diffHours < 24) {
@@ -169,6 +175,7 @@ export default function StudentOverviewPage() {
   const [dashboard, setDashboard] = React.useState<any>(null)
   const { notifications, unreadCount, markAllAsRead, clockOffset } = useNotifications()
   const [loading, setLoading] = React.useState(true)
+  const dashboardSequence = React.useRef(0)
 
   // Status Filter for Active Assignments
   const [statusTab, setStatusTab] = React.useState<'all' | 'pending' | 'grading' | 'graded'>('all')
@@ -199,12 +206,19 @@ export default function StudentOverviewPage() {
     } catch {}
 
     let active = true
+    const sequence = ++dashboardSequence.current
     void studentPortalApi.getStudentDashboard()
-      .then(data => { if (active) setDashboard(data) })
+      .then(data => { if (active && sequence === dashboardSequence.current) setDashboard(data) })
       .catch(() => {})
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [])
+
+  useAssignmentSync(async () => {
+    const sequence = ++dashboardSequence.current
+    const data = await studentPortalApi.getStudentDashboard({ cache: 'no-store' })
+    if (sequence === dashboardSequence.current) setDashboard(data)
+  })
 
   // Raw upcoming assignments from API
   const rawUpcoming = dashboard?.upcomingAssignments || []
