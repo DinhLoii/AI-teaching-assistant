@@ -15,6 +15,7 @@ import { AssignmentDocument } from '../components/AssignmentDocument'
 import { assignmentDocumentContent } from '../document-content'
 import { assignmentRubricRules, assignmentMaxScore } from '../rubric-content'
 import { loadStudentAssignment } from '../load-student-assignment'
+import { useAssignmentSync } from '../hooks/useAssignmentSync'
 import { assignmentsApi } from '@/lib/api/modules/assignments'
 import { submissionsApi } from '@/lib/api/modules/submissions'
 import { gradingApi } from '@/lib/api/modules/grading'
@@ -221,6 +222,8 @@ export default function StudentAssignmentDetailPage() {
     })
   }, [assignmentId, t])
 
+  useAssignmentSync(loadData)
+
   React.useEffect(() => {
     setLoading(true)
     setSubmissionStatusReady(false)
@@ -242,7 +245,8 @@ export default function StudentAssignmentDetailPage() {
 
   // Live Countdown & Late Policy calculation (G6.4)
   React.useEffect(() => {
-    if (!assignment?.due && !submission?.extendedDueDate) return
+    // Submission history can arrive before the assignment and its late policy.
+    if (!assignment || (!assignment.due && !submission?.extendedDueDate)) return
 
     const formatRemaining = (days: number, hours: number, minutes: number, seconds: number) => {
       if (days > 0) {
@@ -259,6 +263,7 @@ export default function StudentAssignmentDetailPage() {
       const effectiveDue = submission?.extendedDueDate
         ? new Date(submission.extendedDueDate).getTime()
         : new Date(assignment.due).getTime()
+      if (!Number.isFinite(effectiveDue)) return
 
       const allowLate = assignment.allowLateSubmission !== undefined
         ? Boolean(assignment.allowLateSubmission)
@@ -306,7 +311,7 @@ export default function StudentAssignmentDetailPage() {
     updateCountdown()
     const timer = setInterval(updateCountdown, 1000)
     return () => clearInterval(timer)
-  }, [assignment?.due, assignment?.lateSubmitHours, assignment?.allowLateSubmission, submission?.extendedDueDate, language, t])
+  }, [assignment, submission?.extendedDueDate, language, t])
 
   // Check if current submission is graded
   const isSubmissionGraded = Boolean(
