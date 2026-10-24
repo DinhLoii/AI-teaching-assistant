@@ -8,6 +8,17 @@ import { durableGradingQueue } from './modules/grading/engine/application/queue/
 import { engineSubmissionController } from './modules/grading/engine/modules/submissions/routes/index.js'
 import { realtimeBus } from './shared/infrastructure/realtime-bus.js'
 import { prisma } from './database/prisma.js'
+import { waitForDatabase } from './database/startup.js'
+
+try {
+  await waitForDatabase(() => prisma.$connect(), message => console.warn(`[Startup] ${message}`))
+  console.log('[Startup] Database connected')
+} catch (error) {
+  const code = (error as { code?: string; errorCode?: string })?.code || (error as { errorCode?: string })?.errorCode || 'unknown'
+  console.error(`[Startup] Database connection failed (${code}). Check DATABASE_URL, network access and the database status. For Neon, set connect_timeout=20 in the connection URL.`)
+  await prisma.$disconnect()
+  process.exit(1)
+}
 
 const app = createApp()
 const server = http.createServer(app)
@@ -20,7 +31,7 @@ if (process.env.GRADING_WORKER_ENABLED !== 'false') {
 }
 
 if (env.NODE_ENV === 'development' && process.env.ENABLE_DEV_SEED === 'true') {
-  // DB down must not block boot — the error surfaces on the first real query anyway
+  // Seed only after the database connection has been established.
   seedTestAccounts()
     .then(() => console.log('🌱 Dev seed: test accounts ready (admin/lecturer/student @fpt.edu.vn)'))
     .catch((err) => console.warn('⚠️ Dev seed skipped:', err instanceof Error ? err.message : err))

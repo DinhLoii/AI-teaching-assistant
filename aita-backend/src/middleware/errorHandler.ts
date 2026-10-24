@@ -40,6 +40,13 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
 
   if (err.name === 'PrismaClientKnownRequestError') {
     const prismaError = err as any
+    if (['P2028', 'P2024', 'P1002'].includes(prismaError.code)) {
+      return res.status(503).json(new ApiResponse(
+        503,
+        'Cơ sở dữ liệu phản hồi chậm hoặc giao dịch đã hết thời gian. Vui lòng tải lại dữ liệu và thử lại.',
+        { code: 'DATABASE_TIMEOUT', requestId },
+      ))
+    }
     if (prismaError.code === 'P2002') {
       const apiResponse = new ApiResponse(409, 'Dữ liệu đã tồn tại')
       return res.status(409).json(apiResponse)

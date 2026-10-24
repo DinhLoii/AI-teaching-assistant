@@ -2,6 +2,7 @@ import { PrismaClient, Prisma } from '@prisma/client'
 import { prisma } from '../../database/prisma.js'
 import type { IUnitOfWork } from '../application/ports/unit-of-work.interface.js'
 import { Logger } from './logger.js'
+import { databaseTransactionOptions } from '../../database/transaction-options.js'
 
 /**
  * Prisma-backed Unit of Work.
@@ -65,8 +66,6 @@ export class PrismaUnitOfWork implements IUnitOfWork {
     }
 
     this.logger.debug('Starting new transaction')
-    const timeout = Number(process.env.DB_TRANSACTION_TIMEOUT) || 30000
-    const maxWait = Number(process.env.DB_TRANSACTION_MAX_WAIT) || 15000
 
     try {
       const result = await (this.client as PrismaClient).$transaction(
@@ -79,7 +78,7 @@ export class PrismaUnitOfWork implements IUnitOfWork {
           }
           return work(txUow)
         },
-        { timeout, maxWait },
+        databaseTransactionOptions,
       )
       this.logger.debug('Transaction committed successfully')
       return result

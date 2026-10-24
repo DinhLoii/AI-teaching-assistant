@@ -1,7 +1,9 @@
 import { PrismaClient, Prisma } from '@prisma/client'
 import { logger } from '../shared/infrastructure/logger.js'
+import { databaseTransactionOptions } from './transaction-options.js'
 
 export const prisma = new PrismaClient({
+  transactionOptions: databaseTransactionOptions,
   log: process.env.NODE_ENV === 'development'
     ? ['error', 'warn']
     : ['error'],

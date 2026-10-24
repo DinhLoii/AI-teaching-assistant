@@ -34,7 +34,8 @@ const schema = z.object({
   SMTP_PASS: z.string().optional(),
   RATE_LIMIT_WINDOW: z.coerce.number().default(60000),
   RATE_LIMIT_MAX: z.coerce.number().default(100),
-  DB_TRANSACTION_TIMEOUT: z.coerce.number().default(10000),
+  DB_TRANSACTION_TIMEOUT: z.coerce.number().int().positive().default(30000),
+  DB_TRANSACTION_MAX_WAIT: z.coerce.number().int().positive().default(15000),
 }).superRefine((value, context) => {
   if (!value.DATABASE_URL.startsWith('postgresql://') && !value.DATABASE_URL.startsWith('postgres://')) context.addIssue({ code: 'custom', path: ['DATABASE_URL'], message: 'Ứng dụng yêu cầu PostgreSQL.' })
   if (value.NODE_ENV !== 'production') return
