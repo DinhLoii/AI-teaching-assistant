@@ -175,6 +175,7 @@ async function main() {
         SubjectName: subj.name,
         Description: subj.desc,
         Semester: subj.semester,
+        ...(subj.code === 'PRF192' ? { Credit: PRF192_SYLLABUS.noCredit } : {}),
         ...(syllabusJson ? { SyllabusData: syllabusJson } : {})
       },
       create: {
@@ -183,6 +184,7 @@ async function main() {
         Description: subj.desc,
         IsActive: true,
         Semester: subj.semester,
+        ...(subj.code === 'PRF192' ? { Credit: PRF192_SYLLABUS.noCredit } : {}),
         SyllabusData: syllabusJson
       }
     })
