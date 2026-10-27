@@ -1,0 +1,524 @@
+{
+  "subjectCode": "FER202",
+  "metadata": {
+    "title": "React - Đăng ký và đăng nhập",
+    "projectType": "frontend"
+  },
+  "testSuites": {
+    "browser": [
+      {
+        "id": "TC01",
+        "name": "Hiển thị trang đăng nhập",
+        "startUrl": "/#login",
+        "steps": [
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=login-page]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "label[for=login-email]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "label[for=login-password]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=login-submit]"
+          }
+        ]
+      },
+      {
+        "id": "TC02",
+        "name": "Đăng ký thiếu họ tên",
+        "startUrl": "/#register",
+        "steps": [
+          {
+            "action": "click",
+            "target": "[data-testid=register-submit]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=register-error]:has-text(\"Họ tên\")"
+          }
+        ]
+      },
+      {
+        "id": "TC03",
+        "name": "Email đăng ký sai định dạng",
+        "startUrl": "/#register",
+        "steps": [
+          {
+            "action": "fill",
+            "target": "[data-testid=register-name]",
+            "value": "Nguyễn Văn A"
+          },
+          {
+            "action": "fill",
+            "target": "[data-testid=register-email]",
+            "value": "not-an-email"
+          },
+          {
+            "action": "fill",
+            "target": "[data-testid=register-password]",
+            "value": "DemoPass123"
+          },
+          {
+            "action": "fill",
+            "target": "[data-testid=register-confirm]",
+            "value": "DemoPass123"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=register-submit]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=register-error]:has-text(\"Email không hợp lệ\")"
+          }
+        ]
+      },
+      {
+        "id": "TC04",
+        "name": "Mật khẩu đăng ký quá ngắn",
+        "startUrl": "/#register",
+        "steps": [
+          {
+            "action": "fill",
+            "target": "[data-testid=register-name]",
+            "value": "Nguyễn Văn A"
+          },
+          {
+            "action": "fill",
+            "target": "[data-testid=register-email]",
+            "value": "student1@demo.test"
+          },
+          {
+            "action": "fill",
+            "target": "[data-testid=register-password]",
+            "value": "123"
+          },
+          {
+            "action": "fill",
+            "target": "[data-testid=register-confirm]",
+            "value": "123"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=register-submit]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=register-error]:has-text(\"Mật khẩu phải\")"
+          }
+        ]
+      },
+      {
+        "id": "TC05",
+        "name": "Xác nhận mật khẩu không khớp",
+        "startUrl": "/#register",
+        "steps": [
+          {
+            "action": "fill",
+            "target": "[data-testid=register-name]",
+            "value": "Nguyễn Văn A"
+          },
+          {
+            "action": "fill",
+            "target": "[data-testid=register-email]",
+            "value": "student1@demo.test"
+          },
+          {
+            "action": "fill",
+            "target": "[data-testid=register-password]",
+            "value": "DemoPass123"
+          },
+          {
+            "action": "fill",
+            "target": "[data-testid=register-confirm]",
+            "value": "OtherPass123"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=register-submit]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=register-error]:has-text(\"Xác nhận mật khẩu không khớp\")"
+          }
+        ]
+      },
+      {
+        "id": "TC06",
+        "name": "Đăng ký thành công",
+        "startUrl": "/#register",
+        "steps": [
+          {
+            "action": "fill",
+            "target": "[data-testid=register-name]",
+            "value": "Nguyễn Văn A"
+          },
+          {
+            "action": "fill",
+            "target": "[data-testid=register-email]",
+            "value": "student1@demo.test"
+          },
+          {
+            "action": "fill",
+            "target": "[data-testid=register-password]",
+            "value": "DemoPass123"
+          },
+          {
+            "action": "fill",
+            "target": "[data-testid=register-confirm]",
+            "value": "DemoPass123"
+          },
+          {
+            "action": "screenshot",
+            "screenshotName": "registration-form"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=register-submit]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=login-page]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=auth-notice]:has-text(\"Đăng ký thành công\")"
+          }
+        ]
+      },
+      {
+        "id": "TC07",
+        "name": "Chặn email trùng không phân biệt hoa thường",
+        "startUrl": "/#register",
+        "steps": [
+          {
+            "action": "fill",
+            "target": "[data-testid=register-name]",
+            "value": "Nguyễn Văn A"
+          },
+          {
+            "action": "fill",
+            "target": "[data-testid=register-email]",
+            "value": "STUDENT1@DEMO.TEST"
+          },
+          {
+            "action": "fill",
+            "target": "[data-testid=register-password]",
+            "value": "DemoPass123"
+          },
+          {
+            "action": "fill",
+            "target": "[data-testid=register-confirm]",
+            "value": "DemoPass123"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=register-submit]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=register-error]:has-text(\"Email đã được đăng ký\")"
+          }
+        ]
+      },
+      {
+        "id": "TC08",
+        "name": "Đăng nhập sai mật khẩu",
+        "startUrl": "/#login",
+        "steps": [
+          {
+            "action": "fill",
+            "target": "[data-testid=login-email]",
+            "value": "student1@demo.test"
+          },
+          {
+            "action": "fill",
+            "target": "[data-testid=login-password]",
+            "value": "WrongPass123"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=login-submit]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=login-error]:has-text(\"Email hoặc mật khẩu không đúng\")"
+          }
+        ]
+      },
+      {
+        "id": "TC09",
+        "name": "Đăng nhập tài khoản chưa tồn tại",
+        "startUrl": "/#login",
+        "steps": [
+          {
+            "action": "fill",
+            "target": "[data-testid=login-email]",
+            "value": "unknown@demo.test"
+          },
+          {
+            "action": "fill",
+            "target": "[data-testid=login-password]",
+            "value": "DemoPass123"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=login-submit]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=login-error]:has-text(\"Email hoặc mật khẩu không đúng\")"
+          }
+        ]
+      },
+      {
+        "id": "TC10",
+        "name": "Đăng nhập đúng và hiển thị hồ sơ",
+        "startUrl": "/#login",
+        "steps": [
+          {
+            "action": "fill",
+            "target": "[data-testid=login-email]",
+            "value": "STUDENT1@DEMO.TEST"
+          },
+          {
+            "action": "fill",
+            "target": "[data-testid=login-password]",
+            "value": "DemoPass123"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=login-submit]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=dashboard-page]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=profile-name]:has-text(\"Nguyễn Văn A\")"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=profile-email]:has-text(\"student1@demo.test\")"
+          },
+          {
+            "action": "screenshot",
+            "screenshotName": "dashboard"
+          }
+        ]
+      },
+      {
+        "id": "TC11",
+        "name": "Tải lại vẫn giữ phiên trong cùng tab",
+        "startUrl": "/#dashboard",
+        "steps": [
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=dashboard-page]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=profile-email]:has-text(\"student1@demo.test\")"
+          }
+        ]
+      },
+      {
+        "id": "TC12",
+        "name": "Đăng xuất trở lại trang đăng nhập",
+        "startUrl": "/#dashboard",
+        "steps": [
+          {
+            "action": "click",
+            "target": "[data-testid=logout]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=login-page]"
+          }
+        ]
+      },
+      {
+        "id": "TC13",
+        "name": "Chặn truy cập trang cá nhân khi chưa đăng nhập",
+        "startUrl": "/#dashboard",
+        "steps": [
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=login-page]"
+          },
+          {
+            "action": "screenshot",
+            "screenshotName": "login-after-logout"
+          }
+        ]
+      }
+    ]
+  },
+  "rubric": {
+    "id": "fer202-auth",
+    "title": "React Auth",
+    "totalWeight": 10,
+    "passThreshold": 0.5,
+    "rules": [
+      {
+        "id": "CRIT-1",
+        "title": "Khởi động React và hiển thị form đăng nhập",
+        "description": "Khởi động React và hiển thị form đăng nhập",
+        "category": "UI",
+        "weight": 1,
+        "scoringStrategy": "AIVision",
+        "requiredEvidence": [
+          {
+            "evidenceType": "browser.workflow.completed",
+            "minimumConfidence": 1,
+            "browserProbe": {
+              "description": "Khởi động React và hiển thị form đăng nhập",
+              "path": "/",
+              "testIds": [
+                "TC01"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "CRIT-2",
+        "title": "Form đăng ký và kiểm tra dữ liệu đầu vào",
+        "description": "Form đăng ký và kiểm tra dữ liệu đầu vào",
+        "category": "UI",
+        "weight": 2,
+        "scoringStrategy": "AIVision",
+        "requiredEvidence": [
+          {
+            "evidenceType": "browser.workflow.completed",
+            "minimumConfidence": 1,
+            "browserProbe": {
+              "description": "Form đăng ký và kiểm tra dữ liệu đầu vào",
+              "path": "/",
+              "testIds": [
+                "TC02",
+                "TC03",
+                "TC04",
+                "TC05"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "CRIT-3",
+        "title": "Lưu tài khoản và chặn email trùng",
+        "description": "Lưu tài khoản và chặn email trùng",
+        "category": "UI",
+        "weight": 1,
+        "scoringStrategy": "AIVision",
+        "requiredEvidence": [
+          {
+            "evidenceType": "browser.workflow.completed",
+            "minimumConfidence": 1,
+            "browserProbe": {
+              "description": "Lưu tài khoản và chặn email trùng",
+              "path": "/",
+              "testIds": [
+                "TC06",
+                "TC07"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "CRIT-4",
+        "title": "Đăng nhập đúng và báo lỗi thông tin sai",
+        "description": "Đăng nhập đúng và báo lỗi thông tin sai",
+        "category": "UI",
+        "weight": 2,
+        "scoringStrategy": "AIVision",
+        "requiredEvidence": [
+          {
+            "evidenceType": "browser.workflow.completed",
+            "minimumConfidence": 1,
+            "browserProbe": {
+              "description": "Đăng nhập đúng và báo lỗi thông tin sai",
+              "path": "/",
+              "testIds": [
+                "TC08",
+                "TC09",
+                "TC10"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "CRIT-5",
+        "title": "Bảo vệ trang cá nhân và giữ phiên khi tải lại",
+        "description": "Bảo vệ trang cá nhân và giữ phiên khi tải lại",
+        "category": "UI",
+        "weight": 1,
+        "scoringStrategy": "AIVision",
+        "requiredEvidence": [
+          {
+            "evidenceType": "browser.workflow.completed",
+            "minimumConfidence": 1,
+            "browserProbe": {
+              "description": "Bảo vệ trang cá nhân và giữ phiên khi tải lại",
+              "path": "/",
+              "testIds": [
+                "TC11",
+                "TC13"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "CRIT-6",
+        "title": "Đăng xuất và xóa phiên đăng nhập",
+        "description": "Đăng xuất và xóa phiên đăng nhập",
+        "category": "UI",
+        "weight": 1,
+        "scoringStrategy": "AIVision",
+        "requiredEvidence": [
+          {
+            "evidenceType": "browser.workflow.completed",
+            "minimumConfidence": 1,
+            "browserProbe": {
+              "description": "Đăng xuất và xóa phiên đăng nhập",
+              "path": "/",
+              "testIds": [
+                "TC12"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "CRIT-7",
+        "title": "Giao diện, labels, component và responsive",
+        "description": "Giao diện, labels, component và responsive",
+        "category": "UI",
+        "weight": 2,
+        "scoringStrategy": "AIVision",
+        "requiredEvidence": [
+          {
+            "evidenceType": "browser.screenshot.captured",
+            "minimumConfidence": 1,
+            "browserProbe": {
+              "description": "Giao diện, labels, component và responsive",
+              "path": "/",
+              "testIds": []
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

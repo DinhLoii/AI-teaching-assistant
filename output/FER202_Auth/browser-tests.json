@@ -1,0 +1,355 @@
+[
+  {
+    "id": "TC01",
+    "name": "Hiển thị trang đăng nhập",
+    "startUrl": "/#login",
+    "steps": [
+      {
+        "action": "assertVisible",
+        "target": "[data-testid=login-page]"
+      },
+      {
+        "action": "assertVisible",
+        "target": "label[for=login-email]"
+      },
+      {
+        "action": "assertVisible",
+        "target": "label[for=login-password]"
+      },
+      {
+        "action": "assertVisible",
+        "target": "[data-testid=login-submit]"
+      }
+    ]
+  },
+  {
+    "id": "TC02",
+    "name": "Đăng ký thiếu họ tên",
+    "startUrl": "/#register",
+    "steps": [
+      {
+        "action": "click",
+        "target": "[data-testid=register-submit]"
+      },
+      {
+        "action": "assertVisible",
+        "target": "[data-testid=register-error]:has-text(\"Họ tên\")"
+      }
+    ]
+  },
+  {
+    "id": "TC03",
+    "name": "Email đăng ký sai định dạng",
+    "startUrl": "/#register",
+    "steps": [
+      {
+        "action": "fill",
+        "target": "[data-testid=register-name]",
+        "value": "Nguyễn Văn A"
+      },
+      {
+        "action": "fill",
+        "target": "[data-testid=register-email]",
+        "value": "not-an-email"
+      },
+      {
+        "action": "fill",
+        "target": "[data-testid=register-password]",
+        "value": "DemoPass123"
+      },
+      {
+        "action": "fill",
+        "target": "[data-testid=register-confirm]",
+        "value": "DemoPass123"
+      },
+      {
+        "action": "click",
+        "target": "[data-testid=register-submit]"
+      },
+      {
+        "action": "assertVisible",
+        "target": "[data-testid=register-error]:has-text(\"Email không hợp lệ\")"
+      }
+    ]
+  },
+  {
+    "id": "TC04",
+    "name": "Mật khẩu đăng ký quá ngắn",
+    "startUrl": "/#register",
+    "steps": [
+      {
+        "action": "fill",
+        "target": "[data-testid=register-name]",
+        "value": "Nguyễn Văn A"
+      },
+      {
+        "action": "fill",
+        "target": "[data-testid=register-email]",
+        "value": "student1@demo.test"
+      },
+      {
+        "action": "fill",
+        "target": "[data-testid=register-password]",
+        "value": "123"
+      },
+      {
+        "action": "fill",
+        "target": "[data-testid=register-confirm]",
+        "value": "123"
+      },
+      {
+        "action": "click",
+        "target": "[data-testid=register-submit]"
+      },
+      {
+        "action": "assertVisible",
+        "target": "[data-testid=register-error]:has-text(\"Mật khẩu phải\")"
+      }
+    ]
+  },
+  {
+    "id": "TC05",
+    "name": "Xác nhận mật khẩu không khớp",
+    "startUrl": "/#register",
+    "steps": [
+      {
+        "action": "fill",
+        "target": "[data-testid=register-name]",
+        "value": "Nguyễn Văn A"
+      },
+      {
+        "action": "fill",
+        "target": "[data-testid=register-email]",
+        "value": "student1@demo.test"
+      },
+      {
+        "action": "fill",
+        "target": "[data-testid=register-password]",
+        "value": "DemoPass123"
+      },
+      {
+        "action": "fill",
+        "target": "[data-testid=register-confirm]",
+        "value": "OtherPass123"
+      },
+      {
+        "action": "click",
+        "target": "[data-testid=register-submit]"
+      },
+      {
+        "action": "assertVisible",
+        "target": "[data-testid=register-error]:has-text(\"Xác nhận mật khẩu không khớp\")"
+      }
+    ]
+  },
+  {
+    "id": "TC06",
+    "name": "Đăng ký thành công",
+    "startUrl": "/#register",
+    "steps": [
+      {
+        "action": "fill",
+        "target": "[data-testid=register-name]",
+        "value": "Nguyễn Văn A"
+      },
+      {
+        "action": "fill",
+        "target": "[data-testid=register-email]",
+        "value": "student1@demo.test"
+      },
+      {
+        "action": "fill",
+        "target": "[data-testid=register-password]",
+        "value": "DemoPass123"
+      },
+      {
+        "action": "fill",
+        "target": "[data-testid=register-confirm]",
+        "value": "DemoPass123"
+      },
+      {
+        "action": "screenshot",
+        "screenshotName": "registration-form"
+      },
+      {
+        "action": "click",
+        "target": "[data-testid=register-submit]"
+      },
+      {
+        "action": "assertVisible",
+        "target": "[data-testid=login-page]"
+      },
+      {
+        "action": "assertVisible",
+        "target": "[data-testid=auth-notice]:has-text(\"Đăng ký thành công\")"
+      }
+    ]
+  },
+  {
+    "id": "TC07",
+    "name": "Chặn email trùng không phân biệt hoa thường",
+    "startUrl": "/#register",
+    "steps": [
+      {
+        "action": "fill",
+        "target": "[data-testid=register-name]",
+        "value": "Nguyễn Văn A"
+      },
+      {
+        "action": "fill",
+        "target": "[data-testid=register-email]",
+        "value": "STUDENT1@DEMO.TEST"
+      },
+      {
+        "action": "fill",
+        "target": "[data-testid=register-password]",
+        "value": "DemoPass123"
+      },
+      {
+        "action": "fill",
+        "target": "[data-testid=register-confirm]",
+        "value": "DemoPass123"
+      },
+      {
+        "action": "click",
+        "target": "[data-testid=register-submit]"
+      },
+      {
+        "action": "assertVisible",
+        "target": "[data-testid=register-error]:has-text(\"Email đã được đăng ký\")"
+      }
+    ]
+  },
+  {
+    "id": "TC08",
+    "name": "Đăng nhập sai mật khẩu",
+    "startUrl": "/#login",
+    "steps": [
+      {
+        "action": "fill",
+        "target": "[data-testid=login-email]",
+        "value": "student1@demo.test"
+      },
+      {
+        "action": "fill",
+        "target": "[data-testid=login-password]",
+        "value": "WrongPass123"
+      },
+      {
+        "action": "click",
+        "target": "[data-testid=login-submit]"
+      },
+      {
+        "action": "assertVisible",
+        "target": "[data-testid=login-error]:has-text(\"Email hoặc mật khẩu không đúng\")"
+      }
+    ]
+  },
+  {
+    "id": "TC09",
+    "name": "Đăng nhập tài khoản chưa tồn tại",
+    "startUrl": "/#login",
+    "steps": [
+      {
+        "action": "fill",
+        "target": "[data-testid=login-email]",
+        "value": "unknown@demo.test"
+      },
+      {
+        "action": "fill",
+        "target": "[data-testid=login-password]",
+        "value": "DemoPass123"
+      },
+      {
+        "action": "click",
+        "target": "[data-testid=login-submit]"
+      },
+      {
+        "action": "assertVisible",
+        "target": "[data-testid=login-error]:has-text(\"Email hoặc mật khẩu không đúng\")"
+      }
+    ]
+  },
+  {
+    "id": "TC10",
+    "name": "Đăng nhập đúng và hiển thị hồ sơ",
+    "startUrl": "/#login",
+    "steps": [
+      {
+        "action": "fill",
+        "target": "[data-testid=login-email]",
+        "value": "STUDENT1@DEMO.TEST"
+      },
+      {
+        "action": "fill",
+        "target": "[data-testid=login-password]",
+        "value": "DemoPass123"
+      },
+      {
+        "action": "click",
+        "target": "[data-testid=login-submit]"
+      },
+      {
+        "action": "assertVisible",
+        "target": "[data-testid=dashboard-page]"
+      },
+      {
+        "action": "assertVisible",
+        "target": "[data-testid=profile-name]:has-text(\"Nguyễn Văn A\")"
+      },
+      {
+        "action": "assertVisible",
+        "target": "[data-testid=profile-email]:has-text(\"student1@demo.test\")"
+      },
+      {
+        "action": "screenshot",
+        "screenshotName": "dashboard"
+      }
+    ]
+  },
+  {
+    "id": "TC11",
+    "name": "Tải lại vẫn giữ phiên trong cùng tab",
+    "startUrl": "/#dashboard",
+    "steps": [
+      {
+        "action": "assertVisible",
+        "target": "[data-testid=dashboard-page]"
+      },
+      {
+        "action": "assertVisible",
+        "target": "[data-testid=profile-email]:has-text(\"student1@demo.test\")"
+      }
+    ]
+  },
+  {
+    "id": "TC12",
+    "name": "Đăng xuất trở lại trang đăng nhập",
+    "startUrl": "/#dashboard",
+    "steps": [
+      {
+        "action": "click",
+        "target": "[data-testid=logout]"
+      },
+      {
+        "action": "assertVisible",
+        "target": "[data-testid=login-page]"
+      }
+    ]
+  },
+  {
+    "id": "TC13",
+    "name": "Chặn truy cập trang cá nhân khi chưa đăng nhập",
+    "startUrl": "/#dashboard",
+    "steps": [
+      {
+        "action": "assertVisible",
+        "target": "[data-testid=login-page]"
+      },
+      {
+        "action": "screenshot",
+        "screenshotName": "login-after-logout"
+      }
+    ]
+  }
+]

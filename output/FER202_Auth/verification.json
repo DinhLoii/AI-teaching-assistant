@@ -1,0 +1,12 @@
+{
+  "verifiedAt": "2026-10-27T06:25:42.246Z",
+  "source": "Exact folder.zip extracted into a fresh directory; application started with ExecutionSandboxService",
+  "runtime": "node:20-alpine",
+  "browserWorkflowsPassed": 0,
+  "browserWorkflowsTotal": 0,
+  "automaticAuthWorkflows": 7,
+  "visibleBrowserVerified": true,
+  "productionBuildPassed": true,
+  "mobileWidth": 390,
+  "externalAiCalls": 0
+}
