@@ -94,7 +94,8 @@ export class DocumentExtractorService {
       if (pdfParseModule.PDFParse) {
         const parser = new pdfParseModule.PDFParse({ data: buffer })
         await parser.load()
-        const res = await parser.getText()
+        // Do not include synthetic PDF page separators in extracted testcase data.
+        const res = await parser.getText({ pageJoiner: '\n' })
         pageCount = parser.pageCount || res?.pages?.length
         await parser.destroy()
         if (res && res.text) extractedText = res.text
@@ -174,6 +175,8 @@ export class DocumentExtractorService {
       // 3. Remove non-printable control chars except \t, \n
       .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
       // 4. Clean repeating page headers / footers (e.g. "Trang 1/5", "Page 2 of 10")
+      .replace(/^[ \t]*--[ \t]+\d+[ \t]+of[ \t]+\d+[ \t]+--[ \t]*(?:\n|$)/gim, '')
+      .replace(/^[ \t]*(?:Trang|Page)\s+\d+(?:[ \t]*(?:\/|of)[ \t]*\d+)?[ \t]*(?:\n|$)/gim, '')
       .replace(/(?:Trang|Page)\s+\d+\s*(?:\/|of)\s*\d+/gi, '')
       .replace(/Trang\s+\d+/gi, '')
       // 5. Connect hyphenated line wraps (e.g., "nghiệp-\n vụ" -> "nghiệp vụ")

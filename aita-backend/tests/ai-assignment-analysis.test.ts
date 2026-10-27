@@ -411,7 +411,7 @@ test('Scenario 19: Zod validation catches negative points and scales mismatched 
 
   const validated = AnalysisValidatorService.validateAndRepair(mockOutput, 10)
   assert.ok(validated.warnings.length > 0)
-  assert.equal(validated.output.rubricCriteria[0].maxPoints, 0, 'Negative points should be corrected to 0')
+  assert.equal(validated.output.rubricCriteria[0].maxPoints, 5, 'After invalid points are corrected, mismatched criteria receive an equal share')
   const newSum = validated.output.rubricCriteria.reduce((s, c) => s + c.maxPoints, 0)
   assert.equal(Math.round(newSum), 10, 'Scaled AI rubric should equal targetMaxScore 10')
 })

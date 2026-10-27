@@ -1,0 +1,72 @@
+BÀI TẬP LẬP TRÌNH C
+QUẢN LÝ KHO SẢN PHẨM
+Ngôn ngữ: C (C11)    |    Tổng điểm: 10    |    Hình thức: Chấm tự động qua stdin/stdout
+1. Mục tiêu
+Viết chương trình quản lý danh sách sản phẩm trong bộ nhớ bằng mảng struct. Không cần đọc/ghi tệp và
+không sử dụng C++. Mỗi sản phẩm gồm: mã ID, tên, số lượng, đơn giá.
+2. Dữ liệu đầu vào (Input)
+Dòng đầu chứa số nguyên Q (1 ≤ Q ≤ 1000) là số lệnh. Q dòng tiếp theo, mỗi dòng chứa một lệnh trong
+bảng:
+Lệnh
+Ý nghĩa
+ADD id name quantity price
+Thêm sản phẩm
+FIND id
+Tìm sản phẩm theo ID
+UPDATE id quantity price
+Cập nhật số lượng và đơn giá
+DELETE id
+Xóa sản phẩm theo ID
+COUNT
+Đếm số sản phẩm hiện tại
+TOP
+Sản phẩm có giá trị kho lớn nhất
+Ràng buộc: id từ 1 đến 1.000.000; name là một từ không dấu, tối đa 30 ký tự; quantity và price là số
+nguyên từ 0 đến 10.000. Số sản phẩm tối đa 1.000. Dữ liệu vào hợp lệ; mỗi ID ứng với nhiều nhất một sản
+phẩm tại một thời điểm.
+3. Kết quả đầu ra (Output)
+Mỗi lệnh in đúng một dòng, theo quy tắc sau:
+• ADD: ADDED nếu thêm thành công; EXISTS nếu ID đã có.
+• FIND: id name quantity price nếu tìm thấy; NOT FOUND nếu không.
+• UPDATE: UPDATED nếu tìm thấy; NOT FOUND nếu không.
+• DELETE: DELETED nếu tìm thấy; NOT FOUND nếu không.
+• COUNT: in số sản phẩm hiện có.
+• TOP: in id name quantity price của sản phẩm có quantity × price lớn nhất; nếu bằng nhau chọn ID nhỏ
+nhất; in EMPTY nếu kho rỗng.
+Lưu ý: Không in lời nhắc, chú thích hoặc bất kỳ thông báo nào khác ra stdout.
+4. Ví dụ minh họa
+Input
+9
+ADD 10 But 5 2000
+ADD 20 Vo 2 7000
+Trang 1
+COUNT
+FIND 10
+TOP
+UPDATE 10 10 3000
+TOP
+DELETE 20
+COUNT
+Output
+ADDED
+ADDED
+2
+10 But 5 2000
+20 Vo 2 7000
+UPDATED
+10 But 10 3000
+DELETED
+1
+5. Thang điểm tham khảo (10 điểm)
+• ADD và kiểm tra ID trùng: 2 điểm.
+• FIND và xử lý NOT FOUND: 1 điểm.
+• UPDATE và xử lý NOT FOUND: 2 điểm.
+• DELETE và xử lý NOT FOUND: 1 điểm.
+• COUNT: 1 điểm.
+• TOP, hòa chọn ID nhỏ nhất, kho rỗng: 2 điểm.
+• Đúng định dạng và giới hạn: 1 điểm.
+6. Yêu cầu nộp bài
+Nộp tập tin main.c, biên dịch được bằng GCC (ví dụ: gcc -std=c11 main.c -o main). Chương trình đọc từ
+stdin và in ra stdout theo đúng đặc tả.
+Ghi chú: Thang điểm là tham khảo; kết quả thực tế phụ thuộc bộ kiểm thử và cách phân bổ điểm của hệ
+thống chấm.

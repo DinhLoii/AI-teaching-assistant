@@ -386,6 +386,13 @@ export class AiClientManager {
                     } catch (err: any) {
                         lastError = err;
 
+                        // A response-format/evidence failure is not an API key outage.
+                        // Let the next attempt request valid JSON without cooling down the key.
+                        if (err instanceof SyntaxError || /AI_JSON_INVALID|AI_CODE_EVIDENCE_MISSING|AI_REVIEW_INVALID/.test(err.message || '')) {
+                            console.warn(`[AiClientManager] Key #${keyIndex + 1}: phản hồi không hợp lệ; sẽ yêu cầu lại, không khóa API key.`);
+                            continue;
+                        }
+
                         const status = Number(err.status || err.statusCode || 0);
                         const errBody = err.error ? JSON.stringify(err.error) : (err.message || String(err));
 
