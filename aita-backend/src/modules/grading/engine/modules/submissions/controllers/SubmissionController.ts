@@ -31,8 +31,10 @@ import { ForbiddenError, NotFoundError } from '../../../../../../shared/applicat
 import { memoryCache } from '../../../../../../shared/infrastructure/memory-cache.js';
 import { assertDirectorySubmissionLanguage, examConfiguration } from '../../../../../submissions/application/submission-language.js';
 import { verifyConsoleTests } from '../../../application/evaluator/console-verification.js';
+import { browserPresentationContext, readBrowserPresentation, type BrowserPresentation } from '../../../application/execution/browser-presentation.js';
 import { studentReportView } from '../../../../../submissions/application/student-report-view.js';
 import { detectAssignmentProfile } from '../../../../../ai/infrastructure/analysis/assignment-contract.js';
+import { requiresManualUiStart } from '../../../../../submissions/application/ui-grading-policy.js';
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 
@@ -196,7 +198,7 @@ export class SubmissionController extends BaseController {
      * POST /api/submissions
      * Accepts a .zip file upload, processes and returns the assessment.
      */
-    private async queueUploadedFile(file: Express.Multer.File, assignmentId: string, user: any) {
+    private async queueUploadedFile(file: Express.Multer.File, assignmentId: string, user: any, watchBrowser = false) {
         await assertAssignmentAccess(assignmentId, user, true);
         if (!file.originalname.toLowerCase().endsWith('.zip')) throw new BadRequestError('Only ZIP files are accepted.');
         const bytes = file.buffer || await fs.readFile(file.path);
@@ -213,14 +215,14 @@ export class SubmissionController extends BaseController {
                 ZipFileUrl: '/private-submissions/manual/' + id + '.zip?filename=' + encodeURIComponent(file.originalname)
             } });
         } catch (error) { await fs.unlink(destination).catch(() => {}); throw error; }
-        await durableGradingQueue.enqueue(id, 'batch');
+        await durableGradingQueue.enqueue(id, 'batch', { watchBrowser });
         return { submissionId: id, fileName: file.originalname, studentName: file.originalname.replace(/\.zip$/i, '') };
     }
 
     submit = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             if (!req.file) throw new BadRequestError('Please upload a ZIP file.');
-            const result = await this.queueUploadedFile(req.file, req.body.assignmentId, req.user);
+            const result = await this.queueUploadedFile(req.file, req.body.assignmentId, req.user, req.body.watchBrowser === 'true' || req.body.watchBrowser === true);
             this.ok(res, { ...result, statusUrl: '/api/grading/submissions/' + result.submissionId + '/stream' }, 'Submission accepted for processing');
         } catch (error) { next(error); }
     };
@@ -231,7 +233,7 @@ export class SubmissionController extends BaseController {
             if (!files?.length) throw new BadRequestError('Please upload ZIP files.');
             await assertAssignmentAccess(req.body.assignmentId, req.user!, true);
             const jobs = [];
-            for (const file of files) jobs.push(await this.queueUploadedFile(file, req.body.assignmentId, req.user));
+            for (const file of files) jobs.push(await this.queueUploadedFile(file, req.body.assignmentId, req.user, req.body.watchBrowser === 'true' || req.body.watchBrowser === true));
             this.ok(res, { jobs }, jobs.length + ' submissions accepted for processing');
         } catch (error) { next(error); }
     };
@@ -285,6 +287,7 @@ export class SubmissionController extends BaseController {
                 where: { Id: assignmentId },
                 include: {
                     TestCase: { orderBy: { SortOrder: 'asc' } },
+                    Subject: true,
                     ExamSection: {
                         include: {
                             RubricRule: {
@@ -297,15 +300,18 @@ export class SubmissionController extends BaseController {
                 }
             });
             if (examDb) {
+                const configuration = examConfiguration(examDb);
                 publishedAssignment = {
                     id: examDb.Id,
                     version: 1,
                     metadata: {
                         title: examDb.Title || 'Assignment',
-                        description: examDb.Description,
-                        projectType: examDb.SubmissionFormat || 'CSD201'
+                        description: examDb.Description || configuration.description || examDb.OriginalPrompt,
+                        subjectCode: examDb.Subject?.SubjectCode,
+                        projectType: configuration.projectType || configuration.metadata?.projectType || (requiresManualUiStart(examDb) ? 'frontend' : examDb.SubmissionFormat || 'unknown')
                     },
                     blueprintId: examDb.Id,
+                    testSuites: configuration.testSuites || { browser: configuration.browserTests || [] },
                     rubric: {
                         id: examDb.Id,
                         totalWeight: Number(examDb.TotalPoints || 10),
@@ -377,11 +383,11 @@ export class SubmissionController extends BaseController {
         if (queue === null) {
             // Inline: the caller already holds a continuous-queue slot and must keep holding it
             // until this submission is fully graded, otherwise the next one would start early.
-            await this.enqueueSubmissionJob(submissionId, publishedAssignment, engineSubmission, extractDir, null);
+            await this.enqueueSubmissionJob(submissionId, publishedAssignment, engineSubmission, extractDir, null, readBrowserPresentation(submissionRecord.ReportData));
         } else {
             // Queued: hand off and return, so HTTP callers such as gradeExisting respond
             // immediately instead of waiting for the whole evaluation.
-            void this.enqueueSubmissionJob(submissionId, publishedAssignment, engineSubmission, extractDir, queue);
+            void this.enqueueSubmissionJob(submissionId, publishedAssignment, engineSubmission, extractDir, queue, readBrowserPresentation(submissionRecord.ReportData));
         }
     };
 
@@ -412,7 +418,7 @@ export class SubmissionController extends BaseController {
             }
 
             await this.assertSubmissionAccess(submissionId, req.user, false);
-            await this.executeGradingForSubmission(submissionId);
+            await durableGradingQueue.enqueue(submissionId, 'batch', { watchBrowser: req.body.watchBrowser === true });
 
             this.ok(res, { submissionId, statusUrl: `/api/grading/submissions/${submissionId}/stream` }, 'Submission accepted for grading');
 
@@ -465,7 +471,7 @@ export class SubmissionController extends BaseController {
             const results = [];
             for (const record of pendingSubmissions) {
                 await this.assertSubmissionAccess(record.Id, req.user, false);
-                await durableGradingQueue.enqueue(record.Id, 'batch');
+                await durableGradingQueue.enqueue(record.Id, 'batch', { watchBrowser: req.body.watchBrowser === true });
                 results.push({ submissionId: record.Id, studentName: record.User_Submission_StudentIdToUser?.StudentCode || record.StudentId, fileName: path.basename(record.ZipFileUrl!.split('?')[0]) });
             }
 
@@ -514,7 +520,7 @@ export class SubmissionController extends BaseController {
             const results = [];
             for (const record of pendingSubmissions) {
                 await this.assertSubmissionAccess(record.Id, req.user, false);
-                await durableGradingQueue.enqueue(record.Id, 'batch');
+                await durableGradingQueue.enqueue(record.Id, 'batch', { watchBrowser: req.body.watchBrowser === true });
                 results.push({ submissionId: record.Id, studentName: record.User_Submission_StudentIdToUser?.StudentCode || record.StudentId, fileName: path.basename(record.ZipFileUrl!.split('?')[0]) });
             }
 
@@ -574,7 +580,7 @@ export class SubmissionController extends BaseController {
      *                                     slot in continuousSubmissionQueue, so the work is
      *                                     not queued twice.
      */
-    public enqueueSubmissionJob(submissionId: string, publishedAssignment: any, submission: Submission, extractDir: string, queue: SubmissionQueue | null = globalSubmissionQueue) {
+    public enqueueSubmissionJob(submissionId: string, publishedAssignment: any, submission: Submission, extractDir: string, queue: SubmissionQueue | null = globalSubmissionQueue, presentation: BrowserPresentation = { watchBrowser: false }) {
         const job = async () => {
             let sandboxHandle: SandboxHandle | null = null;
             let evaluationTimer: ReturnType<typeof setTimeout> | undefined;
@@ -653,6 +659,9 @@ export class SubmissionController extends BaseController {
                         ? `[Môi trường] Sandbox sẵn sàng; runtime: ${sandboxHandle.runtimeStack}; container: ${sandboxHandle.containerId || 'không có container ID'}.`
                         : `[Môi trường] Runtime: ${sandboxHandle.runtimeStack}; chưa thể chạy ứng dụng. ${sandboxHandle.crashLogs || 'Không có runner phù hợp với loại dự án này.'}` });
 
+                    if (!sandboxHandle.isReady && (sandboxHandle.projectType === 'frontend' || requiresManualUiStart(publishedAssignment))) {
+                        throw new Error('UI_RUNTIME_UNAVAILABLE: Không khởi động được môi trường giao diện. Kiểm tra Docker Desktop rồi bắt đầu chấm lại; chưa tạo điểm UI.');
+                    }
                     if (sandboxHandle.isReady && sandboxHandle.baseUrl) {
                         checkCancelled();
                         globalJobManager.updateProgress(submissionId, 10, 'Đang kiểm tra kết nối ứng dụng trong sandbox...');
@@ -673,7 +682,8 @@ export class SubmissionController extends BaseController {
                             extractDir,
                             publishedAssignment,
                             sandboxHandle.baseUrl,
-                            sandboxHandle.additionalUrls
+                            sandboxHandle.additionalUrls,
+                            message => globalJobManager.recordEvent(submissionId, { stage: 2, status: 'info', message })
                         );
                         globalJobManager.recordEvent(submissionId, { stage: 2, status: 'info', message: `[Kiểm chứng giao diện] Đã thu thập ${playwrightEvidence.length} bản ghi bằng chứng từ trình thực thi.` });
                     }
@@ -819,7 +829,8 @@ export class SubmissionController extends BaseController {
             }
         };
 
-        return (queue ? queue.enqueue(job) : job()).catch(err => {
+        const scopedJob = () => browserPresentationContext.run(presentation, job);
+        return (queue ? queue.enqueue(scopedJob) : scopedJob()).catch(err => {
             console.error(`[SubmissionController] Queue error for ${submissionId}:`, err);
             if (gradingLease.getStore()) throw err;
         });
@@ -845,7 +856,7 @@ export class SubmissionController extends BaseController {
             try {
                 const subRecord = await prisma.submission.findUnique({
                     where: { Id: id },
-                    include: { Exam: true }
+                    include: { Exam: { include: { Subject: true } } }
                 });
                 if (subRecord) {
                     const statusLower = String(subRecord.GradingStatus || '').toLowerCase();
@@ -866,12 +877,13 @@ export class SubmissionController extends BaseController {
                         return;
                     } else if (subRecord.ZipFileUrl) {
                         const strat = (subRecord as any).Exam?.GradingStrategy || 'CONTINUOUS_QUEUE';
-                        if (strat === 'BATCH_POST_DEADLINE') {
+                        const task = await prisma.submissionGradingTask.findUnique({ where: { SubmissionId: id } });
+                        if ((!task || task.Status === 'cancelled') && (strat === 'BATCH_POST_DEADLINE' || requiresManualUiStart(subRecord.Exam))) {
                             res.write(`data: ${JSON.stringify({
                                 id,
                                 state: 'pending',
                                 progressPercent: 0,
-                                currentTask: 'Holding in pending status for batch grading'
+                                currentTask: 'Chờ giảng viên bấm bắt đầu chấm bài.'
                             })}\n\n`);
                             setTimeout(() => {
                                 try { res.end(); } catch (e) { }
@@ -879,7 +891,6 @@ export class SubmissionController extends BaseController {
                             return;
                         }
                         // Self-healing: if in DB but memory job missing and in Continuous Queue mode, start grading job immediately
-                        const task = await prisma.submissionGradingTask.findUnique({ where: { SubmissionId: id } });
                         job = {
                             submissionId: id,
                             state: ['failed', 'cancelled'].includes(task?.Status) || statusLower === 'error' || (!task && statusLower === 'processing') ? 'failed' : task?.Status === 'running' ? 'processing' : 'queued',

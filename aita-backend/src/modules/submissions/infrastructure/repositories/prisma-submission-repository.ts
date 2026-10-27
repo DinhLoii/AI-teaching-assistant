@@ -1,6 +1,7 @@
 import { ISubmissionRepository, SubmissionFilter } from '../../domain/repositories/submission-repository.interface.js'
 import { Submission } from '../../domain/entities/submission.entity.js'
 import { SubmissionMapper } from '../mappers/submission.mapper.js'
+import { requiresManualUiStart } from '../../application/ui-grading-policy.js'
 
 const includeDefault = {
   User_Submission_StudentIdToUser: {
@@ -123,8 +124,11 @@ export class PrismaSubmissionRepository implements ISubmissionRepository {
       submission.attemptNumber = (previous._max.AttemptNumber || 0) + 1
       submission.isLatest = true
       await tx.submission.updateMany({ where, data: { IsLatest: false } })
-      const exam = await tx.exam.findUnique({ where: { Id: submission.examId }, select: { GradingStrategy: true } })
-      const continuous = submission.zipFileUrl && exam?.GradingStrategy !== 'BATCH_POST_DEADLINE'
+      const exam = await tx.exam.findUnique({ where: { Id: submission.examId }, select: { GradingStrategy: true, SubmissionFormat: true, AiGeneratedContent: true, Subject: { select: { SubjectCode: true } } } })
+      const continuous = submission.zipFileUrl && exam?.GradingStrategy !== 'BATCH_POST_DEADLINE' && !requiresManualUiStart(exam)
+      // Return the same state that is committed, so student clients start tracking
+      // the new attempt instead of displaying the entity's default Pending state.
+      if (continuous) submission.gradingStatus = 'Processing'
       await tx.submission.create({ data: { ...SubmissionMapper.toPersistence(submission), ...(continuous ? { GradingStatus: 'Processing' } : {}) } })
       if (continuous) await tx.$executeRaw`INSERT INTO "SubmissionGradingTask" ("SubmissionId", "Lane") VALUES (${submission.id}, 'continuous') ON CONFLICT ("SubmissionId") DO NOTHING`
     }

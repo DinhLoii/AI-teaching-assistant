@@ -16,6 +16,34 @@ import { memoryCache } from '../src/shared/infrastructure/memory-cache.js'
 import { StudentPortalController } from '../src/modules/student-portal/presentation/student-portal.controller.js'
 import { databaseTransactionOptions } from '../src/database/transaction-options.js'
 import { errorHandler } from '../src/middleware/errorHandler.js'
+import { Submission } from '../src/modules/submissions/domain/entities/submission.entity.js'
+import { requiresManualUiStart } from '../src/modules/submissions/application/ui-grading-policy.js'
+
+test('each resubmission queues its new identity and returns the committed grading state', async () => {
+  for (const [strategy, subject] of [['CONTINUOUS_QUEUE', 'PRF192'], ['BATCH_POST_DEADLINE', 'PRF192'], ['CONTINUOUS_QUEUE', 'FER202']]) {
+    let saved: any, taskWrites = 0
+    const tx = {
+      $executeRaw: async (parts: TemplateStringsArray, ...values: any[]) => { if (parts.join('').includes('INSERT INTO')) { taskWrites++; assert.equal(values[0], 'new-attempt') } return 1 },
+      exam: { findUnique: async () => ({ GradingStrategy: strategy, Subject: { SubjectCode: subject } }) },
+      submission: { aggregate: async () => ({ _max: { AttemptNumber: 1 } }), updateMany: async () => ({ count: 1 }), create: async ({ data }: any) => { saved = data } },
+    }
+    const repository = new PrismaSubmissionRepository({ $transaction: async (work: any) => work(tx) })
+    const attempt = Submission.create('new-attempt', 'student', 'exam', 'class', 1, '/private-submissions/new.zip')
+    await repository.createAttempt(attempt)
+    assert.equal(attempt.attemptNumber, 2)
+    assert.equal(attempt.gradingStatus, saved.GradingStatus)
+    const automatic = strategy === 'CONTINUOUS_QUEUE' && subject !== 'FER202'
+    assert.equal(SubmissionResponseDto.from(attempt, 'STUDENT').gradingStatus, automatic ? 'Processing' : 'Pending')
+    assert.equal(taskWrites, automatic ? 1 : 0)
+  }
+})
+
+test('UI start policy uses explicit UI configuration and subject, not the generic project label', () => {
+  assert.equal(requiresManualUiStart({ Subject: { SubjectCode: 'FER202' } }), true)
+  assert.equal(requiresManualUiStart({ AiGeneratedContent: JSON.stringify({ projectType: 'frontend' }) }), true)
+  assert.equal(requiresManualUiStart({ Subject: { SubjectCode: 'PRF192' }, SubmissionFormat: 'project' }), false)
+  assert.equal(requiresManualUiStart({ AiGeneratedContent: JSON.stringify({ rubric: { rules: [{ scoringStrategy: 'AIVision' }] } }) }), true)
+})
 
 const future = new Date(Date.now() + 86400000).toISOString()
 const dto: any = { data: { examId: 'exam', studentId: 'student', extendedDueDate: future, penaltyMode: 'WAIVE' } }

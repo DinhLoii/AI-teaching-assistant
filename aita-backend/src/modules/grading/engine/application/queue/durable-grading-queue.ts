@@ -4,6 +4,8 @@ import { globalJobManager } from './SubmissionJobManager.js'
 import { failedGradingUpdate } from '../../infrastructure/file-system/grading-failure.js'
 import { gradingLease } from './grading-lease.js'
 import { memoryCache } from '../../../../../shared/infrastructure/memory-cache.js'
+import { reportWithBrowserPresentation } from '../execution/browser-presentation.js'
+import { requiresManualUiStart } from '../../../../submissions/application/ui-grading-policy.js'
 
 export type QueueLane = 'continuous' | 'batch'
 
@@ -16,9 +18,9 @@ export class DurableGradingQueue {
   private running = new Set<Promise<void>>()
   constructor(private readonly db: any = prisma) {}
 
-  async enqueue(id: string, lane: QueueLane = 'continuous') {
+  async enqueue(id: string, lane: QueueLane = 'continuous', options?: { watchBrowser?: boolean }) {
     const inserted = await this.db.$transaction(async (tx: any) => {
-      const row = await tx.submission.findUnique({ where: { Id: id }, select: { Id: true, ZipFileUrl: true } })
+      const row = await tx.submission.findUnique({ where: { Id: id }, select: { Id: true, ZipFileUrl: true, ReportData: true } })
       if (!row?.ZipFileUrl) throw new Error('Bài nộp chưa có ZIP để chấm.')
       const rows = await tx.$queryRaw`
         INSERT INTO "SubmissionGradingTask" ("SubmissionId", "Lane") VALUES (${id}, ${lane})
@@ -26,7 +28,7 @@ export class DurableGradingQueue {
           "Attempts"=0, "RequestedAt"=NOW(), "AvailableAt"=NOW(), "LeaseOwner"=NULL, "LeaseUntil"=NULL, "LastError"=NULL
         WHERE "SubmissionGradingTask"."Status" IN ('completed', 'failed', 'cancelled') AND ("SubmissionGradingTask"."LeaseUntil" IS NULL OR "SubmissionGradingTask"."LeaseUntil"<NOW())
         RETURNING "SubmissionId", "RequestedAt"`
-      if (rows.length) await tx.submission.update({ where: { Id: id }, data: { GradingStatus: 'Processing', ReviewStatus: 'DRAFT' } })
+      if (rows.length) await tx.submission.update({ where: { Id: id }, data: { GradingStatus: 'Processing', ReviewStatus: 'DRAFT', ReportData: reportWithBrowserPresentation(row.ReportData, options?.watchBrowser === true) } })
       return rows[0] || null
     })
     if (inserted) {
@@ -37,7 +39,7 @@ export class DurableGradingQueue {
   }
 
   /** Claims across processes are serialized briefly; evaluation runs outside this transaction. */
-  async claim(): Promise<{ SubmissionId: string; Attempts: number; LeaseOwner: string; LeaseUntil: Date; RequestedAt: Date } | null> {
+  async claim(): Promise<{ SubmissionId: string; Lane?: string; Attempts: number; LeaseOwner: string; LeaseUntil: Date; RequestedAt: Date } | null> {
     const owner = randomUUID()
     return this.db.$transaction(async (tx: any) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(17392026)`
@@ -50,7 +52,7 @@ export class DurableGradingQueue {
           ORDER BY t."RequestedAt" LIMIT 1 FOR UPDATE SKIP LOCKED
         ) UPDATE "SubmissionGradingTask" t SET "Status"='running', "Attempts"=t."Attempts"+1,
           "LeaseOwner"=${owner}, "LeaseUntil"=NOW()+INTERVAL '2 minutes'
-        FROM candidate c WHERE t."SubmissionId"=c."SubmissionId" RETURNING t."SubmissionId", t."Attempts", t."LeaseOwner", t."LeaseUntil", t."RequestedAt"`
+        FROM candidate c WHERE t."SubmissionId"=c."SubmissionId" RETURNING t."SubmissionId", t."Lane", t."Attempts", t."LeaseOwner", t."LeaseUntil", t."RequestedAt"`
       return rows[0] || null
     })
   }
@@ -101,7 +103,7 @@ export class DurableGradingQueue {
     }
   }
 
-  private async run(task: { SubmissionId: string; Attempts: number; LeaseOwner: string; LeaseUntil: Date; RequestedAt: Date }, execute: (id: string) => Promise<void>) {
+  private async run(task: { SubmissionId: string; Lane?: string; Attempts: number; LeaseOwner: string; LeaseUntil: Date; RequestedAt: Date }, execute: (id: string) => Promise<void>) {
     const id = task.SubmissionId
     const owner = task.LeaseOwner
     const heartbeat = setInterval(() => {
@@ -109,6 +111,15 @@ export class DurableGradingQueue {
     }, 20000)
     heartbeat.unref?.()
     try {
+      if (task.Lane === 'continuous') {
+        const row = await this.db.submission.findUnique({ where: { Id: id }, include: { Exam: { include: { Subject: true } } } });
+        if (requiresManualUiStart(row?.Exam)) {
+          const held = await this.db.$executeRaw`UPDATE "SubmissionGradingTask" SET "Status"='cancelled', "LeaseOwner"=NULL, "LeaseUntil"=NULL, "LastError"=NULL WHERE "SubmissionId"=${id} AND "LeaseOwner"=${owner}`;
+          if (held) await this.db.submission.updateMany({ where: { Id: id, GradingTask: { is: { Status: 'cancelled' } } }, data: { GradingStatus: 'Pending' } });
+          globalJobManager.clearJob(id);
+          return;
+        }
+      }
       await gradingLease.run({ owner, startedAt: new Date(task.LeaseUntil).getTime() - 120000, requestVersion: new Date(task.RequestedAt).getTime(), attempt: task.Attempts }, () => execute(id))
       const job = globalJobManager.getJob(id)
       if (job?.state === 'failed') throw new Error(job.error || 'Grading failed')
