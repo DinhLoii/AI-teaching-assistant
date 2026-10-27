@@ -148,3 +148,6 @@ vite.config.ts.timestamp-*
 FE_old.zip
 aita-backend/storage/
 
+# Temporary directories and build artifacts
+tmp/
+target/
