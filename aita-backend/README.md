@@ -2,6 +2,51 @@
 
 API Node.js cho frontend `aita-fontend/`.
 
+## FER202 / React frontend
+
+Runner React Vite và Create React App dùng `node:20-alpine`, giữ đúng thư mục
+`package.json` kể cả ZIP lồng folder và công bố giao diện ở cổng 8080. Vite
+khởi động với `--host 0.0.0.0 --port 8080 --strictPort`; không chèn CommonJS
+vào dự án ESM. Dependency cần mạng ở lần cài đầu hoặc npm cache đã có.
+React độc lập được nhận diện từ mã nguồn kể cả đề ghi loại `project`/`zip`.
+Chỉ kiểm tra các cổng công khai mà trình duyệt truy cập được, có giới hạn thời
+gian mỗi yêu cầu; frontend phải trả HTML thành công, 404 không được coi là sẵn sàng.
+
+Trên máy chạy backend, chạy `npm run playwright:install` để cài Chromium.
+`npm run test:fer202` dựng ZIP React mẫu, chạy qua Docker/Playwright thật,
+kiểm tra form, thêm/xóa, trạng thái, lưu dữ liệu, chuyển trang và mobile;
+đồng thời xác minh workflow đạt được điểm và workflow lỗi không được điểm.
+Lệnh không gọi AI và không ghi điểm sinh viên. Báo cáo ở
+`output/FER202_Readiness/verification.json` tính từ thư mục gốc repository.
+
+Các test thao tác được lưu trong `PublishedAssignment.testSuites.browser`.
+Sinh viên nộp bài UI chỉ lưu lần nộp ở trạng thái Pending, không tạo việc chấm
+tự động. Giảng viên bấm **Bắt đầu chấm UI & Logs** (hoặc chủ động chấm batch)
+để bắt đầu; nút đợi server nhận việc rồi mới mở log của lượt mới.
+Đề đăng ký/đăng nhập thiếu browser tests được chuẩn bị từ mẫu yêu cầu auth và
+form thực tế: email sai, xác nhận mật khẩu sai, đăng ký, email trùng, mật khẩu
+đăng nhập sai, đăng nhập đúng/đối chiếu hồ sơ, đăng xuất. Các tiêu chí chức năng
+liên quan lấy điểm từ workflow thật; không bấm mọi button tùy tiện. Đề hoặc form
+không phù hợp mẫu cần cấu hình test riêng, log ghi rõ chưa xác minh thao tác.
+Tiêu chí `AIVision` có `requiredEvidence[].browserProbe.testIds` sẽ tính điểm
+theo đúng workflow đã liên kết, không dùng AI thay cho kết quả fail. Test chưa
+chạy yêu cầu giảng viên duyệt. Tiêu chí AIVision không liên kết workflow vẫn
+dùng ảnh chụp và cơ chế chấm giao diện hiện có. Cần cấu hình selector và kết
+quả mong đợi phù hợp từng đề; không chuyển test giao diện thành stdin/stdout.
+
+Khi chấm bài có giao diện, Chromium tự mở cửa sổ trên máy chạy backend để
+bạn quan sát trang và các thao tác kiểm thử. Không cần bật tùy chọn, không có
+khung truyền ảnh trong modal. Chạy xong hoặc lỗi, trình duyệt tự đóng qua
+finally; chỉ đóng phiên Chromium do lượt chấm tạo ra. Nếu không có workflow
+cấu hình hoặc mẫu phù hợp thì chỉ chụp bằng chứng, không nhận là đã test form.
+Máy không có desktop sẽ ghi rõ việc chuyển sang chạy nền.
+Docker dùng endpoint của context hiện tại (bao gồm pipe Docker Desktop Linux
+trên Windows); DOCKER_HOST cấu hình tường minh vẫn được ưu tiên. UI runtime
+không khởi động được sẽ dừng lượt chấm, không tiếp tục chấm code thay cho UI.
+
+Chạy `npm run test:fer202` để kiểm tra Docker và Chromium thật với React mẫu.
+Không gọi AI và không ghi điểm sinh viên.
+
 ## Chạy nhanh
 
 ```bash

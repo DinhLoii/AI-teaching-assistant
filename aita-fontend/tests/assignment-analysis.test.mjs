@@ -29,6 +29,19 @@ const contract = plain('modules/ai/infrastructure/analysis/assignment-contract.t
 const fixture = fs.readFileSync('tests/fixtures/personal-expense-tracker.txt', 'utf8')
 const libraryFixture = fs.readFileSync('tests/fixtures/mini-library-manager.txt', 'utf8')
 const inventoryFixture = fs.readFileSync('tests/fixtures/mini-inventory-manager.txt', 'utf8')
+const productFixture = fs.readFileSync('tests/fixtures/product-inventory-c.txt', 'utf8')
+
+test('synthetic PDF page separators never enter reference test expected outputs', async () => {
+  const { DocumentExtractorService } = plain('modules/ai/infrastructure/analysis/document-extractor.service.ts')
+  const { DeterministicParserService } = plain('modules/ai/infrastructure/analysis/deterministic-parser.service.ts')
+  const extractor = new DocumentExtractorService()
+  const document = productFixture.replace('UPDATED\n10 But 10 3000', 'UPDATED\n-- 3 of 7 --\n10 But 10 3000')
+  const result = new DeterministicParserService().parse(await extractor.extract(undefined, document), 10)
+  assert.equal(result.testCases.length, 1)
+  assert.equal(result.testCases[0].expectedOutput.includes('-- 3 of 7 --'), false)
+  assert.equal(result.testCases[0].expectedOutput.split('\n').length, 9)
+  assert.equal(extractor.normalizeText('value -- 3 of 7 -- remains'), 'value -- 3 of 7 -- remains')
+})
 
 test('acceptance extraction never interprets console input counts, output zero or later sections as test IDs', () => {
   const consoleDocument = 'Test cases\nTC01 – Input sample\nInput\n4\nADD A 1 2\nQUERY A\nOutput\n0\nNOT_FOUND\nTOTAL 0\n4\nADD B 2 3\nQUERY B'
@@ -52,6 +65,32 @@ function useCase(aiResponse, unavailable = false) {
   })
   return { execute: input => new (load('modules/ai/application/use-cases/auto-configure-assignment.use-case.ts').AutoConfigureAssignmentUseCase)().execute(input), prompt: () => prompt }
 }
+
+test('product inventory assignment preserves seven source weights and extracts the unnumbered sample', async () => {
+  const result = await useCase({}, true).execute({ promptText: productFixture, maxScore: 10 })
+  assert.equal(result.detectedLanguage, 'C')
+  assert.equal(result.submissionFormat.entryFile, 'main.c')
+  assert.equal(result.rubricCriteria.length, 7)
+  assert.deepEqual(Array.from(result.rubricCriteria, row => row.maxPoints), [2, 1, 2, 1, 1, 2, 1])
+  assert.equal(result.provenanceReport.pointsSumDelta, 0)
+  assert.equal(result.analysisReview.warnings.some(warning => warning.includes('chia đều')), false)
+  assert.equal(result.testCases.length, 1)
+  const tc = result.testCases[0]
+  assert.equal(tc.input, '9\nADD 10 But 5 2000\nADD 20 Vo 2 7000\nCOUNT\nFIND 10\nTOP\nUPDATE 10 10 3000\nTOP\nDELETE 20\nCOUNT')
+  assert.equal(tc.expectedOutput, 'ADDED\nADDED\n2\n10 But 5 2000\n20 Vo 2 7000\nUPDATED\n10 But 10 3000\nDELETED\n1')
+  assert.equal(tc.points, 0)
+  assert.equal(tc.source, 'EXTRACTED')
+  assert.equal(tc.input.split('\n').length, 10)
+  assert.equal(tc.expectedOutput.split('\n').length, 9)
+})
+
+test('inventory sample extraction rejects truncated command/output blocks and specification-only text', () => {
+  const { DocumentExtractorService } = plain('modules/ai/infrastructure/analysis/document-extractor.service.ts')
+  const { extractLabeledConsoleTests } = plain('modules/ai/infrastructure/analysis/console-test-extractor.ts')
+  const cleaned = new DocumentExtractorService().normalizeText(productFixture)
+  assert.equal(extractLabeledConsoleTests(cleaned.replace('DELETED\n1\n5.', 'DELETED\n5.')).length, 0)
+  assert.equal(extractLabeledConsoleTests(cleaned.slice(0, cleaned.indexOf('4. Ví dụ'))).length, 0)
+})
 
 test('Mini Library reference table produces exactly TC01–TC10 with original I/O, not the illustrative example or rubric text', async () => {
   const result = await useCase({}, true).execute({ promptText: libraryFixture, maxScore: 10 })
@@ -166,7 +205,9 @@ test('AI unavailable returns extraction-only and never invents SQL, stdin tests 
   const result = await runner.execute({ text })
   assert.equal(result.analysisReview.status, 'extraction_only')
   assert.equal(result.testCases.length, 0)
-  assert.ok(result.rubricCriteria.every(row => row.reviewNeeded && row.maxPoints === 0 && text.includes(row.evidence)))
+  assert.ok(result.rubricCriteria.every(row => row.reviewNeeded && row.maxPoints >= 0 && text.includes(row.evidence)))
+  assert.equal(result.rubricCriteria.reduce((sum, row) => sum + Math.round(row.maxPoints * 100), 0), 1000)
+  assert.ok(result.analysisReview.warnings.some(warning => warning.includes('chia đều')))
   assert.ok(!result.rubricCriteria.some(row => /Đăng nhập/.test(row.name)))
 })
 test('DOCX upload reads native Word table cells through the actual extractor', async () => {

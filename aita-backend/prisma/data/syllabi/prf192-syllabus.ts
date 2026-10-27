@@ -7,12 +7,41 @@
 export const PRF192_SYLLABUS = {
   code: 'PRF192',
   name: 'Programming Fundamentals',
+  syllabusId: 12223,
+  syllabusName: 'Programming Fundamentals_Cơ sở lập trình',
+  sourceUrl: 'https://flm.fpt.edu.vn/gui/role/student/SyllabusDetails?sylID=12223',
+  learningTeachingMethod: 'Problem based learning, Active Learning',
   noCredit: 3,
   degreeLevel: 'Bachelor',
   timeAllocation: 'Study hour (150h) = 45h contact hours + 1h final exam + 104h self-study',
   preRequisite: 'None',
   description: `Understand basics computer system and methods of software development, focus on function-oriented programming design, coding, testing and discipline in programming.
 Explain basic concepts of programming, function-oriented programming design, modularity, understand and coding programs using C language.`,
+
+  learningOutcomes: [
+    {
+      category: '1. Knowledge',
+      code: '(ABET e)',
+      items: [
+        'Explain the way to solve a real problem using computer.',
+        'Understand the basic concepts computer system, and software development.',
+        'Understand the basic concepts of programming, focus on procedure programming, testing and debugging, unit testing.'
+      ]
+    },
+    {
+      category: '2. Skills in programming',
+      code: '(ABET k)',
+      items: [
+        'Read and understand the simple C programs;',
+        'Solve real problems using C.'
+      ]
+    },
+    {
+      category: '3. Apply learning methods effectively',
+      code: '(ABET i)',
+      items: ['Academic reading.', 'Individual and team work behaviors.']
+    }
+  ],
 
   studentTasks: [
     'Students must attend at least 80% of contact sessions in order to be accepted to the final examination.',

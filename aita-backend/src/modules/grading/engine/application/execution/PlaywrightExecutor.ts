@@ -2,9 +2,11 @@
 import { PublishedAssignment } from '../../core/domain/submission/PublishedAssignment';
 import { Evidence } from '../../core/domain/evidence/Evidence';
 import { IArtifactStore } from '../../core/contracts/IArtifactStore';
-import { chromium } from 'playwright';
+import { browserPresentationContext, launchGradingBrowser } from './browser-presentation.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import { PlaywrightPlugin } from '../../plugins/playwright/PlaywrightPlugin.js';
+import { prepareAuthBrowserTests } from './auth-browser-tests.js';
 
 export class PlaywrightExecutor {
     constructor(private artifactStore: IArtifactStore) {}
@@ -14,18 +16,21 @@ export class PlaywrightExecutor {
         projectDirectory: string, 
         assignment: PublishedAssignment,
         baseUrl: string,
-        additionalUrls?: string[]
+        additionalUrls?: string[],
+        onBrowserMessage?: (message: string) => void
     ): Promise<Evidence[]> {
         const evidences: Evidence[] = [];
+        const browserMessage = (message: string) => { onBrowserMessage?.(message); };
         
-        console.log(`[PlaywrightExecutor] Starting Chromium in background for ${baseUrl}...`);
+        let browserTests = assignment.testSuites?.browser || [];
+        console.log(`[PlaywrightExecutor] Starting Chromium for ${baseUrl}...`);
         
         let browser;
         try {
-            browser = await chromium.launch({ 
-                headless: true 
-            });
-            const page = await browser.newPage();
+            // Keep a single native window alive for discovery, workflows and screenshots.
+            const launched = await browserPresentationContext.run({ watchBrowser: true }, () => launchGradingBrowser(onBrowserMessage));
+            browser = launched.browser;
+            const page = await browser.newPage({ viewport: launched.visible ? null : { width: 1280, height: 720 } });
             
             // Network Interceptor: Auto-correct hardcoded API ports and inject CORS
             await page.route('**/*', async (route) => {
@@ -131,6 +136,26 @@ export class PlaywrightExecutor {
             
             // Optional: Give it a tiny bit more time for any JS rendering on the final URL
             await page.waitForTimeout(2000);
+
+            if (!browserTests.length && successfullyLoaded) {
+                try {
+                    const generated = await prepareAuthBrowserTests(page, assignment);
+                    browserTests = generated;
+                    for (const test of generated) evidences.push({ id: `planned-${test.id}`, type: 'browser.workflow.planned', source: 'AuthRequirementTemplate', confidence: 1, timestamp: new Date().toISOString(), payload: { testId: test.id, ruleIds: test.ruleIds } });
+                    if (generated.length) browserMessage(`[Kiểm thử UI] Đã chuẩn bị ${generated.length} kịch bản đăng ký/đăng nhập từ yêu cầu đề và các trường form thực tế.`);
+                } catch { browserMessage('[Kiểm thử UI] Chưa xác định được đầy đủ form theo yêu cầu. Cần giảng viên cấu hình kịch bản; không ghi nhận kiểm thử giả.'); }
+            }
+            if (!browserTests.length) browserMessage('[Kiểm thử UI] Chưa có kịch bản phù hợp với đề; chỉ thu thập ảnh, chưa xác minh thao tác button/form.');
+
+            if (browserTests.length && successfullyLoaded) {
+                const artifactsDir = path.join(projectDirectory, '.grading-browser-artifacts');
+                await fs.promises.mkdir(artifactsDir, { recursive: true });
+                const workflows = await browserPresentationContext.run({ watchBrowser: true }, () => new PlaywrightPlugin(this.artifactStore).executeAsync({
+                    submissionId, apiUrl: finalUrl, artifacts: [], sandboxWorkspacePath: artifactsDir, onBrowserMessage: browserMessage,
+                    browserSession: launched,
+                }, browserTests));
+                evidences.push(...workflows);
+            }
 
             // Keep track of screenshots already taken to avoid duplicate work if multiple rules target same path
             const routesToSnapshot = new Set<string>();
@@ -246,7 +271,7 @@ export class PlaywrightExecutor {
             if (browser) await browser.close();
         }
 
-        console.log(`[PlaywrightExecutor] Finished. Captured ${evidences.length} screenshots.`);
+        console.log(`[PlaywrightExecutor] Finished. Captured ${evidences.filter(e => e.type === 'browser.screenshot.captured').length} screenshots.`);
         return evidences;
     }
 

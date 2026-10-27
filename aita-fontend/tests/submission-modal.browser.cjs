@@ -18,7 +18,7 @@ test('student submission modal lifecycle in a real browser', async (t) => {
       build.onResolve({ filter: /^@\/lib\/api\/modules\/grading$/ }, () => ({ path: 'grading', namespace: 'stub' }))
       build.onLoad({ filter: /.*/, namespace: 'stub' }, ({ path }) => ({ contents: path === 'cache'
         ? 'export const clearClientApiCache = () => {}'
-        : 'export const gradingApi = { downloadSubmission: async (id) => window.testState.downloads.push(id) }' }))
+        : 'export const gradingApi = { downloadSubmission: async (id) => window.testState.downloads.push(id), subscribeToProgress: (id, progress, complete, error) => { window.gradingObserver = { id, progress, complete, error }; return () => { window.gradingObserver = null } } }' }))
     }}],
     stdin: { resolveDir: root, loader: 'tsx', contents: `
       import React from 'react';
@@ -61,8 +61,8 @@ test('student submission modal lifecycle in a real browser', async (t) => {
     const page = await setup()
     await requested(page)
     assert.equal(await page.getByRole('list', { name: 'Các bước tiếp nhận bài nộp' }).getByRole('listitem').count(), 5)
-    assert.equal(await page.getByRole('progressbar').getAttribute('aria-valuenow'), null)
-    assert.equal(await page.getByRole('progressbar').locator('div').evaluate(el => el.style.width), '30%')
+    assert.equal(await page.getByRole('progressbar', { name: 'Tiến trình tiếp nhận bài nộp' }).getAttribute('aria-valuenow'), null)
+    assert.equal(await page.getByRole('progressbar', { name: 'Tiến trình tiếp nhận bài nộp' }).locator('div').evaluate(el => el.style.width), '30%')
     await page.clock.runFor(2300)
     assert.match(await page.locator('body').innerText(), /00:02/)
     assert.equal(await page.getByTitle('Đóng').isDisabled(), true)
@@ -70,7 +70,7 @@ test('student submission modal lifecycle in a real browser', async (t) => {
     assert.deepEqual(await page.evaluate(() => window.testState.requests), [{ url: '/api/submissions', method: 'POST', file: 'student.zip', note: 'my note', assignment: 'assignment-1' }])
     await page.evaluate(() => window.respond({ success: true, data: { id: 'saved-1', submittedAt: '2026-10-15T08:00:00Z' } }))
     await received(page)
-    assert.equal(await page.getByRole('progressbar').getAttribute('aria-valuenow'), '100')
+    assert.equal(await page.getByRole('progressbar', { name: 'Tiến trình tiếp nhận bài nộp' }).getAttribute('aria-valuenow'), '100')
     assert.equal(await page.evaluate(() => window.testState.successes.length), 1)
     assert.equal(await page.evaluate(() => window.testState.requests.length), 1)
     await page.getByText('Tải tệp vừa nộp (.zip)', { exact: true }).click()
@@ -118,6 +118,25 @@ test('student submission modal lifecycle in a real browser', async (t) => {
     await received(page)
     assert.equal(await page.evaluate(() => window.testState.requests.length), 0)
     assert.doesNotMatch(await page.locator('body').innerText(), /0 rủi ro|TLS 1.3|AES-256|Continuous Queue/)
+    await page.close()
+  })
+  await t.test('grading progress follows only the latest attempt and never displays staff logs or triggers regrading', async () => {
+    const page = await setup({ initialMode: 'receipt', submissionId: 'attempt-1' })
+    await page.waitForFunction(() => window.gradingObserver?.id === 'attempt-1')
+    await page.evaluate(() => {
+      window.oldObserver = window.gradingObserver
+      window.gradingObserver.progress({ submissionId: 'attempt-1', state: 'processing', requestVersion: 1, progressPercent: 40, logs: [{ message: 'PRIVATE TEST ANSWER' }], result: { totalScore: 9 } })
+    })
+    await page.getByText('Hệ thống đang chấm lần nộp này.', { exact: true }).waitFor()
+    assert.equal(await page.getByRole('progressbar', { name: 'Tiến trình chấm bài', exact: true }).getAttribute('aria-valuenow'), '40')
+    assert.doesNotMatch(await page.locator('body').innerText(), /PRIVATE TEST ANSWER|Điểm tổng kết/)
+    await page.evaluate(() => window.renderModal({ initialMode: 'receipt', submissionId: 'attempt-2' }))
+    await page.waitForFunction(() => window.gradingObserver?.id === 'attempt-2')
+    await page.evaluate(() => window.oldObserver.progress({ submissionId: 'attempt-1', state: 'completed', progressPercent: 100 }))
+    assert.equal(await page.getByText('Đã chấm xong. Chờ giảng viên công bố kết quả.', { exact: true }).count(), 0)
+    await page.evaluate(() => window.gradingObserver.progress({ submissionId: 'attempt-2', state: 'completed', progressPercent: 100 }))
+    await page.getByText('Đã chấm xong. Chờ giảng viên công bố kết quả.', { exact: true }).waitFor()
+    assert.equal(await page.evaluate(() => window.testState.requests.length), 0)
     await page.close()
   })
   await t.test('timeout unblocks UI; a late confirmation can still complete without duplicate POST', async () => {

@@ -1,0 +1,13 @@
+{
+  "checkedAt": "2026-10-27T02:52:08.225Z",
+  "runtime": "node:20-alpine",
+  "framework": "React 19 / Vite 6",
+  "visibleBrowserVerified": true,
+  "browserWorkflowsPassed": 7,
+  "screenshotCount": 2,
+  "positiveScore": 10,
+  "negativeScore": 0,
+  "mobileViewport": 390,
+  "artifactsDir": "E:\\FPTU\\Term07\\SWD392\\AI-Teaching-Assistant\\tmp\\fer202-1793069434083\\artifacts",
+  "source": "Exact nested ZIP started through ExecutionSandboxService; PlaywrightExecutor and RubricEvaluator; no external AI request"
+}

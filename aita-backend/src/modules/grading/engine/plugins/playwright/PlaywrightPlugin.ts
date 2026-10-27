@@ -43,7 +43,8 @@ export class PlaywrightPlugin implements IEvidenceProvider {
         const browserContext: BrowserExecutionContext = {
             ...context,
             baseUrl: context.apiUrl,
-            artifactsDir: context.sandboxWorkspacePath || '/tmp/grading_artifacts'
+            artifactsDir: context.sandboxWorkspacePath || '/tmp/grading_artifacts',
+            onBrowserMessage: context.onBrowserMessage
         };
 
         const runner = new BrowserTestRunner(this.pluginId, browserContext, this.artifactStore);

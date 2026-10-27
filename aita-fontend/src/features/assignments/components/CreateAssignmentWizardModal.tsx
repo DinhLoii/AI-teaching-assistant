@@ -8,6 +8,7 @@ import { useLanguage } from '@/providers/language-provider'
 import { assignmentsApi } from '@/lib/api/modules/assignments'
 import { aiApi } from '@/lib/api/modules/ai'
 import { AssignmentAnalysisReview } from './AssignmentAnalysisReview'
+import { distributeRubricPoints } from '@/utils/rubricPoints'
 import {
   Sparkles, Plus, Trash2, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft,
   Send, Terminal, Award, FileText, Check, UploadCloud, RefreshCw, Loader2,
@@ -378,7 +379,7 @@ export function CreateAssignmentWizardModal({
 
   // Calculate totals
   const totalRubricScore = React.useMemo(() => {
-    return rubricCriteria.reduce((sum, item) => sum + (Number(item.maxPoints) || 0), 0)
+    return Number(rubricCriteria.reduce((sum, item) => sum + (Number(item.maxPoints) || 0), 0).toFixed(2))
   }, [rubricCriteria])
 
   const totalTestScore = React.useMemo(() => {
@@ -501,7 +502,7 @@ export function CreateAssignmentWizardModal({
         }
 
         if (data.rubricCriteria && Array.isArray(data.rubricCriteria) && data.rubricCriteria.length > 0) {
-          setRubricCriteria(data.rubricCriteria.map((rc: any, idx: number) => ({
+          const extractedCriteria = data.rubricCriteria.map((rc: any, idx: number) => ({
             id: rc.id || `rc-ai-${Date.now()}-${idx}`,
             name: rc.name || rc.title || `Tiêu chí ${idx + 1}`,
             description: rc.description || '',
@@ -511,7 +512,10 @@ export function CreateAssignmentWizardModal({
             failCondition: rc.failCondition || 'Chưa đạt yêu cầu',
             aiGuidance: rc.aiGuidance || 'Đối chiếu tiêu chí với bài nộp và nêu bằng chứng.',
             evidence: rc.evidence, source: rc.source, reviewNeeded: rc.reviewNeeded,
-          })))
+          }))
+          const target = Number(data.maxScore) || maxScore
+          const sum = extractedCriteria.reduce((total: number, criterion: RubricCriterionItem) => total + criterion.maxPoints, 0)
+          setRubricCriteria(Math.abs(sum - target) > 0.001 ? distributeRubricPoints(extractedCriteria, target) : extractedCriteria)
         }
       }
     } catch (err: any) {
@@ -1154,6 +1158,9 @@ export function CreateAssignmentWizardModal({
                     </select>
                   </div>
 
+                  <Button type="button" variant="outline" size="sm" disabled={!rubricCriteria.length} onClick={() => setRubricCriteria(distributeRubricPoints(rubricCriteria, maxScore))} className="text-xs gap-1">
+                    <RefreshCw className="w-3.5 h-3.5" /> Chia đều {maxScore} điểm
+                  </Button>
                   <Button type="button" variant="primary" size="sm" onClick={addCriterion} className="bg-orange-600 hover:bg-orange-700 text-white text-xs gap-1">
                     <Plus className="w-3.5 h-3.5" /> Thêm tiêu chí
                   </Button>
@@ -1200,7 +1207,7 @@ export function CreateAssignmentWizardModal({
                             <input
                               type="number"
                               min={0}
-                              step={0.25}
+                              step={0.01}
                               value={rc.maxPoints}
                               onChange={(e) => {
                                 const val = Number(e.target.value) || 0

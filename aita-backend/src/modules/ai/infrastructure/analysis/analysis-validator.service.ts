@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { AdaptiveAnalysisOutput, AnalyzedRubricCriterion } from '../../domain/analysis/analysis.types.js'
+import type { AdaptiveAnalysisOutput } from '../../domain/analysis/analysis.types.js'
 
 export const AnalyzedTestCaseSchema = z.object({
   id: z.string(),
@@ -124,21 +124,25 @@ export class AnalysisValidatorService {
       seenNames.add(lower)
     }
 
-    // For Branch B (AI_GENERATED), scale points if mismatch exists
-    if (output.provenanceReport.rubricSourceType === 'AI_GENERATED') {
-      if (Math.abs(currentSum - targetMaxScore) > 0.05 && currentSum > 0) {
-        warnings.push(`Tự động căn chỉnh tổng điểm Rubric đề xuất (${currentSum}đ -> ${targetMaxScore}đ).`)
-        this.scaleRubricCriteria(rubricCriteria, targetMaxScore)
-      }
-    } else {
-      // For Branch A (ORIGINAL_DOCUMENT), keep original points but flag warning if mismatch
-      if (Math.abs(currentSum - targetMaxScore) > 0.05) {
-        output.provenanceReport.pointsSumDelta = Number(Math.abs(currentSum - targetMaxScore).toFixed(2))
-        warnings.push(
-          `Barem gốc từ tài liệu có tổng điểm là ${currentSum}đ (khác mức ${targetMaxScore}đ dự kiến). Giữ nguyên điểm gốc theo tài liệu để giảng viên xác nhận.`
-        )
-      }
+    // Source evidence remains unchanged; an inconsistent scale is distributed
+    // evenly in hundredths so the grading rubric always totals the chosen score.
+    if (rubricCriteria.length && Math.abs(currentSum - targetMaxScore) > 0.001) {
+      const note = `Tổng điểm trích xuất ${currentSum}đ chưa khớp thang ${targetMaxScore}đ. Đã chia đều ${targetMaxScore}đ cho ${rubricCriteria.length} tiêu chí; giữ nguyên nội dung và trích dẫn gốc, cần giảng viên duyệt.`
+      const units = Math.round(targetMaxScore * 100)
+      const base = Math.floor(units / rubricCriteria.length)
+      const remainder = units % rubricCriteria.length
+      rubricCriteria.forEach((criterion, index) => {
+        const originalPoints = criterion.maxPoints
+        criterion.maxPoints = (base + (index < remainder ? 1 : 0)) / 100
+        criterion.reviewNeeded = true
+        criterion.notes = [criterion.notes, `Điểm trước phân bổ: ${originalPoints}. ${note}`].filter(Boolean).join('\n')
+      })
+      warnings.push(note)
+      output.summaryExplanation = [output.summaryExplanation, note].filter(Boolean).join('\n')
+      const review = (output as any).analysisReview
+      if (review) review.warnings = [...(review.warnings || []), note]
     }
+    output.provenanceReport.pointsSumDelta = Number(Math.abs(rubricCriteria.reduce((sum, criterion) => sum + criterion.maxPoints, 0) - targetMaxScore).toFixed(2))
 
     // Missing execution evidence remains empty; never inject or hide invented cases.
     if (!output.testCases.length) warnings.push('Chưa có testcase thực thi được xác minh.');
@@ -151,22 +155,4 @@ export class AnalysisValidatorService {
     }
   }
 
-  private static scaleRubricCriteria(criteria: AnalyzedRubricCriterion[], targetMaxScore: number): void {
-    const currentSum = criteria.reduce((sum, c) => sum + (c.maxPoints || 0), 0)
-    if (currentSum <= 0) return
-
-    const factor = targetMaxScore / currentSum
-    let runningSum = 0
-
-    for (let i = 0; i < criteria.length; i++) {
-      if (i === criteria.length - 1) {
-        criteria[i].maxPoints = Number(Math.max(0, targetMaxScore - runningSum).toFixed(1))
-      } else {
-        const basePts = typeof criteria[i].maxPoints === 'number' ? criteria[i].maxPoints : 1
-        const scaled = Number((basePts * factor).toFixed(1))
-        runningSum += scaled
-        criteria[i].maxPoints = scaled
-      }
-    }
-  }
 }

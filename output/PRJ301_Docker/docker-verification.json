@@ -1,0 +1,29 @@
+{
+  "checkedAt": "2026-10-27T02:21:51.654Z",
+  "source": "Exact ZIP extracted and started by ExecutionSandboxService",
+  "runtime": "aita-java-war:tomcat-9.0-jdk21",
+  "checksPassed": 20,
+  "checks": [
+    "Health / Tomcat startup",
+    "Seed and ordered list",
+    "Case insensitive search",
+    "Empty search",
+    "Missing product 404",
+    "Create / JSON / UTF-8",
+    "Duplicate ID does not overwrite",
+    "Blank name 400",
+    "Negative quantity 400",
+    "Negative price 400",
+    "Malformed JSON 400",
+    "Fractional quantity rejected",
+    "Update / zero boundaries",
+    "Update missing ID 404",
+    "Invalid path ID 400",
+    "Delete / persistence across requests",
+    "Delete missing ID 404",
+    "JSP / MVC / escaped HTML",
+    "Root route and welcome JSP",
+    "Platform HTTPProbeEngine integration"
+  ],
+  "httpProbePassed": true
+}

@@ -4,7 +4,7 @@ import { AggregateRoot, DomainEvent } from '../../../../shared/domain/domain-eve
 // Value Types
 // ──────────────────────────────────────────────────────────────
 
-export type GradingStatusValue = 'Pending' | 'Queued' | 'Grading' | 'Graded' | 'Error'
+export type GradingStatusValue = 'Pending' | 'Queued' | 'Processing' | 'Grading' | 'Graded' | 'Error'
 /**
  * `PUBLISHED` is the value every reader tests for — SubmissionResponseDto nulls each score
  * unless it sees it, and PrismaStatsRepository filters GPA/history/graded counts on it. The

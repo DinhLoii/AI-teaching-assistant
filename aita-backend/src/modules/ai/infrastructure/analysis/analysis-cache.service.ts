@@ -8,7 +8,7 @@ interface CacheEntry {
 }
 
 export class AnalysisCacheService {
-  private static readonly PARSER_VERSION = 'v6-acceptance-scenario-boundaries'
+  private static readonly PARSER_VERSION = 'v10-pdf-page-separators'
   private static readonly DEFAULT_TTL_MS = 30 * 60 * 1000 // 30 minutes
   private static readonly MAX_ENTRIES = 100
 

@@ -157,19 +157,21 @@ export const gradingApi = {
     })
   },
 
-  submitProject: (file: File, assignmentId?: string) => {
+  submitProject: (file: File, assignmentId?: string, options?: { watchBrowser?: boolean }) => {
     const formData = new FormData()
     formData.append('file', file)
     if (assignmentId) formData.append('assignmentId', assignmentId)
+    formData.append('watchBrowser', String(options?.watchBrowser !== false))
     return request<{ submissionId: string }>('/grading/submissions', {
       method: 'POST',
       body: formData,
     })
   },
-  submitBatchProject: (files: File[], assignmentId?: string) => {
+  submitBatchProject: (files: File[], assignmentId?: string, options?: { watchBrowser?: boolean }) => {
     const formData = new FormData()
     files.forEach(f => formData.append('files', f))
     if (assignmentId) formData.append('assignmentId', assignmentId)
+    formData.append('watchBrowser', String(options?.watchBrowser !== false))
     return request<{ jobs: any[] }>('/grading/submissions/upload-batch', {
       method: 'POST',
       body: formData,
@@ -196,24 +198,24 @@ export const gradingApi = {
     return response.blob();
   },
 
-  gradeExistingSubmission: (submissionId: string) => {
+  gradeExistingSubmission: (submissionId: string, options?: { watchBrowser?: boolean }) => {
     return request<{ submissionId: string, statusUrl: string }>('/grading/submissions/grade-existing', {
       method: 'POST',
-      body: JSON.stringify({ submissionId }),
+      body: JSON.stringify({ submissionId, watchBrowser: options?.watchBrowser !== false }),
     })
   },
 
-  gradeExistingBatch: (assignmentId: string) => {
+  gradeExistingBatch: (assignmentId: string, options?: { watchBrowser?: boolean }) => {
     return request<{ jobs: any[] }>('/grading/submissions/grade-existing-batch', {
       method: 'POST',
-      body: JSON.stringify({ assignmentId }),
+      body: JSON.stringify({ assignmentId, watchBrowser: options?.watchBrowser !== false }),
     })
   },
 
-  gradeSelectedBatch: (assignmentId: string, submissionIds: string[]) => {
+  gradeSelectedBatch: (assignmentId: string, submissionIds: string[], options?: { watchBrowser?: boolean }) => {
     return request<{ jobs: any[] }>('/grading/submissions/grade-selected-batch', {
       method: 'POST',
-      body: JSON.stringify({ assignmentId, submissionIds }),
+      body: JSON.stringify({ assignmentId, submissionIds, watchBrowser: options?.watchBrowser !== false }),
     })
   },
 

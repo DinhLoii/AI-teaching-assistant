@@ -7,7 +7,7 @@ import type {
   RubricDetectionStatus,
   RubricSourceType,
 } from '../../domain/analysis/analysis.types.js'
-import { detectAssignmentProfile, extractDocumentRubric } from './assignment-contract.js'
+import { detectAssignmentProfile, extractDocumentRubric, isRubricSummaryLine } from './assignment-contract.js'
 import { extractLabeledConsoleTests } from './console-test-extractor.js'
 
 export interface DeterministicParseResult {
@@ -760,6 +760,12 @@ export class DeterministicParserService {
     for (let i = 0; i < rawLines.length; i++) {
       const line = rawLines[i]
 
+      // A rubric heading/total states the scale, never another scored criterion.
+      // Stop before subsequent document sections so their numbered requirements
+      // and penalties are not added to the rubric.
+      if (/^(?:#{1,6}\s*)?(?:\d+[.)]\s*)?(?:quy định|quy trình|(?:yêu cầu|hướng dẫn)\s+nộp(?:\s+bài)?|submission|acceptance tests?|tình huống kiểm thử|test cases?)(?=$|[\s:])/i.test(line)) break
+      if (isRubricSummaryLine(line)) continue
+
       if (/^(?:#{1,6}\s*)?(?:\d+\.\s*)?(?:rubric|barem|quy định nộp bài|quy trình demo|grading criteria)/i.test(line)) continue
 
       // Ignore title lines or table headers
@@ -848,7 +854,7 @@ export class DeterministicParserService {
           continue
         }
 
-        const pointMatch = itemBody.match(/[:\-\(\t]\s*(\d+(?:[\.,]\d+)?)\s*(?:đ|điểm|pts?|points?|marks?|\/10|\/20)?\s*[\)\:]?\s*(.*)$/i)
+        const pointMatch = itemBody.match(/[:\-\(\t]\s*(\d+(?:[\.,]\d+)?)\s*(?:điểm|đ(?![a-zÀ-ỹ])|pts?|points?|marks?|\/10|\/20)?\s*[\)\:]?\s*[.;]?\s*(.*)$/i)
 
         if (pointMatch) {
           const pointVal = parseFloat(pointMatch[1].replace(',', '.'))
@@ -880,7 +886,7 @@ export class DeterministicParserService {
       }
 
       // General line with points pattern
-      const generalPointMatch = line.match(/^([^:\-\(\t]+?)[\s:\-\(\t]+(\d+(?:[\.,]\d+)?)\s*(?:đ|điểm|pts?|points?|marks?)\s*[\)\:]?\s*(.*)$/i)
+      const generalPointMatch = line.match(/^([^:\-\(\t]+?)[\s:\-\(\t]+(\d+(?:[\.,]\d+)?)\s*(?:điểm|đ(?![a-zÀ-ỹ])|pts?|points?|marks?)\s*[\)\:]?\s*[.;]?\s*(.*)$/i)
       if (generalPointMatch && !/^(?:thời\s*gian|học\s*kỳ|lớp|ngày|tổng|thang\s*điểm|total|stt)/i.test(generalPointMatch[1])) {
         const pointVal = parseFloat(generalPointMatch[2].replace(',', '.'))
         const namePart = generalPointMatch[1].trim()

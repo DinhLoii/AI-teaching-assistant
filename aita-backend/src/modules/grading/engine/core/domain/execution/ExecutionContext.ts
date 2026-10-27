@@ -22,5 +22,9 @@ export interface ExecutionContext {
 
     // Optional container ID for teardown
     containerId?: string;
+    /** Local browser presentation messages, shown in the grading log. */
+    onBrowserMessage?: (message: string) => void;
+    /** Local, non-serializable session owned by the outer executor. */
+    browserSession?: { browser: any; visible: boolean };
 }
 

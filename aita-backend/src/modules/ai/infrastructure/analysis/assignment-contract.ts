@@ -38,6 +38,10 @@ export function detectAssignmentProfile(text: string, filename = '') {
 export interface SourceRequirement { text: string; sourceQuote: string; level: 'required' | 'advanced' | 'excluded' }
 export interface AcceptanceScenario { id: string; steps: string; expectedResult: string; sourceQuote: string; level: 'required' | 'advanced'; execution: 'manual_review' }
 const normalize = (text: string) => text.replaceAll('\r\n', '\n').replace(/\s+/g, ' ').trim()
+export function isRubricSummaryLine(line: string): boolean {
+  const label = line.trim().replace(/^(?:#{1,6}\s*)?(?:(?:\d+|[IVXLCDM]+)[.)]\s*)?/i, '').replace(/^\|\s*/, '')
+  return /^(?:thang\s*điểm|barem|rubric|grading criteria|marking scheme|tiêu chí chấm điểm|tổng(?:\s+cộng)?(?:\s+điểm)?|total(?:\s+(?:points?|marks?|score))?)(?=$|[\s:|(])/i.test(label)
+}
 export function extractDocumentRubric(text: string): AnalyzedRubricCriterion[] {
   const lines = text.split('\n').map(line => line.trim()).filter(Boolean)
   const start = lines.findIndex(line => /^(?:#{1,6}\s*)?(?:\d+\.\s*)?(?:rubric|barem|grading criteria|marking scheme|tiêu chí chấm điểm)/i.test(line))
@@ -45,15 +49,16 @@ export function extractDocumentRubric(text: string): AnalyzedRubricCriterion[] {
   const criteria: AnalyzedRubricCriterion[] = []
   const numeric = /^(\d+(?:[.,]\d+)?)\s*(?:điểm|đ|points?|marks?)?$/i
   const add = (name: string, points: string, description: string, evidence: string) => {
+    if (isRubricSummaryLine(name)) return
     if (/^(?:tổng|total|hạng mục|điểm|tiêu chí|stt)/i.test(name)) return
     criteria.push({ id: `rubric-source-${criteria.length + 1}`, name, description, maxPoints: Number(points.replace(',', '.')), method: 'ai_assessment', passCondition: description, failCondition: 'Không đáp ứng tiêu chí gốc; cần nêu bằng chứng từ bài nộp.', aiGuidance: `Chỉ chấm theo tiêu chí gốc: ${description}. Không bổ sung yêu cầu ngoài đề.`, source: 'EXTRACTED', evidence, reviewNeeded: false })
   }
   for (let i = start + 1; i < lines.length; i++) {
     const line = lines[i]
-    if (/^(?:#{1,6}\s*)?(?:\d+\.\s*)?(?:tổng\b|total\b|quy định|quy trình|submission|hướng dẫn nộp|diễn giải)/i.test(line)) break
+    if (/^(?:#{1,6}\s*)?(?:\d+\.\s*)?(?:tổng\b|total\b|quy định|quy trình|submission|(?:yêu cầu|hướng dẫn)\s+nộp|diễn giải)/i.test(line)) break
     if (line.includes('|') || line.includes('\t')) {
       const cols = line.split(/\||\t/).map(value => value.trim()).filter(Boolean)
-      if (cols.length > 3 && /^\d+\.?$/.test(cols[0])) cols.shift()
+      if (cols.length >= 3 && /^\d+[.)]?$/.test(cols[0])) cols.shift()
       const pointIndex = cols.findIndex(value => numeric.test(value))
       if (pointIndex > 0) add(cols[0], cols[pointIndex].match(numeric)![1], cols.filter((_, index) => index !== pointIndex && index !== 0).join(' | ') || cols[0], line)
     } else if (line.length > 5 && numeric.test(lines[i + 1] || '')) {

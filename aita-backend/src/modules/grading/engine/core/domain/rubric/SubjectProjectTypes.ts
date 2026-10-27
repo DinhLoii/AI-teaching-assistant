@@ -34,6 +34,7 @@ export const SUBJECT_PROJECT_TYPES: Record<string, SubjectProjectTypePolicy> = {
 
     // Web: backend when it is servlets and APIs, fullstack once UI is graded too
     PRJ301: { allowed: ['backend', 'fullstack'], fallback: 'backend' },
+    FER202: { allowed: ['frontend'], fallback: 'frontend' },
     // .NET / C# applications (Desktop for PRN211/PRN212, Backend/Web for PRN221/PRN231)
     PRN211: { allowed: ['desktop', 'backend', 'fullstack'], fallback: 'desktop' },
     PRN212: { allowed: ['desktop', 'backend', 'fullstack'], fallback: 'desktop' },

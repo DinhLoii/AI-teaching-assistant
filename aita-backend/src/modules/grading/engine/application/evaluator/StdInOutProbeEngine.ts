@@ -1,5 +1,6 @@
 // @ts-nocheck
 import Docker from 'dockerode';
+import { createDockerClient } from '../sandbox/docker-client.js';
 import { randomUUID } from 'node:crypto';
 import { assertStdioSandboxExecution } from '../../config/sandbox-policy.js';
 import { canonicalSubmissionLanguage } from '../../../../submissions/application/submission-language.js';
@@ -52,7 +53,7 @@ export class StdInOutProbeEngine {
   private docker: Docker;
 
   constructor() {
-    this.docker = new Docker();
+    this.docker = createDockerClient();
   }
 
   public async evaluateAsync(

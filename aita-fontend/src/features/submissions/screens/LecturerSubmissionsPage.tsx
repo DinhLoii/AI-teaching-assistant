@@ -66,6 +66,19 @@ export default function LecturerSubmissionsPage() {
   const [selectedIds, setSelectedIds] = React.useState<string[]>([])
   const [regradingBatch, setRegradingBatch] = React.useState(false)
   const [regradingSub, setRegradingSub] = React.useState<any | null>(null)
+  const [startingGradingId, setStartingGradingId] = React.useState<string | null>(null)
+  const startLocks = React.useRef(new Set<string>())
+  const isUiAssignment = /^FER\d{3}/i.test(assignment?.subjectCode || '') || /frontend|react|fullstack/i.test(String(assignment?.projectType || assignment?.subjectName || ''))
+  const startObservedGrading = async (sub: any) => {
+    if (startLocks.current.has(sub.id)) return
+    startLocks.current.add(sub.id); setStartingGradingId(sub.id)
+    try {
+      // Open the stream only after the server accepts the new run, avoiding an old completed report.
+      await gradingApi.gradeExistingSubmission(sub.id)
+      setRegradingSub(sub)
+    } catch (error) { alert(errorMessage(error) || 'Không bắt đầu được lượt chấm. Vui lòng thử lại.') }
+    finally { startLocks.current.delete(sub.id); setStartingGradingId(null) }
+  }
 
   // Batch Upload State
   const fileInputRef = React.useRef<HTMLInputElement | null>(null)
@@ -680,7 +693,7 @@ export default function LecturerSubmissionsPage() {
                               }
                               className="text-[11px]"
                             >
-                              {sub.gradingStatus || sub.status || 'Pending'}
+                              {isUiAssignment && statusStr === 'pending' ? 'Chờ bắt đầu chấm' : sub.gradingStatus || sub.status || 'Pending'}
                             </Badge>
 
                             {isPublished ? (
@@ -745,17 +758,13 @@ export default function LecturerSubmissionsPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => {
-                                setRegradingSub(sub)
-                                gradingApi.gradeExistingSubmission(sub.id).catch((err: any) => {
-                                  console.warn('Backend grade trigger:', err)
-                                })
-                              }}
+                              disabled={startingGradingId === sub.id}
+                              onClick={() => { void startObservedGrading(sub) }}
                               className="text-xs py-1 px-2.5 gap-1 font-mono text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800/60 bg-amber-50/60 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-900/40"
-                              title="Xem chi tiết phiên chấm Docker Sandbox & AI Rubric (>_ logs)"
+                              title={isUiAssignment ? 'Bắt đầu chấm UI, mở Chromium và theo dõi nhật ký' : 'Bắt đầu lượt chấm và theo dõi nhật ký'}
                             >
                               <Terminal className="w-3 h-3 text-orange-500" />
-                              <span>&gt;_ Logs Sandbox & AI</span>
+                              <span>{startingGradingId === sub.id ? 'Đang bắt đầu…' : isUiAssignment ? '▶ Bắt đầu chấm UI & Logs' : '>_ Logs Sandbox & AI'}</span>
                             </Button>
 
                             {/* Edit score */}

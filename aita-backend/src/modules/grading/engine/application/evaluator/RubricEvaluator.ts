@@ -18,6 +18,7 @@ import { normaliseSubjectCode } from '../../core/domain/rubric/SubjectProjectTyp
 import { config } from '../../config/index.js';
 import { assertRealGradingMode } from '../../config/grading-mode.js';
 import type { ExecutionObserver } from './execution-events.js';
+import { scoreBrowserWorkflows } from './browser-workflow-score.js';
 
 export interface EvaluationContext {
     sandbox: SandboxHandle;
@@ -371,6 +372,8 @@ export class RubricEvaluator {
     }
 
     private async evaluateRuleAsync(rule: RubricRule, context: EvaluationContext, sharedVariables: Record<string, any> = {}): Promise<RuleScore> {
+        const plannedTests = context.evidencePool.filter(e => e.type === 'browser.workflow.planned' && e.source === 'AuthRequirementTemplate' && e.payload?.ruleIds?.includes(rule.id)).map(e => e.payload.testId);
+        if (plannedTests.length) return { ruleId: rule.id, ...scoreBrowserWorkflows(plannedTests, context.evidencePool, rule.weight) };
         const formatScore = (s: number) => parseFloat(s.toFixed(3));
         const normSubj = normaliseSubjectCode(context.subjectCode);
         const isStrictMobile = (normSubj && normSubj.startsWith('PRM'))
@@ -381,6 +384,13 @@ export class RubricEvaluator {
         try {
             switch (rule.scoringStrategy as string) {
                 case "AIVision": {
+                    const browserTestIds = (rule.requiredEvidence || []).flatMap(spec => spec.browserProbe?.testIds || []);
+                    if (browserTestIds.length) {
+                        return { ruleId: rule.id, ...scoreBrowserWorkflows(browserTestIds, context.evidencePool, rule.weight) };
+                    }
+                    if (normSubj === 'FER202' && !context.evidencePool.some(e => e.type === 'browser.screenshot.captured' && ['PlaywrightExecutor', 'PlaywrightPlugin'].includes(e.source))) {
+                        return { ruleId: rule.id, passed: false, score: 0, needsReview: true, reason: 'Chưa có ảnh giao diện FER202 từ trình duyệt thực thi. Cần kiểm tra runner và chấm lại; không dùng đọc code thay cho xác minh UI.' };
+                    }
                     const ruleText = (rule.title + " " + (rule.description || "")).toLowerCase();
 
                     // Get ALL screenshots from the pool (captured by Playwright's universal route discovery)

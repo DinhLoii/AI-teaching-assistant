@@ -1,0 +1,188 @@
+{
+  "Q1": {
+    "columns": [
+      "ProductID",
+      "ProductName",
+      "ListPrice"
+    ],
+    "rows": [
+      [
+        "3",
+        "Bag",
+        "200.00"
+      ],
+      [
+        "4",
+        "Mouse",
+        "150.00"
+      ]
+    ],
+    "maxPoints": 1
+  },
+  "Q2": {
+    "columns": [
+      "OrderID",
+      "CustomerName",
+      "OrderDate",
+      "Status",
+      "OrderTotal"
+    ],
+    "rows": [
+      [
+        "101",
+        "An",
+        "2026-01-05",
+        "Completed",
+        "70.00"
+      ],
+      [
+        "102",
+        "Binh",
+        "2026-01-10",
+        "Completed",
+        "230.00"
+      ],
+      [
+        "103",
+        "An",
+        "2026-02-01",
+        "Cancelled",
+        "300.00"
+      ],
+      [
+        "104",
+        "Chi",
+        "2026-02-12",
+        "Completed",
+        "180.00"
+      ],
+      [
+        "105",
+        "Binh",
+        "2026-02-20",
+        "Pending",
+        "80.00"
+      ],
+      [
+        "106",
+        "Dung",
+        "2026-03-02",
+        "Completed",
+        "130.00"
+      ]
+    ],
+    "maxPoints": 2
+  },
+  "Q3": {
+    "columns": [
+      "CustomerID",
+      "CustomerName",
+      "Revenue"
+    ],
+    "rows": [
+      [
+        "2",
+        "Binh",
+        "230.00"
+      ],
+      [
+        "3",
+        "Chi",
+        "180.00"
+      ],
+      [
+        "4",
+        "Dung",
+        "130.00"
+      ],
+      [
+        "1",
+        "An",
+        "70.00"
+      ],
+      [
+        "5",
+        "Ha",
+        "0.00"
+      ]
+    ],
+    "maxPoints": 2
+  },
+  "Q4": {
+    "columns": [
+      "ProductID",
+      "ProductName"
+    ],
+    "rows": [
+      [
+        "4",
+        "Mouse"
+      ],
+      [
+        "6",
+        "Marker"
+      ]
+    ],
+    "maxPoints": 1
+  },
+  "Q5": {
+    "columns": [
+      "ProductID",
+      "ProductName",
+      "TotalQuantity"
+    ],
+    "rows": [
+      [
+        "1",
+        "Pen",
+        "10"
+      ],
+      [
+        "2",
+        "Notebook",
+        "3"
+      ]
+    ],
+    "maxPoints": 1
+  },
+  "Q6": {
+    "columns": [
+      "MonthNo",
+      "Revenue"
+    ],
+    "rows": [
+      [
+        "1",
+        "300.00"
+      ],
+      [
+        "2",
+        "180.00"
+      ],
+      [
+        "3",
+        "130.00"
+      ],
+      [
+        "4",
+        "0.00"
+      ]
+    ],
+    "maxPoints": 2
+  },
+  "Q7": {
+    "columns": [
+      "CustomerID",
+      "CustomerName",
+      "City"
+    ],
+    "rows": [
+      [
+        "5",
+        "Ha",
+        "Hue"
+      ]
+    ],
+    "maxPoints": 1
+  }
+}
