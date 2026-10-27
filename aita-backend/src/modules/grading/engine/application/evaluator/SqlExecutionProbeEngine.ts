@@ -1,5 +1,6 @@
 // @ts-nocheck
 import Docker from 'dockerode';
+import { createDockerClient } from '../sandbox/docker-client.js';
 import { assertSandboxExecution } from '../../config/sandbox-policy.js';
 import * as path from 'path';
 import * as fs from 'fs/promises';
@@ -73,7 +74,7 @@ export class SqlExecutionProbeEngine {
     private containerSessions = new Map<string, { container: Docker.Container, setupMs: number }>();
 
     constructor() {
-        this.docker = new Docker();
+        this.docker = createDockerClient();
     }
 
     // ═══════════════════════════════════════════════════════════════

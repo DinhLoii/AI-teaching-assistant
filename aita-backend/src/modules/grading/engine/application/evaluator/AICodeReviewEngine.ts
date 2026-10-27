@@ -1,5 +1,6 @@
 // @ts-nocheck
 import OpenAI from 'openai';
+import { parseAiJson } from '../../infrastructure/ai/parse-ai-json.js';
 import { config } from '../../config';
 import { AiClientManager } from '../../infrastructure/ai/AiClientManager';
 import * as crypto from 'crypto';
@@ -309,7 +310,7 @@ STRICT RULES:
             }
 
             // Validate before the provider manager caches a response. Invalid evidence must be retried.
-            return resolveCodeReviewResult(presentedFiles, JSON.parse(text));
+            return resolveCodeReviewResult(presentedFiles, parseAiJson(text));
           } finally {
             clearTimeout(timeoutId);
           }

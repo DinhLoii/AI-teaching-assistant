@@ -2,9 +2,12 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import Docker from 'dockerode';
+import { createDockerClient } from './docker-client.js';
 import * as net from 'net';
 import { execSync } from 'child_process';
 import { javaRuntimePlan, decodeSandboxLogs } from './java-runtime.js';
+import { frontendRuntimePlan } from './frontend-runtime.js';
+import { probePublishedApp } from './published-app-probe.js';
 import * as os from 'os';
 import { sandboxExecutionAllowed } from '../../config/sandbox-policy.js';
 
@@ -37,7 +40,7 @@ export class ExecutionSandboxService {
   private docker: Docker;
 
   constructor() {
-    this.docker = new Docker();
+    this.docker = createDockerClient();
   }
 
   /**
@@ -101,6 +104,7 @@ export class ExecutionSandboxService {
       // DYNAMIC DOCKER PROVISIONING
       // ═══════════════════════════════════════════════════════════
       let dockerImage = "mcr.microsoft.com/dotnet/sdk:8.0";
+      let standaloneFrontend = false;
       let cmd = ["sh", "-c", `cp -a /app /sandbox && cd "${runDir.replace('/app', '/sandbox')}" && dotnet restore && dotnet run --urls http://0.0.0.0:8080`];
       let env = [
         "ASPNETCORE_ENVIRONMENT=Sandbox",
@@ -207,6 +211,20 @@ export class ExecutionSandboxService {
           ];
           break;
         case "nodejs":
+          // Uploaded exams may store SubmissionFormat=project/zip rather than frontend.
+          // Provision a standalone React package from its code, not that label.
+          const nodePackages = await this.findAllFiles(submissionPath, 'package.json');
+          if (nodePackages.length === 1 && fingerprintFile) {
+            const frontendPlan = frontendRuntimePlan(JSON.parse(await fs.readFile(fingerprintFile, 'utf8')), runDir);
+            if (frontendPlan) {
+              dockerImage = frontendPlan.image;
+              cmd = ['sh', '-c', frontendPlan.command];
+              standaloneFrontend = true;
+              if (projectType === 'unknown') projectType = 'frontend';
+              env = [];
+              break;
+            }
+          }
           dockerImage = "node:20-alpine";
 
           const nodeAutoPort = `
@@ -537,10 +555,13 @@ export NODE_ENV=development
       const containerId = container.id;
 
       const baseUrl = `http://localhost:${hostPort}`;
+      const additionalUrls = standaloneFrontend ? [] : [
+        `http://localhost:${hostPort3000}`, `http://localhost:${hostPort5000}`, `http://localhost:${hostPort5173}`
+      ];
       try {
         // Wait for app to be ready (300s timeout for heavy Node.js fullstack builds)
         if (this.isServerRuntime(runtimeStack)) {
-          await this.waitUntilReady(container, baseUrl, 300000);
+          await this.waitUntilReady(container, baseUrl, 300000, additionalUrls, standaloneFrontend);
         }
       } catch (err: any) {
         console.error(`[Sandbox] Timeout/Crash waiting for ${baseUrl}. Fetching container logs...`);
@@ -552,34 +573,23 @@ export NODE_ENV=development
         } catch (logErr) {
           console.error(`[Sandbox] Could not fetch container logs:`, logErr);
         }
-        if (err.message?.includes("prematurely") || err.message?.includes("Timeout")) {
-          return {
+        return {
             containerId,
             baseUrl,
-            additionalUrls: [
-              `http://localhost:${hostPort3000}`,
-              `http://localhost:${hostPort5000}`,
-              `http://localhost:${hostPort5173}`
-            ],
+            additionalUrls,
             projectType,
             runtimeStack,
             isReady: false,
             dbWarnings,
             crashLogs: err.message + "\n\n" + crashLogs
           };
-        }
-        throw err;
       }
 
       console.log(`[Sandbox] Container ${containerId.substring(0, 8)} ready at ${baseUrl}`);
       return {
         containerId,
         baseUrl,
-        additionalUrls: [
-          `http://localhost:${hostPort3000}`,
-          `http://localhost:${hostPort5000}`,
-          `http://localhost:${hostPort5173}`
-        ],
+        additionalUrls,
         projectType,
         runtimeStack,
         isReady: true,
@@ -886,7 +896,7 @@ try {
   // Utility methods
   // ═══════════════════════════════════════════════════════════════════
 
-  private async waitUntilReady(container: any, baseUrl: string, timeoutMs: number): Promise<void> {
+  private async waitUntilReady(container: any, baseUrl: string, timeoutMs: number, additionalUrls: string[] = [], requireHtml = false): Promise<void> {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
       try {
@@ -895,30 +905,10 @@ try {
           throw new Error(`Container exited prematurely. Exit Code: ${inspect.State.ExitCode}. Build or application startup failed; see container logs for the cause.`);
         }
 
-        const containerIP = inspect.NetworkSettings?.IPAddress ||
-          (inspect.NetworkSettings?.Networks ? (Object.values(inspect.NetworkSettings.Networks)[0] as any)?.IPAddress : null);
-
-        const checkUrls = [baseUrl];
-        if (containerIP) {
-          checkUrls.unshift(`http://${containerIP}:8080`);
-          checkUrls.unshift(`http://${containerIP}:3000`);
-          checkUrls.unshift(`http://${containerIP}:5000`);
-          checkUrls.unshift(`http://${containerIP}:5173`);
-        }
-        const gateway = inspect.NetworkSettings?.Networks ? (Object.values(inspect.NetworkSettings.Networks)[0] as any)?.Gateway : null;
-        if (gateway) {
-          const port = baseUrl.split(':').pop();
-          checkUrls.push(`http://${gateway}:${port}`);
-        }
-
-        for (const url of checkUrls) {
-          try {
-            const response = await fetch(url);
-            if (response.ok || response.status === 404) {
-              return;
-            }
-          } catch (fetchErr) { }
-        }
+        const remaining = timeoutMs - (Date.now() - start);
+        if (remaining <= 0) break;
+        const ready = await Promise.all([baseUrl, ...additionalUrls].map(url => probePublishedApp(url, requireHtml, Math.max(1, Math.min(1500, remaining)))));
+        if (ready.some(Boolean)) return;
       } catch (e: any) {
         if (e.message?.includes('prematurely')) throw e;
       }

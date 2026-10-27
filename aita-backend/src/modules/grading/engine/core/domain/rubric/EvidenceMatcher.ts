@@ -1,6 +1,7 @@
 // @ts-nocheck
 export type EvidenceType =
   | "browser.screenshot.captured"   // Playwright — needs sandbox
+  | "browser.workflow.completed"
   | "runtime.http.probed"           // HTTPProbe — needs sandbox
   | "ai.code.reviewed"              // Gemini reads source — no sandbox needed
   | "runtime.stdio.probed"          // StdInOutProbe — Docker stdin/stdout
@@ -54,6 +55,8 @@ export interface StdInOutProbeSpec {
 
 export interface BrowserProbeSpec {
   description: string;
+  /** Optional executable browser suite IDs used for deterministic scoring. */
+  testIds?: string[];
   /** Target relative path to navigate to, e.g., '/login' or '/dashboard' */
   path: string;
 }
