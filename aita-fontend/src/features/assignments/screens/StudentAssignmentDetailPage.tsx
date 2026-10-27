@@ -141,6 +141,7 @@ export default function StudentAssignmentDetailPage() {
   const [downloadingAttachment, setDownloadingAttachment] = React.useState<string | null>(null)
   const [documentDownloadError, setDocumentDownloadError] = React.useState('')
   const pollingRef = React.useRef<NodeJS.Timeout | null>(null)
+  const gradingPollingId = React.useRef('')
 
   // Active view tab: 'spec' (Đề bài & Folder) | 'report' (Báo cáo AI)
   const [viewTab, setViewTab] = React.useState<'report' | 'spec'>('spec')
@@ -226,6 +227,9 @@ export default function StudentAssignmentDetailPage() {
 
   React.useEffect(() => {
     setLoading(true)
+    gradingPollingId.current = ''
+    if (pollingRef.current) clearInterval(pollingRef.current)
+    setIsGradingWait(false)
     setSubmissionStatusReady(false)
     setAssignment(null)
     setSubmission(null)
@@ -239,6 +243,7 @@ export default function StudentAssignmentDetailPage() {
   // Cleanup polling on unmount
   React.useEffect(() => {
     return () => {
+      gradingPollingId.current = ''
       if (pollingRef.current) clearInterval(pollingRef.current)
     }
   }, [])
@@ -390,6 +395,7 @@ export default function StudentAssignmentDetailPage() {
       return
     }
     setIsGradingWait(true)
+    gradingPollingId.current = initialSubId
     setGradingSeconds(0)
 
     let elapsed = 0
@@ -405,6 +411,7 @@ export default function StudentAssignmentDetailPage() {
         checking = true
         try {
           const latest = await submissionsApi.getSubmissionDetail(initialSubId, true)
+          if (gradingPollingId.current !== initialSubId) return
           if (latest) {
             setSubmission(latest)
             const status = String(latest.gradingStatus || '').toLowerCase()
@@ -445,7 +452,7 @@ export default function StudentAssignmentDetailPage() {
   React.useEffect(() => {
     if (submission && !isSubmissionGraded && !isGradingWait) {
       const status = String(submission.gradingStatus || '').toLowerCase()
-      if (status === 'queued' || status === 'grading' || status === 'in_progress') {
+      if (status === 'queued' || status === 'processing' || status === 'grading' || status === 'in_progress') {
         const subId = submission.id || (submission as any).submissionId || (submission as any).Id
         if (subId && subId !== 'undefined' && subId !== 'null') {
           startGradingPolling(subId)
@@ -550,7 +557,8 @@ export default function StudentAssignmentDetailPage() {
     clearClientApiCache('/submissions')
     const normalized = normalizeSubmissionRow(res)
     setSubmission(normalized)
-  }, [])
+    if (normalized.id && ['processing', 'queued', 'grading'].includes(String(normalized.gradingStatus || '').toLowerCase())) startGradingPolling(normalized.id)
+  }, [startGradingPolling])
 
   const handleModalComplete = React.useCallback(() => {
     setStudentSubmissionModal(null)
@@ -967,10 +975,10 @@ export default function StudentAssignmentDetailPage() {
                           }
                         }}
                         className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-xs transition-colors cursor-pointer border border-emerald-200 dark:border-emerald-800"
-                        title={isVi ? 'Xem biên nhận xác thực tiếp nhận bài nộp' : 'View Submission Receipt'}
+                        title={isVi ? 'Theo dõi tiến trình chấm và biên nhận của lần nộp này' : 'Track grading and view this submission receipt'}
                       >
                         <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>{isVi ? 'Biên nhận tiếp nhận' : 'Receipt'}</span>
+                        <span>{isVi ? 'Theo dõi chấm bài' : 'Track grading'}</span>
                       </button>
 
                       <div className="text-xs text-slate-400 font-mono">

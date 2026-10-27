@@ -18,6 +18,7 @@ import { gradingApi } from '@/lib/api/modules/grading'
 import { submissionsApi } from '@/lib/api/modules/submissions'
 import { clearClientApiCache } from '@/lib/api/client'
 import { cn, formatDate } from '@/lib/utils'
+import { StudentGradingProgress } from './StudentGradingProgress'
 
 export interface StudentSubmissionModalProps {
   isOpen: boolean
@@ -282,7 +283,7 @@ export function StudentSubmissionModal({
       clearInterval(timer)
       clearTimeout(timeout)
     }
-  }, [isOpen, initialMode])
+  }, [isOpen, initialMode, initialSubId])
 
   // Download submitted archive
   const handleDownload = async () => {
@@ -504,6 +505,8 @@ export function StudentSubmissionModal({
               )
             })}
           </div>
+
+          {isFinished && activeSubId && <StudentGradingProgress key={activeSubId} submissionId={activeSubId} />}
 
           {/* Reassuring Completion Receipt Card (Persistent, never flashes away) */}
           {isFinished && (
