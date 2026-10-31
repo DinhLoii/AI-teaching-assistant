@@ -147,6 +147,9 @@ export default function AdminClassDetailPage() {
 
         {/* Quick Actions */}
         <div className="flex flex-wrap gap-3">
+          <Button variant="outline" onClick={() => router.push(`/admin/gradebook?classId=${encodeURIComponent(classId)}`)}>
+            <BookOpen className="w-4 h-4 mr-2" /> Bảng điểm học phần
+          </Button>
           <Button onClick={openEnrollModal} variant="primary">
             <UserPlus className="w-4 h-4 mr-2" /> Thêm sinh viên vào lớp
           </Button>

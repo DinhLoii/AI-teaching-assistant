@@ -74,3 +74,23 @@ Các điểm phân quyền API, bảo vệ ZIP, hàng đợi PostgreSQL có ph�
 Kiểm chứng tại máy: build backend và frontend đạt; typecheck và cấu trúc đạt; bộ test frontend đạt, thêm kiểm thử SSE chấm bài. Kiểm thử backend gồm API quyền truy cập, chặn ZIP, không tạo điểm 0 từ lỗi và kết quả worker khác; kiểm thử PostgreSQL riêng xác minh ghi bài/task nguyên tử, khóa chống trùng, phục hồi lease, retry/hủy và relay sự kiện. PostgreSQL tạm cục bộ không có pgvector nên nhóm test này không xác minh RAG/vector; CI đã cấu hình image pgvector để kiểm tra migration đầy đủ.
 
 Lint hiện không còn lỗi; còn 1.029 cảnh báo có sẵn cần xử lý dần. Hai bảng mới đã được áp dụng lên Neon sau khi chủ dự án cho phép; xác minh quyền ứng dụng và đọc/ghi thử có rollback. Kiểm thử đạt: 78 frontend, 7 backend, 7 PostgreSQL cục bộ. Chưa nghiệm thu runner Android, triển khai Docker đầy đủ, tải production, backup/restore hoặc các URL Cloudinary cũ. Không coi những mục này là đã hoàn thành chỉ vì build/test mã nguồn đạt.
+
+### Bổ sung quản lý điểm admin — 2026-10-31
+
+Đã thêm `/admin/gradebook` theo học kỳ → mã lớp trong kỳ → môn học phần,
+điểm từng bài/lần nộp hiện hành, điều chỉnh kèm lý do/audit, công bố/thu hồi
+hàng loạt, cấu hình trọng số riêng từng học phần và xuất Excel. API kiểm tra
+quyền admin, phạm vi lớp/môn/sinh viên, thang điểm và phiên bản trước khi lưu
+nguyên tử điểm/audit/thông báo. Sửa thẻ điểm sinh viên để ẩn điểm chưa công bố;
+API sửa điểm cũ bổ sung kiểm tra quyền và phạm vi giảng viên.
+
+Kiểm chứng: bộ test frontend 113 đạt/1 bỏ qua; backend 88 đạt/4 bỏ qua, gồm 12
+test mới về bảng điểm. Kiểm thử trình duyệt bằng dữ liệu giả lập đạt các luồng
+sửa, lịch sử, xung đột, công bố hàng loạt, trọng số, nội dung Excel và responsive.
+Đối chiếu chỉ đọc thành công với 3 kỳ/8 học phần trong DB hiện tại. Không thay
+đổi điểm thật. Typecheck/cấu trúc/lint phần mới đạt; build frontend Webpack đạt.
+Turbopack build còn lỗi tiến trình xử lý CSS font trong môi trường kiểm tra;
+không thay đổi cấu hình build mặc định để che lỗi này. Chưa kiểm thử mutation
+bảng điểm trên PostgreSQL thật hoặc nghiệm thu tải lớn/đồng thời nhiều instance.
+Chi tiết: `aita-fontend/docs/admin-gradebook.md`. Các hạng mục production khác
+của audit vẫn giữ nguyên trạng thái.

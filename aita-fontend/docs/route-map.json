@@ -1,5 +1,10 @@
 [
   {
+    "route": "/admin/gradebook",
+    "entry": "src/app/admin/gradebook/page.tsx",
+    "screen": "src/features/gradebook/screens/AdminGradebookPage.tsx"
+  },
+  {
     "route": "/",
     "entry": "src/app/page.tsx",
     "screen": "src/features/auth/screens/LoginPage.tsx"
