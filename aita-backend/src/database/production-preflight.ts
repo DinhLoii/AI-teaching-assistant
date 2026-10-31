@@ -7,6 +7,7 @@ import { prisma } from './prisma.js'
 import { runtimeDataRoot, publicUploadsRoot, artifactFilesRoot } from '../shared/infrastructure/runtime-storage.js'
 import { privateSubmissionRoot } from '../modules/submissions/infrastructure/submission-storage.js'
 import { assertProductionEmailConfiguration } from '../shared/application/email-policy.js'
+import { assertRuntimeSchema } from './runtime-schema-check.js'
 
 export async function findDefaultDemoAccounts(db: any = prisma) {
   const rows = await db.user.findMany({ where: { OR: ACCOUNTS.map(a => ({ Email: { equals: a.email, mode: 'insensitive' } })) }, select: { Id: true, Email: true, PasswordHash: true, Status: true } })
@@ -18,17 +19,27 @@ export async function findDefaultDemoAccounts(db: any = prisma) {
   return affected
 }
 
-export async function assertProductionPreflight(db: any = prisma) {
-  const defaults = await findDefaultDemoAccounts(db)
-  // The owner explicitly chose to retain the current accounts and passwords.
-  // Report the risk without mutating accounts or blocking deployment.
-  if (defaults.some(a => a.active)) console.warn('[Preflight] Known demo passwords remain active; accounts are preserved as requested by the owner.')
+export async function assertMigrationReadiness(db: any = prisma, mode = process.env.MIGRATION_CHECK_MODE || 'history') {
+  if (mode === 'schema') {
+    const checked = await assertRuntimeSchema(db)
+    console.warn(`[Preflight] Demo schema check passed: ${checked.models} models, ${checked.columns} columns. Migration history is not verified or modified.`)
+    return
+  }
+  if (mode !== 'history') throw new Error('MIGRATION_CHECK_MODE must be history (default) or schema (demo compatibility check).')
   const ledger = await db.$queryRaw`SELECT to_regclass('"_prisma_migrations"')::text AS ledger`
   if (!ledger[0]?.ledger) throw new Error('Production blocked: migration baseline is not recorded. Follow docs/PRODUCTION_DEPLOYMENT.md; do not reset the database.')
   const rows = await db.$queryRaw`SELECT migration_name FROM "_prisma_migrations" WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL`
   const expected = (await fs.readdir(path.resolve('prisma/migrations'), { withFileTypes: true })).filter(e => e.isDirectory()).map(e => e.name)
   if (expected.some(name => !rows.some((r: any) => r.migration_name === name))) throw new Error('Production blocked: pending migrations. Review npm run db:preflight before deployment.')
-  if (process.env.RENDER && !process.env.RUNTIME_DATA_DIR) throw new Error('Render requires RUNTIME_DATA_DIR on a persistent disk for uploads, submissions and artifacts.')
+}
+
+export async function assertProductionPreflight(db: any = prisma) {
+  await assertMigrationReadiness(db)
+  const defaults = await findDefaultDemoAccounts(db)
+  // The owner explicitly chose to retain the current accounts and passwords.
+  // Report the risk without mutating accounts or blocking deployment.
+  if (defaults.some(a => a.active)) console.warn('[Preflight] Known demo passwords remain active; accounts are preserved as requested by the owner.')
+  if (process.env.RENDER && !process.env.RUNTIME_DATA_DIR) throw new Error('Render requires RUNTIME_DATA_DIR for file storage. On Free, this directory is ephemeral.')
   for (const dir of [runtimeDataRoot(), publicUploadsRoot(), artifactFilesRoot(), privateSubmissionRoot()]) {
     await fs.mkdir(dir, { recursive: true })
     await fs.access(dir, constants.R_OK | constants.W_OK)

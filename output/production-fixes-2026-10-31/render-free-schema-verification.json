@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-31",
+  "migrationCheckMode": "schema",
+  "models": 56,
+  "columns": 472,
+  "readOnlySchemaCheck": "passed",
+  "fullPreflight": "passed",
+  "databaseSchemaModified": false,
+  "migrationHistoryModified": false,
+  "tests": {
+    "passed": 107,
+    "failed": 0,
+    "skipped": 4
+  },
+  "build": "passed",
+  "limit": "Demo compatibility only; indexes, constraints, native precision and historical data migrations are not certified."
+}
