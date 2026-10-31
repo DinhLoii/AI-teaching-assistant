@@ -6,6 +6,7 @@ import { ACCOUNTS } from './dev-seed.js'
 import { prisma } from './prisma.js'
 import { runtimeDataRoot, publicUploadsRoot, artifactFilesRoot } from '../shared/infrastructure/runtime-storage.js'
 import { privateSubmissionRoot } from '../modules/submissions/infrastructure/submission-storage.js'
+import { assertProductionEmailConfiguration } from '../shared/application/email-policy.js'
 
 export async function findDefaultDemoAccounts(db: any = prisma) {
   const rows = await db.user.findMany({ where: { OR: ACCOUNTS.map(a => ({ Email: { equals: a.email, mode: 'insensitive' } })) }, select: { Id: true, Email: true, PasswordHash: true, Status: true } })
@@ -32,6 +33,6 @@ export async function assertProductionPreflight(db: any = prisma) {
     await fs.mkdir(dir, { recursive: true })
     await fs.access(dir, constants.R_OK | constants.W_OK)
   }
-  if (!(process.env.RESEND_API_KEY && process.env.EMAIL_FROM) && !(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)) throw new Error('Production requires a configured email provider for account recovery.')
+  assertProductionEmailConfiguration()
   if (process.env.RENDER && (process.env.SANDBOX_ENABLED === 'true' || process.env.STDIO_SANDBOX_ENABLED === 'true')) throw new Error('Run execution sandboxes on a dedicated grading host, not inside the Render API container. See deployment documentation.')
 }

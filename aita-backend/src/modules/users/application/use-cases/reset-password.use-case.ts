@@ -4,6 +4,7 @@ import type { IEmailService } from '../../../../shared/application/email.service
 import type { ILogger } from '../../../../shared/application/ports/logger.interface.js'
 import { AppError } from '../../../../shared/application/app.error.js'
 import crypto from 'crypto'
+import { assertEmailEnabled } from '../../../../shared/application/email-policy.js'
 
 export class ResetPasswordUseCase {
     constructor(
@@ -14,6 +15,7 @@ export class ResetPasswordUseCase {
     ) {}
 
     async execute(userId: string): Promise<void> {
+        assertEmailEnabled()
         const user = await this.userRepo.findById(userId)
         if (!user) {
             throw new AppError('NOT_FOUND', 'Không tìm thấy người dùng', 404)

@@ -5,6 +5,7 @@ import { NotFoundError, ValidationError } from '../../../../shared/application/a
 import type { IHashService } from '../../../../shared/application/ports/i-hash-service.js'
 import { createHash } from 'node:crypto'
 import { PasswordResetAttempts } from '../password-reset-attempts.js'
+import { assertEmailEnabled } from '../../../../shared/application/email-policy.js'
 
 export interface ResetPasswordInput {
   dto: ResetPasswordRequestDto
@@ -18,6 +19,7 @@ export class ResetPasswordUseCase implements IUseCase<ResetPasswordInput, void> 
   ) {}
 
   async execute({ dto }: ResetPasswordInput): Promise<void> {
+    assertEmailEnabled()
     const { email, otp, newPassword } = dto
     
     const user = await this.userRepository.findByEmail(email)
