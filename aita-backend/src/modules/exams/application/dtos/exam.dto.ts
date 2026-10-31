@@ -33,12 +33,12 @@ export const CreateExamSchema = z.object({
   startDate: z.string().optional(),
   allowResubmission: z.coerce.boolean().optional(),
   maxAttempts: z.coerce.number().optional(),
-  submissionFormat: z.union([z.string(), z.record(z.any())]).optional(),
-  runtimeConfig: z.record(z.any()).optional(),
-  sqlConfig: z.record(z.any()).optional(),
-  testCases: z.array(z.record(z.any())).optional(),
-  rubricCriteria: z.array(z.record(z.any())).optional(),
-  aiConfig: z.record(z.any()).optional(),
+  submissionFormat: z.union([z.string(), z.record(z.string(), z.any())]).optional(),
+  runtimeConfig: z.record(z.string(), z.any()).optional(),
+  sqlConfig: z.record(z.string(), z.any()).optional(),
+  testCases: z.array(z.record(z.string(), z.any())).optional(),
+  rubricCriteria: z.array(z.record(z.string(), z.any())).optional(),
+  aiConfig: z.record(z.string(), z.any()).optional(),
   sampleSolution: z.string().optional(),
 }).transform(data => {
   if (data.classId && (!data.classIds || data.classIds.length === 0)) {

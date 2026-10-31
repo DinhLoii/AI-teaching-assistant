@@ -2,6 +2,14 @@ import { prisma } from '../../../../database/prisma.js'
 import { RagChunk, RagDocumentType } from '../../domain/rag/rag.types.js'
 
 export class RagKnowledgeBase {
+  async getPublicAssignmentKnowledge(examId: string): Promise<RagChunk[]> {
+    const exam = await prisma.exam.findUnique({ where: { Id: examId }, select: { Id: true, Title: true, Description: true } })
+    if (!exam) return []
+    return [{ id: `public-exam-${exam.Id}`, docType: RagDocumentType.ASSIGNMENT_SPEC,
+      title: exam.Title || 'Đề bài', sourceRef: exam.Id, content: `${exam.Title || ''}\n${exam.Description || ''}`,
+      metadata: { examId: exam.Id, importanceWeight: 5 } }]
+  }
+
   /**
    * Ingest and chunk an Assignment / Exam from the database.
    */

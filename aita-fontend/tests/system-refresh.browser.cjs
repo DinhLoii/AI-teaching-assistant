@@ -12,7 +12,7 @@ const cases = [
 ]
 
 async function main() {
-  const browser = await chromium.launch({ channel: 'msedge', headless: true })
+  const browser = await chromium.launch({ channel: process.platform === 'win32' ? 'msedge' : undefined, headless: true })
   try {
     for (const scenario of cases) {
       const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' })
@@ -59,7 +59,7 @@ async function main() {
       if (scenario.iconOnly) assert.equal(await button.locator('span:not([aria-hidden])').count(), 0)
       await page.getByText('Original data', { exact: true }).first().waitFor()
       await button.evaluate(el => { el.click(); el.click() })
-      assert.equal(calls, 2, 'Refresh bypasses cached data and suppresses duplicate clicks')
+      assert.equal(calls, 2, `${scenario.route}: refresh bypasses cached data and suppresses duplicate clicks`)
       release()
       await page.getByText('Updated data', { exact: true }).first().waitFor()
       await page.waitForFunction(() => !document.querySelector('[data-refresh-button]').disabled)

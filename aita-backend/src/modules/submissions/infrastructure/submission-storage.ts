@@ -1,9 +1,10 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import type { RequestHandler } from 'express'
+import { runtimeDataRoot, publicUploadsRoot } from '../../../shared/infrastructure/runtime-storage.js'
 
 const maxBytes = 100 * 1024 * 1024
-export const privateSubmissionRoot = () => path.resolve(process.env.PRIVATE_SUBMISSION_DIR || 'storage/submissions')
+export const privateSubmissionRoot = () => path.resolve(process.env.PRIVATE_SUBMISSION_DIR || path.join(runtimeDataRoot(), 'storage', 'submissions'))
 
 export async function resolveSubmissionFile(url: string): Promise<string> {
   const pathname = url.split('?')[0]
@@ -11,7 +12,7 @@ export async function resolveSubmissionFile(url: string): Promise<string> {
   if (pathname.startsWith('/private-submissions/')) {
     root = privateSubmissionRoot(); relative = pathname.slice('/private-submissions/'.length)
   } else if (pathname.startsWith('/uploads/') && /\.zip$/i.test(pathname)) {
-    root = path.resolve('uploads'); relative = pathname.slice('/uploads/'.length)
+    root = publicUploadsRoot(); relative = pathname.slice('/uploads/'.length)
   } else throw new Error('Vị trí bài nộp không hợp lệ.')
   root = await fs.realpath(root)
   const filename = await fs.realpath(path.resolve(root, relative))

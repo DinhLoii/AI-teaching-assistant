@@ -5,6 +5,7 @@ export const ADMIN_NAV: NavItem[] = [
   { id: 'lecturers', label: 'Quản lý Giảng viên', path: '/admin/users?role=lecturer', icon: 'Briefcase', category: 'Đào tạo' },
   { id: 'students', label: 'Quản lý Sinh viên', path: '/admin/users?role=student', icon: 'GraduationCap', category: 'Đào tạo' },
   { id: 'classes', label: 'Lớp học & Phân công', path: '/admin/classes', icon: 'BookOpen', category: 'Đào tạo' },
+  { id: 'gradebook', label: 'Quản lý điểm', path: '/admin/gradebook', icon: 'FileCheck', category: 'Đào tạo' },
   { id: 'subjects', label: 'Môn học & Barem', path: '/admin/subjects', icon: 'Library', category: 'Đào tạo' },
   { id: 'seasons', label: 'Chương trình & Học kỳ', path: '/admin/seasons', icon: 'Layers', category: 'Đào tạo' },
   { id: 'reports', label: 'Báo cáo & Thống kê', path: '/admin/reports', icon: 'BarChart3', category: 'Thống kê' },

@@ -1,6 +1,7 @@
 import type { IUserRepository, UserFilter, Pagination, RoleInfo, BulkDeleteResult } from '../../domain/repositories/user-repository.interface.js'
 import { User } from '../../../auth/domain/entities/user.entity.js'
 import { UserMapper } from '../mappers/user.mapper.js'
+import { ConflictError } from '../../../../shared/application/app.error.js'
 
 /**
  * Prisma-backed implementation of IUserRepository.
@@ -88,18 +89,27 @@ export class PrismaUserRepository implements IUserRepository {
 
   async save(user: User): Promise<void> {
     const data = UserMapper.toUpdateData(user)
+    const save = async (client: any) => {
+      const previous = await client.user.findUnique({ where: { Id: user.id }, select: { PasswordHash: true, Status: true } })
+      const original = UserMapper.securityState(user)
+      try { await client.user.update({ where: { Id: user.id, ...original }, data }) }
+      catch (error: any) { if (error?.code === 'P2025') throw new ConflictError('Tài khoản vừa thay đổi. Vui lòng tải lại hoặc đăng nhập lại.'); throw error }
+      if (previous && (previous.PasswordHash !== data.PasswordHash || previous.Status !== data.Status)) {
+        await client.refreshToken.updateMany({ where: { UserId: user.id, IsRevoked: false }, data: { IsRevoked: true } })
+        const Key = `session_revocation:${user.id}`, Value = String(Date.now())
+        await client.systemConfig.upsert({ where: { Key }, create: { Key, Value, Description: 'Access token revocation timestamp' }, update: { Value } })
+      }
+    }
     try {
-      await this.client.user.update({
-        where: { Id: user.id },
-        data,
-      })
+      if (typeof this.client.$transaction === 'function') await this.client.$transaction(save)
+      else await save(this.client)
+      UserMapper.rememberSecurityState(user)
     } catch (err: any) {
       if (err?.message?.includes('Unknown argument `Campus`')) {
         delete (data as any).Campus
-        await this.client.user.update({
-          where: { Id: user.id },
-          data,
-        })
+        if (typeof this.client.$transaction === 'function') await this.client.$transaction(save)
+        else await save(this.client)
+        UserMapper.rememberSecurityState(user)
         return
       }
       throw err

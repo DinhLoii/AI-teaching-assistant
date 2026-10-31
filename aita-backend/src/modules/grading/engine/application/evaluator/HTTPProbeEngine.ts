@@ -277,7 +277,7 @@ export class HTTPProbeEngine {
   private evaluateJsonPath(obj: any, path: string): any {
     if (!obj || typeof obj !== 'object') return null;
     try {
-      const result = JSONPath({ path, json: obj });
+      const result = JSONPath({ path, json: obj, eval: false });
       if (result && result.length === 1) return result[0];
       if (result && result.length > 1) return result;
       return null;

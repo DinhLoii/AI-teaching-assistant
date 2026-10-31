@@ -20,6 +20,34 @@ after(async () => { await db.$disconnect() })
 const enabled = !!process.env.TEST_DATABASE_URL
 const fixture = async () => db.submission.create({ data: { Id: randomUUID(), SubmittedAt: new Date(), ZipFileUrl: '/private-submissions/test.zip', ReviewStatus: 'DRAFT' } })
 
+test('credential rotation atomically revokes sessions and prevents stale saves from restoring old credentials', { skip: !enabled }, async () => {
+  const { PrismaUserRepository } = await import('../src/modules/users/infrastructure/repositories/prisma-user-repository.js')
+  const { PrismaRefreshTokenRepository } = await import('../src/modules/auth/infrastructure/repositories/prisma-refresh-token.repository.js')
+  const raw = await db.user.create({ data: { PasswordHash: 'old-fixture-hash', Status: 'Active' } })
+  const repository = new PrismaUserRepository(db)
+  const current = (await repository.findById(raw.Id))!
+  const stale = (await repository.findById(raw.Id))!
+  const token = await db.refreshToken.create({ data: { UserId: raw.Id, Token: randomUUID(), ExpiresAt: new Date(Date.now() + 60000), IsRevoked: false } })
+  current.changePassword('new-fixture-hash')
+  await repository.save(current)
+  assert.equal((await db.refreshToken.findUnique({ where: { Id: token.Id } }))?.IsRevoked, true)
+  assert.ok(await db.systemConfig.findUnique({ where: { Key: `session_revocation:${raw.Id}` } }))
+  stale.fullName = 'Concurrent stale profile'
+  await assert.rejects(repository.save(stale), { statusCode: 409 })
+  assert.equal((await db.user.findUnique({ where: { Id: raw.Id } }))?.PasswordHash, 'new-fixture-hash')
+  const refresh = await db.refreshToken.create({ data: { UserId: raw.Id, Token: randomUUID(), ExpiresAt: new Date(Date.now() + 60000), IsRevoked: false } })
+  const tokens = new PrismaRefreshTokenRepository(db)
+  assert.equal((await Promise.all([tokens.consume(refresh.Id), tokens.consume(refresh.Id)])).filter(Boolean).length, 1)
+})
+
+test('persistent OTP attempts serialize concurrent callers at five attempts', { skip: !enabled }, async () => {
+  const { PasswordResetAttempts } = await import('../src/modules/auth/application/password-reset-attempts.js')
+  const id = randomUUID()
+  const results = await Promise.allSettled(Array.from({ length: 9 }, () => new PasswordResetAttempts(db).consume(id)))
+  assert.equal(results.filter(r => r.status === 'fulfilled').length, 5)
+  assert.equal(results.filter(r => r.status === 'rejected' && r.reason.statusCode === 429).length, 4)
+})
+
 test('joined page reads preserve relational data, scores and scope with fewer database round trips', { skip: !enabled }, async () => {
   let queries = 0
   const reads = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL, log: [{ emit: 'event', level: 'query' }] })

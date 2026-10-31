@@ -1,0 +1,103 @@
+[
+  {
+    "file": "admin-analytics.browser.cjs",
+    "status": "passed",
+    "seconds": 23
+  },
+  {
+    "file": "admin-gradebook.browser.cjs",
+    "status": "passed",
+    "seconds": 8
+  },
+  {
+    "file": "assignment-analysis.browser.cjs",
+    "status": "passed",
+    "seconds": 8
+  },
+  {
+    "file": "assignment-documents.browser.cjs",
+    "status": "passed",
+    "seconds": 5
+  },
+  {
+    "file": "assignment-performance.browser.cjs",
+    "status": "passed",
+    "seconds": 18
+  },
+  {
+    "file": "assignment-trash.browser.cjs",
+    "status": "passed",
+    "seconds": 9
+  },
+  {
+    "file": "dashboard-summary.browser.cjs",
+    "status": "passed",
+    "seconds": 5
+  },
+  {
+    "file": "grading-log.browser.cjs",
+    "status": "passed",
+    "seconds": 9
+  },
+  {
+    "file": "navigation-performance.browser.cjs",
+    "status": "passed",
+    "seconds": 6
+  },
+  {
+    "file": "notification-time.browser.cjs",
+    "status": "passed",
+    "seconds": 10
+  },
+  {
+    "file": "notifications-realtime.browser.cjs",
+    "status": "passed",
+    "seconds": 16
+  },
+  {
+    "file": "student-classes-refresh.browser.cjs",
+    "status": "passed",
+    "seconds": 3
+  },
+  {
+    "file": "student-syllabus.browser.cjs",
+    "status": "passed",
+    "seconds": 12
+  },
+  {
+    "file": "submission-extension.browser.cjs",
+    "status": "passed",
+    "seconds": 5
+  },
+  {
+    "file": "submission-modal.browser.cjs",
+    "status": "passed",
+    "seconds": 9
+  },
+  {
+    "file": "submission-report.browser.cjs",
+    "status": "passed",
+    "seconds": 16
+  },
+  {
+    "file": "system-performance.browser.cjs",
+    "status": "passed",
+    "seconds": 8
+  },
+  {
+    "file": "system-refresh.browser.cjs",
+    "status": "failed",
+    "seconds": 32,
+    "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('Original data', { exact: true }).first() to be visible\u001b[22m\n\n    at main (E:\\FPTU\\Term07\\SWD392\\AI-Teaching-Assistant\\aita-fontend\\tests\\system-refresh.browser.cjs:46:70) {\n  log: [\n    \"  - waiting for getByText('Original data', { exact: true }).first() to be visible\"\n  ],\n  name: 'TimeoutError'\n}\n"
+  },
+  {
+    "file": "ui-grading-start.browser.cjs",
+    "status": "passed",
+    "seconds": 3
+  },
+  {
+    "file": "user-action-menu.browser.cjs",
+    "status": "passed",
+    "seconds": 18
+  }
+]

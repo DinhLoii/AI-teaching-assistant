@@ -14,7 +14,7 @@ import { TOKENS } from '../../../../shared/infrastructure/tokens.js'
 import { MESSAGES } from '../../../../shared/constants/messages.js'
 import { RefreshToken } from '../../domain/entities/refresh-token.entity.js'
 import type { IRefreshTokenRepository } from '../../domain/repositories/refresh-token-repository.interface.js'
-import { randomBytes } from 'crypto'
+import { credentialVersion, newRefreshToken } from '../credential-version.js'
 
 export interface RegisterInput {
   dto: RegisterStudentRequestDto
@@ -78,10 +78,11 @@ export class RegisterStudentUseCase implements IUseCase<RegisterInput, AuthRespo
         email: user.email ?? '',
         role: 'STUDENT',
         fullName: user.fullName ?? '',
+        credentialVersion: credentialVersion(user.passwordHash),
       })
 
       const txRefreshTokenRepo = txUow.resolve<IRefreshTokenRepository>(TOKENS.RefreshTokenRepository)
-      const refreshTokenString = randomBytes(64).toString('hex')
+      const refreshTokenString = newRefreshToken(user.passwordHash)
       const expiresAt = new Date()
       expiresAt.setDate(expiresAt.getDate() + 7)
 

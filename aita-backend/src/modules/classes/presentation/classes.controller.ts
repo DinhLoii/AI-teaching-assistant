@@ -18,14 +18,25 @@ import { classEvents } from '../../../shared/infrastructure/events/class-events.
 import { NodemailerService } from '../../../shared/infrastructure/email/nodemailer.service.js'
 import { ValidationError, NotFoundError, ForbiddenError } from '../../../shared/application/app.error.js'
 import { memoryCache } from '../../../shared/infrastructure/memory-cache.js'
+import { authenticateLiveToken } from '../../../middleware/auth.js'
 
 export class ClassesController extends BaseController {
+  private async assertCanReadClass(user: { id: string; role: string }, classId: string) {
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(classId)
+    const role = user.role.toUpperCase()
+    const scope = role === 'ADMIN' ? {} : role === 'LECTURER'
+      ? { InstructorClass: { some: { UserId: user.id } } }
+      : { StudentClass: { some: { UserId: user.id } } }
+    const cls = await prisma.class.findFirst({ where: { ...scope, OR: [{ ClassCode: classId }, ...(uuid ? [{ Id: classId }, { SubjectId: classId }, { ExamClass: { some: { ExamId: classId } } }] : [])] }, select: { Id: true } })
+    if (!cls) throw new NotFoundError('Không tìm thấy lớp học trong phạm vi được phép')
+    return cls
+  }
   private async assertCanManageAnnouncement(user: { id: string; role: string }, classId?: string | null, creatorId?: string | null) {
     if (user.role.toUpperCase() === 'ADMIN' || creatorId === user.id) return
     const assignment = classId && user.role.toUpperCase() === 'LECTURER'
       ? await prisma.instructorClass.findFirst({ where: { UserId: user.id, ClassId: classId }, select: { UserId: true } })
       : null
-    if (!assignment) throw new ForbiddenError('Bạn chỉ được quản lý thông báo của lớp mình phụ trách')
+    if (!assignment) throw new ForbiddenError('Bạn chỉ được truy cập hoặc quản lý lớp mình phụ trách')
   }
   constructor(
     private readonly listClassesUseCase: ListClassesUseCase,
@@ -63,6 +74,10 @@ export class ClassesController extends BaseController {
 
   async getById(req: Request, res: Response): Promise<void> {
     const classId = req.params.id as string
+    if (req.user!.role.toUpperCase() === 'STUDENT') {
+      const membership = await prisma.studentClass.findUnique({ where: { UserId_ClassId: { UserId: req.user!.id, ClassId: classId } } })
+      if (!membership) throw new NotFoundError('Không tìm thấy lớp học trong phạm vi được phép')
+    } else await this.assertCanManageAnnouncement(req.user!, classId)
     this.logger.info(`Fetching class ${classId}`)
     const cacheKey = `class_detail_${classId}_${req.user?.role}`
     const cached = memoryCache.get(cacheKey)
@@ -93,6 +108,7 @@ export class ClassesController extends BaseController {
 
   async getStudents(req: Request, res: Response): Promise<void> {
     const classId = req.params.id as string
+    await this.assertCanManageAnnouncement(req.user!, classId)
     this.logger.info(`Fetching students for class ${classId}`)
     const cacheKey = `class_students_${classId}`
     const result = await memoryCache.wrap(cacheKey, 20, () => this.getClassStudentsUseCase.execute(classId))
@@ -121,6 +137,7 @@ export class ClassesController extends BaseController {
 
   async update(req: Request, res: Response): Promise<void> {
     const classId = req.params.id as string
+    await this.assertCanManageAnnouncement(req.user!, classId)
     this.logger.info(`Updating class ${classId}`)
     memoryCache.invalidatePrefix('classes_')
     const dto = UpdateClassRequestDto.from(req.body)
@@ -308,6 +325,7 @@ export class ClassesController extends BaseController {
 
   async listAnnouncements(req: Request, res: Response): Promise<void> {
     const classId = req.params.id as string
+    await this.assertCanReadClass(req.user!, classId)
     this.logger.info(`[listAnnouncements] classId=${classId}`)
 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -768,6 +786,7 @@ export class ClassesController extends BaseController {
 
   async streamAnnouncements(req: Request, res: Response): Promise<void> {
     const classId = req.params.id as string
+    await this.assertCanReadClass(req.user!, classId)
 
     res.setHeader('Content-Type', 'text/event-stream')
     res.setHeader('Cache-Control', 'no-cache')
@@ -801,12 +820,18 @@ export class ClassesController extends BaseController {
     classEvents.on(`class_announcement_deleted:${classId}`, onDeleteAnnouncement)
 
     // Keepalive ping every 25 seconds
-    const keepAliveTimer = setInterval(() => {
+    let checking = false
+    const keepAliveTimer = setInterval(async () => {
+      if (checking) return
+      checking = true
       try {
+        await authenticateLiveToken(req.headers.authorization?.slice(7) || '')
+        await this.assertCanReadClass(req.user!, classId)
         res.write(`: keepalive\n\n`)
       } catch (e) {
         clearInterval(keepAliveTimer)
-      }
+        res.end()
+      } finally { checking = false }
     }, 25000)
 
     req.on('close', () => {

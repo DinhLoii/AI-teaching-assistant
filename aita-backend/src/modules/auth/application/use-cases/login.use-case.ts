@@ -5,7 +5,8 @@ import type { IHashService } from '../../../../shared/application/ports/i-hash-s
 import type { ILogger } from '../../../../shared/application/ports/logger.interface.js'
 import type { IRefreshTokenRepository } from '../../domain/repositories/refresh-token-repository.interface.js'
 import { RefreshToken } from '../../domain/entities/refresh-token.entity.js'
-import { randomUUID, randomBytes } from 'crypto'
+import { randomUUID } from 'crypto'
+import { credentialVersion, newRefreshToken } from '../credential-version.js'
 import { UnauthorizedError } from '../../../../shared/application/app.error.js'
 import type { LoginRequestDto } from '../dtos/auth.dto.js'
 import { AuthResponseDto } from '../dtos/auth.dto.js'
@@ -71,9 +72,10 @@ export class LoginUseCase implements IUseCase<LoginInput, AuthResponseDto> {
       email: user.email ?? '',
       role: primaryRole,
       fullName: user.fullName ?? '',
+      credentialVersion: credentialVersion(user.passwordHash),
     })
 
-    const refreshTokenString = randomBytes(64).toString('hex')
+    const refreshTokenString = newRefreshToken(user.passwordHash)
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 7) // 7 days valid
 

@@ -52,7 +52,7 @@ const examId = '22222222-2222-4222-8222-222222222222'
     await page.getByText('Chưa công bố điểm', { exact: true }).waitFor()
     await page.setViewportSize({ width: 390, height: 844 })
     await page.getByRole('tab', { name: 'Tổng quan', exact: true }).click()
-    await page.screenshot({ path: 'tests/submission-report-mobile.png', fullPage: true })
+    await page.screenshot({ path: process.env.TEST_ARTIFACT_DIR ? process.env.TEST_ARTIFACT_DIR + '/submission-report-mobile.png' : 'tests/submission-report-mobile.png', fullPage: true })
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1), false)
     missing = true; sourceError = true
     await page.reload()

@@ -1,6 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws'
 import type { Server as HttpServer, IncomingMessage } from 'http'
-import { JwtTokenService } from '../jwt-token-service.js'
+import { authenticateLiveToken } from '../../../middleware/auth.js'
 import { prisma } from '../../../database/prisma.js'
 import { logger } from '../logger.js'
 
@@ -8,13 +8,13 @@ interface ClientMeta {
   userId: string
   role?: string
   isAlive: boolean
+  token?: string
 }
 
 export class NotificationWsService {
   private wss: WebSocketServer | null = null
   private clients: Map<string, Set<WebSocket>> = new Map()
   private clientMeta: WeakMap<WebSocket, ClientMeta> = new WeakMap()
-  private tokenService = new JwtTokenService()
   private heartbeatInterval: NodeJS.Timeout | null = null
 
   /**
@@ -65,10 +65,8 @@ export class NotificationWsService {
 
     if (token) {
       try {
-        const decoded = this.tokenService.verify(token)
-        if (decoded?.userId) {
-          authUser = { userId: decoded.userId, role: decoded.role }
-        }
+        const decoded = await authenticateLiveToken(token)
+        authUser = { userId: decoded.id, role: decoded.role }
       } catch (err: any) {
         logger.warn(`[WebSocket] Token validation failed on connect: ${err.message}`)
       }
@@ -79,6 +77,7 @@ export class NotificationWsService {
       userId: authUser?.userId || '',
       role: authUser?.role,
       isAlive: true,
+      token: authUser ? token || undefined : undefined,
     })
 
     ws.on('pong', () => {
@@ -178,11 +177,13 @@ export class NotificationWsService {
         return
       }
       try {
-        const decoded = this.tokenService.verify(token)
-        if (decoded?.userId) {
-          await this.registerUserSocket(decoded.userId, decoded.role, ws)
-        }
+        const decoded = await authenticateLiveToken(token)
+        const current = this.clientMeta.get(ws)
+        if (current) current.token = token
+        await this.registerUserSocket(decoded.id, decoded.role, ws)
       } catch (err: any) {
+        this.unregisterSocket(ws)
+        ws.close(4001, 'Invalid session')
         this.safeSend(ws, { type: 'AUTH_ERROR', message: 'Invalid token' })
       }
       return
@@ -194,6 +195,8 @@ export class NotificationWsService {
       this.safeSend(ws, { type: 'UNAUTHORIZED', message: 'Please authenticate first' })
       return
     }
+    try { await authenticateLiveToken(meta?.token || '') }
+    catch { this.unregisterSocket(ws); ws.close(4001, 'Session expired'); return }
 
     // 2. Heartbeat PING
     if (type === 'PING') {
@@ -355,6 +358,10 @@ export class NotificationWsService {
     for (const ws of this.wss.clients) {
       const meta = this.clientMeta.get(ws)
       if (!meta) continue
+      if (meta.userId) void authenticateLiveToken(meta.token || '').catch(() => {
+        this.unregisterSocket(ws)
+        ws.close(4001, 'Session expired')
+      })
 
       if (!meta.isAlive) {
         // Socket did not respond to last ping — terminate

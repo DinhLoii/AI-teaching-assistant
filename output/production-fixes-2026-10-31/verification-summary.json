@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-31",
+  "frontend": {
+    "unit": {
+      "passed": 113,
+      "failed": 0,
+      "skipped": 1
+    },
+    "structure": "passed",
+    "typecheck": "passed",
+    "build": "passed (webpack; .next-fixes-final)",
+    "lint": {
+      "errors": 0,
+      "warnings": 1027
+    },
+    "productionAudit": 0,
+    "fullAudit": {
+      "moderate": 16
+    }
+  },
+  "backend": {
+    "unit": {
+      "passed": 103,
+      "failed": 0,
+      "skipped": 4
+    },
+    "build": "passed",
+    "productionAudit": 0,
+    "fullAudit": {
+      "low": 1,
+      "moderate": 24
+    },
+    "postgres": {
+      "passed": 10,
+      "failed": 0,
+      "pgvector": false
+    },
+    "gradebookPostgres": "passed",
+    "dockerBuild": "passed",
+    "nonrootArtifactRoundTrip": {
+      "uid": 1000,
+      "passed": true
+    },
+    "consoleDocker": "passed"
+  },
+  "browser": {
+    "passed": 20,
+    "total": 20,
+    "initialPassed": 19,
+    "rerun": "submission-report screenshot file lock; rerun passed"
+  },
+  "deployment": "not performed",
+  "remaining": [
+    "Reconcile migration baseline on backup/clone",
+    "Provision and validate Vercel/Render storage, AI and email",
+    "Dedicated Docker grading host and file transfer required for full execution",
+    "Staging load tests, backup/restore, monitoring",
+    "Existing lint/nocheck and development dependency debt"
+  ],
+  "accountPolicy": "Owner requested preserving all existing accounts/passwords; known default credentials warn only. No account mutation applied."
+}

@@ -27,7 +27,7 @@ export class UpdateClassUseCase implements IUseCase<{ classId: string; dto: Upda
     const newSubjectId = data.subjectId ?? existingClass.subjectId
     
     if (newCode !== existingClass.classCode || newSemesterId !== existingClass.semesterId || newSubjectId !== existingClass.subjectId) {
-      const duplicateClass = await classRepo.findByCodeAndSubject(newCode as string, newSubjectId as string)
+      const duplicateClass = await classRepo.findByCodeSemesterAndSubject(newCode as string, newSemesterId as string, newSubjectId as string)
       if (duplicateClass && duplicateClass.id !== classId) {
         throw new ConflictError(MESSAGES.CLASS_ALREADY_EXISTS || 'Mã lớp đã tồn tại cho môn học này trong kỳ học này')
       }

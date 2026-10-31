@@ -8,6 +8,8 @@ export interface TokenPayload {
   email: string
   role: string
   fullName: string
+  credentialVersion?: string
+  issuedAt?: number
 }
 
 export interface ITokenService {

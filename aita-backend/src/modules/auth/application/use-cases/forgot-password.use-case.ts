@@ -1,7 +1,8 @@
 import type { IUseCase } from '../../../../shared/application/base-use-case.js'
 import type { IUserRepository } from '../../../users/domain/repositories/user-repository.interface.js'
 import type { ForgotPasswordRequestDto } from '../dtos/auth.dto.js'
-import { NotFoundError, ValidationError } from '../../../../shared/application/app.error.js'
+import { ServiceUnavailableError } from '../../../../shared/application/app.error.js'
+import { randomInt, createHash } from 'node:crypto'
 import type { IEmailService } from '../../../../shared/application/email.service.interface.js'
 
 export interface ForgotPasswordInput {
@@ -20,22 +21,22 @@ export class ForgotPasswordUseCase implements IUseCase<ForgotPasswordInput, void
     // 1. Find user by email
     const user = await this.userRepository.findByEmail(email)
     if (!user) {
-      throw new NotFoundError('Không tìm thấy tài khoản với email này')
+      return
     }
 
     if (!user.isActive()) {
-      throw new ValidationError('Tài khoản đã bị khoá hoặc chưa kích hoạt')
+      return
     }
 
     // 2. Generate a 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString()
+    const otp = randomInt(100000, 1000000).toString()
 
     // 3. Set expiry to 10 minutes from now
     const expiry = new Date()
     expiry.setMinutes(expiry.getMinutes() + 10)
 
     // 4. Update user in DB
-    user.setResetPasswordOtp(otp, expiry)
+    user.setResetPasswordOtp(createHash('sha256').update(otp).digest('hex'), expiry)
     await this.userRepository.save(user)
 
     // 5. Send Email
@@ -55,6 +56,6 @@ export class ForgotPasswordUseCase implements IUseCase<ForgotPasswordInput, void
         <p style="font-size: 12px; color: #888;">Hệ thống Hỗ trợ Giảng dạy AITA</p>
       </div>
     `
-    await this.emailService.sendEmail(email, subject, html)
+    if (!await this.emailService.sendEmail(email, subject, html)) throw new ServiceUnavailableError('Không gửi được email. Vui lòng thử lại sau.')
   }
 }

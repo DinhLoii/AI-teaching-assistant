@@ -65,7 +65,7 @@ export class UpdateClassNoteDto {
 }
 
 export const EnrollStudentSchema = z.object({
-  studentId: z.string({ required_error: 'studentId là bắt buộc' }),
+  studentId: z.string({ error: 'studentId là bắt buộc' }),
 })
 
 export type EnrollStudentRequestDtoType = z.infer<typeof EnrollStudentSchema>

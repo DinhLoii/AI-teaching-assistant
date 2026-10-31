@@ -3,12 +3,13 @@ import { IArtifactStore } from '../../core/contracts/IArtifactStore';
 import { Artifact, ArtifactType } from '../../core/domain/artifact/Artifact';
 import * as fs from 'fs';
 import * as path from 'path';
+import { artifactFilesRoot } from '../../../../../shared/infrastructure/runtime-storage.js';
 
 export class LocalArtifactStore implements IArtifactStore {
     private readonly baseDir: string;
 
     constructor() {
-        this.baseDir = path.join(process.cwd(), 'artifacts', 'files');
+        this.baseDir = artifactFilesRoot();
         if (!fs.existsSync(this.baseDir)) {
             fs.mkdirSync(this.baseDir, { recursive: true });
         }

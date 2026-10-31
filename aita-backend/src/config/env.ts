@@ -14,7 +14,6 @@ const schema = z.object({
     .string()
     .optional()
     .transform((v) => v === 'true' || v === '1'),
-  AI_ENDPOINT: z.string().default('http://localhost:8000'),
   GEMINI_API_KEYS: z.string().optional().default(''),
   GEMINI_API_KEY: z.string().optional().default(''),
   GEMINI_MODEL: z.string().default('gemini-1.5-flash'),
@@ -41,6 +40,8 @@ const schema = z.object({
   if (value.NODE_ENV !== 'production') return
   if (value.JWT_SECRET.length < 32 || /aita_super_secret|development|change.?me|your.?secret|replace_with/i.test(value.JWT_SECRET)) context.addIssue({ code: 'custom', path: ['JWT_SECRET'], message: 'Production yêu cầu khóa JWT ngẫu nhiên tối thiểu 32 ký tự.' })
   if (value.AI_STUB_MODE) context.addIssue({ code: 'custom', path: ['AI_STUB_MODE'], message: 'Không cho phép chấm điểm giả lập trên production.' })
+  if (value.CORS_ORIGIN.split(',').some(o => o.trim() === '*' || !/^https:\/\//i.test(o.trim()))) context.addIssue({ code: 'custom', path: ['CORS_ORIGIN'], message: 'Production yêu cầu danh sách HTTPS origin cụ thể.' })
+  if (!/^https:\/\//i.test(value.FRONTEND_URL)) context.addIssue({ code: 'custom', path: ['FRONTEND_URL'], message: 'Production yêu cầu FRONTEND_URL là HTTPS.' })
 })
 
 export const env = schema.parse(process.env)

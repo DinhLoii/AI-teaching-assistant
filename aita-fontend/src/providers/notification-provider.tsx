@@ -52,6 +52,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     feed.start()
     const socket = new NotificationSocket()
     let active = true
+    let connectedOnce = false
     let highlight: ReturnType<typeof setTimeout>
     socket.onStatusChange = status => { if (active) setConnection(prev => ({ owner, status, offset: prev.owner === owner ? prev.offset : 0 })) }
     socket.onServerTime = time => {
@@ -62,7 +63,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (!active) return
       if (event.type === 'HEARTBEAT') return
       if (event.type === 'ANALYTICS_INVALIDATED') { emitAnalyticsEvent(); return }
-      if (event.type === 'CONNECTED') { emitAnalyticsEvent(); emitAssignmentsChanged() }
+      if (event.type === 'CONNECTED') {
+        // Initial pages already load their data. Only reconnects need to repair
+        // assignment changes missed while the notification stream was offline.
+        if (connectedOnce) { emitAnalyticsEvent(); emitAssignmentsChanged() }
+        connectedOnce = true
+      }
       clearClientApiCache('/notifications')
       const existed = feed.getSnapshot().items.some(n => n.id === event.payload?.id)
       feed.receive(event)

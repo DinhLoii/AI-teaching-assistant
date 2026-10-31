@@ -605,7 +605,6 @@ For StdInOutProbe (Algorithms), generate test cases functioning strictly as an A
     "type": "stdio",
     "config": {
       "description": "string",
-      "javascriptSolver": "function solve(input) { ... return output; }",
       "testCases": [
         { 
           "id": "t1", 
@@ -628,9 +627,8 @@ For StdInOutProbe (Algorithms), generate test cases functioning strictly as an A
 5. STRICT ALIGNMENT: Ensure the generated input and expectedOutput perfectly align with the required formatting in the problem description (e.g., correct number of lines, space separations, and fallback outputs like '-1').
 6. DATA CONSISTENCY: If the input requires an integer N followed by N elements, you MUST ensure that the number of elements generated EXACTLY matches N.
 7. EXACT EXTRACTION OF EXAMPLES: If the ORIGINAL ASSIGNMENT DESCRIPTION contains EXAMPLES, you MUST extract BOTH the 'input' AND the provided 'expectedOutput' EXACTLY as written. DO NOT leave expectedOutput empty for these teacher-provided examples.
-8. REFERENCE SOLUTION EXECUTION: For any ADDITIONAL or NEW hidden test cases you generate beyond the teacher's examples, you MUST leave 'expectedOutput' empty (""). The system will execute your 'javascriptSolver' to compute the missing outputs. You MUST ALWAYS write a flawless algorithmic solver in JavaScript and put it in the 'javascriptSolver' field.
-   - Your 'javascriptSolver' MUST be a single pure function named 'solve' that takes exactly one string parameter ('input') and returns exactly one string (the output).
-   - EXTREMELY IMPORTANT: Your solver MUST flawlessly parse the EXACT input format you generated. Use 'input.trim().split("\\n")' and split lines carefully based on the problem description. Example: "function solve(input) { const lines = input.trim().split('\\n'); const [N, K] = lines[0].trim().split(' ').map(Number); const arr = lines[1].trim().split(' ').map(Number); ... return ans.toString(); }"
+8. EXPECTED OUTPUTS: Provide expected outputs as data. Never provide executable reference solvers. Generated test cases require teacher verification before publication.
+
 
 For AIVision (UI Web), generate:
 {
@@ -709,22 +707,10 @@ OUTPUT JSON ONLY. NO MARKDOWN FENCES.`;
                 rule.requiredEvidence[0].httpProbe = probeCfg.config;
             } else if (strategy === "StdInOutProbe" && probeCfg?.type === "stdio") {
                 const config = probeCfg.config;
-                // AI-Driven Reference Solution Execution
-                if (config.javascriptSolver && config.testCases) {
-                    try {
-                        console.log(`[GeminiAiProvider] Executing AI Reference Solution for req ${req.id}...`);
-                        const solveFn = new Function('input', config.javascriptSolver + '\nreturn solve(input);');
-                        for (const tc of config.testCases) {
-                            if (!tc.expectedOutput || tc.expectedOutput.trim() === "") {
-                                const computedOutput = solveFn(tc.input);
-                                tc.expectedOutput = String(computedOutput).trim();
-                                console.log(`[GeminiAiProvider] Computed output for input: ${tc.input.replace(/\\n/g, ' ')} -> ${tc.expectedOutput}`);
-                            }
-                        }
-                    } catch (e) {
-                        console.error(`[GeminiAiProvider] Failed to execute AI javascriptSolver for req ${req.id}:`, e);
-                    }
-                }
+                // Model output is data, never executable backend code. Empty output can
+                // be legitimate, but missing output requires teacher review before use.
+                delete config.javascriptSolver;
+                config.testCases = (config.testCases || []).filter(tc => typeof tc.expectedOutput === 'string' && tc.expectedOutput.trim().length > 0);
                 rule.requiredEvidence[0].stdInOutProbe = config;
             } else if (strategy === "AIVision" && probeCfg?.type === "browser") {
                 rule.requiredEvidence[0].browserProbe = probeCfg.config;

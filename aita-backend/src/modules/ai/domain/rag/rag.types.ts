@@ -66,6 +66,7 @@ export interface RagChatOutput {
 }
 
 export interface RagDiagnoseInput {
+  userRole?: string
   submissionId: string
   ruleScoreId?: string
   testcaseName?: string

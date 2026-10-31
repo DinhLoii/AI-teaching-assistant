@@ -1,0 +1,707 @@
+TAP version 13
+# Subtest: analytics events are coalesced, emitted after successful mutations and never emitted for failed writes or reads
+ok 1 - analytics events are coalesced, emitted after successful mutations and never emitted for failed writes or reads
+  ---
+  duration_ms: 465.2486
+  type: 'test'
+  ...
+# Subtest: analytics invalidation reaches only authenticated admin streams, with cleanup
+ok 2 - analytics invalidation reaches only authenticated admin streams, with cleanup
+  ---
+  duration_ms: 111.7002
+  type: 'test'
+  ...
+# Subtest: report windows use inclusive Vietnamese calendar dates, including midnight UTC boundaries
+ok 3 - report windows use inclusive Vietnamese calendar dates, including midnight UTC boundaries
+  ---
+  duration_ms: 19.9949
+  type: 'test'
+  ...
+# Subtest: custom ranges reject malformed, impossible, reversed and unbounded dates
+ok 4 - custom ranges reject malformed, impossible, reversed and unbounded dates
+  ---
+  duration_ms: 1.2219
+  type: 'test'
+  ...
+# Subtest: year and configured semesters honor their real start dates; missing semester is not fabricated
+ok 5 - year and configured semesters honor their real start dates; missing semester is not fabricated
+  ---
+  duration_ms: 0.5273
+  type: 'test'
+  ...
+# Subtest: concurrent page reads and subsequent navigation share one request
+ok 6 - concurrent page reads and subsequent navigation share one request
+  ---
+  duration_ms: 491.4144
+  type: 'test'
+  ...
+# Subtest: reading a notification preserves unrelated page cache
+ok 7 - reading a notification preserves unrelated page cache
+  ---
+  duration_ms: 294.8196
+  type: 'test'
+  ...
+# Subtest: an old read cannot repopulate the cache after mutation or remove a newer in-flight read
+ok 8 - an old read cannot repopulate the cache after mutation or remove a newer in-flight read
+  ---
+  duration_ms: 212.1614
+  type: 'test'
+  ...
+# Subtest: assignment mutations preserve master data and profile while refreshing related lists
+ok 9 - assignment mutations preserve master data and profile while refreshing related lists
+  ---
+  duration_ms: 177.1455
+  type: 'test'
+  ...
+# Subtest: unrelated pending reads remain cacheable during a mutation
+ok 10 - unrelated pending reads remain cacheable during a mutation
+  ---
+  duration_ms: 152.1137
+  type: 'test'
+  ...
+# Subtest: domain mutations invalidate dependencies without evicting unrelated resources
+ok 11 - domain mutations invalidate dependencies without evicting unrelated resources
+  ---
+  duration_ms: 586.5022
+  type: 'test'
+  ...
+# Subtest: grading polls bypass the browser cache and request fresh server data
+ok 12 - grading polls bypass the browser cache and request fresh server data
+  ---
+  duration_ms: 195.8534
+  type: 'test'
+  ...
+# Subtest: switching accounts isolates both cached data and pending requests
+ok 13 - switching accounts isolates both cached data and pending requests
+  ---
+  duration_ms: 150.3267
+  type: 'test'
+  ...
+# Subtest: explicit no-store and Cache-Control bypass cache without replacing it
+ok 14 - explicit no-store and Cache-Control bypass cache without replacing it
+  ---
+  duration_ms: 134.2432
+  type: 'test'
+  ...
+# Subtest: stale navigation returns immediately and shares one background refresh
+ok 15 - stale navigation returns immediately and shares one background refresh
+  ---
+  duration_ms: 94.0972
+  type: 'test'
+  ...
+# Subtest: hover prefetch and page load deduplicate API reads; unknown routes do no work
+ok 16 - hover prefetch and page load deduplicate API reads; unknown routes do no work
+  ---
+  duration_ms: 128.8985
+  type: 'test'
+  ...
+# Subtest: domain clients preserve query encoding, JSON payload and authorization
+ok 17 - domain clients preserve query encoding, JSON payload and authorization
+  ---
+  duration_ms: 459.9562
+  type: 'test'
+  ...
+# Subtest: submission adapter and compatibility facade preserve normalized report data
+ok 18 - submission adapter and compatibility facade preserve normalized report data
+  ---
+  duration_ms: 758.6296
+  type: 'test'
+  ...
+# Subtest: multipart submission leaves Content-Type to the browser
+ok 19 - multipart submission leaves Content-Type to the browser
+  ---
+  duration_ms: 227.4547
+  type: 'test'
+  ...
+# Subtest: SQL answer-key download uses the shared API base and Authorization header without a token in the URL
+ok 20 - SQL answer-key download uses the shared API base and Authorization header without a token in the URL
+  ---
+  duration_ms: 254.3885
+  type: 'test'
+  ...
+# Subtest: API error status/code survives the transport extraction
+ok 21 - API error status/code survives the transport extraction
+  ---
+  duration_ms: 116.47
+  type: 'test'
+  ...
+# Subtest: concurrent domain requests share one refresh queue and retry with the new token
+ok 22 - concurrent domain requests share one refresh queue and retry with the new token
+  ---
+  duration_ms: 102.4118
+  type: 'test'
+  ...
+# Subtest: loginDestination routes each role to correct portal and rejects cross-role redirect param
+ok 23 - loginDestination routes each role to correct portal and rejects cross-role redirect param
+  ---
+  duration_ms: 22.3218
+  type: 'test'
+  ...
+# Subtest: RAG AI Tutor client sends structured query and unpacks response correctly
+ok 24 - RAG AI Tutor client sends structured query and unpacks response correctly
+  ---
+  duration_ms: 102.9786
+  type: 'test'
+  ...
+# [AutoConfigureAssignment] executeWithFallback failed: AI unavailable
+# [AutoConfigureAssignment] executeWithFallback failed: AI unavailable
+# Subtest: synthetic PDF page separators never enter reference test expected outputs
+ok 25 - synthetic PDF page separators never enter reference test expected outputs
+  ---
+  duration_ms: 423.3528
+  type: 'test'
+  ...
+# Subtest: acceptance extraction never interprets console input counts, output zero or later sections as test IDs
+ok 26 - acceptance extraction never interprets console input counts, output zero or later sections as test IDs
+  ---
+  duration_ms: 3.0421
+  type: 'test'
+  ...
+# Subtest: product inventory assignment preserves seven source weights and extracts the unnumbered sample
+ok 27 - product inventory assignment preserves seven source weights and extracts the unnumbered sample
+  ---
+  duration_ms: 809.3104
+  type: 'test'
+  ...
+# Subtest: inventory sample extraction rejects truncated command/output blocks and specification-only text
+ok 28 - inventory sample extraction rejects truncated command/output blocks and specification-only text
+  ---
+  duration_ms: 2.8236
+  type: 'test'
+  ...
+# Subtest: Mini Library reference table produces exactly TC01–TC10 with original I/O, not the illustrative example or rubric text
+ok 29 - Mini Library reference table produces exactly TC01–TC10 with original I/O, not the illustrative example or rubric text
+  ---
+  duration_ms: 549.6845
+  type: 'test'
+  ...
+# Subtest: labelled sequential console examples work; ambiguous flattened cells and UI scenarios are not invented
+ok 30 - labelled sequential console examples work; ambiguous flattened cells and UI scenarios are not invented
+  ---
+  duration_ms: 4.4727
+  type: 'test'
+  ...
+# [AutoConfigureAssignment] executeWithFallback failed: AI unavailable
+# [AutoConfigureAssignment] executeWithFallback failed: AI unavailable
+# Subtest: native DOCX I/O tables retain all ten cases when commands use Word soft line breaks
+ok 31 - native DOCX I/O tables retain all ten cases when commands use Word soft line breaks
+  ---
+  duration_ms: 5828.4452
+  type: 'test'
+  ...
+# Subtest: Inventory source yields ten exact cases and never turns prose mentioning input/output into executable tests
+ok 32 - Inventory source yields ten exact cases and never turns prose mentioning input/output into executable tests
+  ---
+  duration_ms: 177.1273
+  type: 'test'
+  ...
+# Subtest: language detection distinguishes app database dependencies from SQL assignments across subjects
+ok 33 - language detection distinguishes app database dependencies from SQL assignments across subjects
+  ---
+  duration_ms: 2.2969
+  type: 'test'
+  ...
+# Subtest: actual uploaded assignment preserves mandatory/advanced/excluded scope and all ten acceptance scenarios
+ok 34 - actual uploaded assignment preserves mandatory/advanced/excluded scope and all ten acceptance scenarios
+  ---
+  duration_ms: 1.5379
+  type: 'test'
+  ...
+# Subtest: end-to-end Android analysis rejects SQL hallucination, preserves source and original 10-point rubric
+ok 35 - end-to-end Android analysis rejects SQL hallucination, preserves source and original 10-point rubric
+  ---
+  duration_ms: 172.9636
+  type: 'test'
+  ...
+# Subtest: AI unavailable returns extraction-only and never invents SQL, stdin tests or verified weights
+ok 36 - AI unavailable returns extraction-only and never invents SQL, stdin tests or verified weights
+  ---
+  duration_ms: 151.8149
+  type: 'test'
+  ...
+# Subtest: DOCX upload reads native Word table cells through the actual extractor
+ok 37 - DOCX upload reads native Word table cells through the actual extractor
+  ---
+  duration_ms: 210.6291
+  type: 'test'
+  ...
+# Subtest: console examples remain executable while empty analyses and SQL inputs get no sample tests
+ok 38 - console examples remain executable while empty analyses and SQL inputs get no sample tests
+  ---
+  duration_ms: 141.8759
+  type: 'test'
+  ...
+# Subtest: analysis cache is isolated by context and does not share mutable teacher changes
+ok 39 - analysis cache is isolated by context and does not share mutable teacher changes
+  ---
+  duration_ms: 5.2836
+  type: 'test'
+  ...
+# Subtest: server refuses publication without teacher review or a consistent total, before database access
+ok 40 - server refuses publication without teacher review or a consistent total, before database access
+  ---
+  duration_ms: 106.7093
+  type: 'test'
+  ...
+# Subtest: multipart creation preserves nested rubric/config, booleans and original attachment metadata
+ok 41 - multipart creation preserves nested rubric/config, booleans and original attachment metadata
+  ---
+  duration_ms: 1363.8012
+  type: 'test'
+  ...
+# Subtest: student response uses the full assignment rather than a rubric section and exposes only public analysis
+ok 42 - student response uses the full assignment rather than a rubric section and exposes only public analysis
+  ---
+  duration_ms: 130.4884
+  type: 'test'
+  ...
+# Subtest: download access restricts students to published enrolled classes and lecturers to their own exams
+ok 43 - download access restricts students to published enrolled classes and lecturers to their own exams
+  ---
+  duration_ms: 28.9888
+  type: 'test'
+  ...
+# Subtest: Vietnamese original filenames survive multipart Latin-1 decoding without changing Unicode names
+ok 44 - Vietnamese original filenames survive multipart Latin-1 decoding without changing Unicode names
+  ---
+  duration_ms: 14.434
+  type: 'test'
+  ...
+# Subtest: attachment controller downloads original disk bytes and filename only after checking access
+ok 45 - attachment controller downloads original disk bytes and filename only after checking access
+  ---
+  duration_ms: 306.8452
+  type: 'test'
+  ...
+# Subtest: authenticated document download returns unchanged binary data, bypasses JSON and cache
+ok 46 - authenticated document download returns unchanged binary data, bypasses JSON and cache
+  ---
+  duration_ms: 201.9336
+  type: 'test'
+  ...
+# Subtest: web specification prioritizes original content and escapes unsafe legacy markup
+ok 47 - web specification prioritizes original content and escapes unsafe legacy markup
+  ---
+  duration_ms: 13.1555
+  type: 'test'
+  ...
+# Subtest: concurrent binary downloads keep original bytes after a shared token refresh
+ok 48 - concurrent binary downloads keep original bytes after a shared token refresh
+  ---
+  duration_ms: 271.3267
+  type: 'test'
+  ...
+# Subtest: empty grading rules and aiRubrics do not mask the relational lecturer rubric
+ok 49 - empty grading rules and aiRubrics do not mask the relational lecturer rubric
+  ---
+  duration_ms: 6.2799
+  type: 'test'
+  ...
+# Subtest: published grading rubric takes priority and score scale follows the assignment
+ok 50 - published grading rubric takes priority and score scale follows the assignment
+  ---
+  duration_ms: 0.5293
+  type: 'test'
+  ...
+# Subtest: permanent deletion removes dependent grading data before parents, then invalidates counters
+ok 51 - permanent deletion removes dependent grading data before parents, then invalidates counters
+  ---
+  duration_ms: 4.7799
+  type: 'test'
+  ...
+# Subtest: permanent deletion failure retains both records and never degrades into a reported-success soft delete
+ok 52 - permanent deletion failure retains both records and never degrades into a reported-success soft delete
+  ---
+  duration_ms: 2.5961
+  type: 'test'
+  ...
+# Subtest: permanent deletion refuses active assignments and supports an idempotent retry
+ok 53 - permanent deletion refuses active assignments and supports an idempotent retry
+  ---
+  duration_ms: 3.1306
+  type: 'test'
+  ...
+# Subtest: trash query selects only fields in the generated Prisma schema
+ok 54 - trash query selects only fields in the generated Prisma schema
+  ---
+  duration_ms: 695.416
+  type: 'test'
+  ...
+# Subtest: trash and restore commit both representations and invalidate cached lists afterwards
+ok 55 - trash and restore commit both representations and invalidate cached lists afterwards
+  ---
+  duration_ms: 2.1898
+  type: 'test'
+  ...
+# Subtest: failure rolls back both representations and does not invalidate as if committed
+ok 56 - failure rolls back both representations and does not invalidate as if committed
+  ---
+  duration_ms: 0.7461
+  type: 'test'
+  ...
+# Subtest: legacy assignments with only one representation work; missing assignments return failure
+ok 57 - legacy assignments with only one representation work; missing assignments return failure
+  ---
+  duration_ms: 1.5737
+  type: 'test'
+  ...
+# Subtest: a failed trash request never falls back to a different delete API
+ok 58 - a failed trash request never falls back to a different delete API
+  ---
+  duration_ms: 453.7398
+  type: 'test'
+  ...
+# Subtest: subject credit and syllabus survive create, update, persistence and response
+ok 59 - subject credit and syllabus survive create, update, persistence and response
+  ---
+  duration_ms: 590.7823
+  type: 'test'
+  ...
+# Subtest: draft, publish, unpublish, republish preserve raw score and feedback without repeated penalty
+ok 60 - draft, publish, unpublish, republish preserve raw score and feedback without repeated penalty
+  ---
+  duration_ms: 262.5002
+  type: 'test'
+  ...
+# Subtest: lowercase student role cannot see unpublished scores and cannot read another student submission
+ok 61 - lowercase student role cannot see unpublished scores and cannot read another student submission
+  ---
+  duration_ms: 125.6006
+  type: 'test'
+  ...
+# Subtest: lecturer submission detail lookup is scoped to classes they teach
+ok 62 - lecturer submission detail lookup is scoped to classes they teach
+  ---
+  duration_ms: 183.1362
+  type: 'test'
+  ...
+# Subtest: single and batch grading requests default to automatically opening Chromium
+ok 63 - single and batch grading requests default to automatically opening Chromium
+  ---
+  duration_ms: 753.973
+  type: 'test'
+  ...
+# Subtest: structured execution metadata becomes renderable text without claiming tests ran or leaking diagnostics
+ok 64 - structured execution metadata becomes renderable text without claiming tests ran or leaking diagnostics
+  ---
+  duration_ms: 2.2131
+  type: 'test'
+  ...
+# Subtest: legacy text survives and malformed summary values always produce a string
+ok 65 - legacy text survives and malformed summary values always produce a string
+  ---
+  duration_ms: 0.6186
+  type: 'test'
+  ...
+# Subtest: logs retain server timestamps, deduplicate reconnect snapshots and do not fabricate missing history
+ok 66 - logs retain server timestamps, deduplicate reconnect snapshots and do not fabricate missing history
+  ---
+  duration_ms: 2.7845
+  type: 'test'
+  ...
+# Subtest: pipeline filters group actual events without inventing an execution stage for generic messages
+ok 67 - pipeline filters group actual events without inventing an execution stage for generic messages
+  ---
+  duration_ms: 1.9898
+  type: 'test'
+  ...
+# Subtest: a different submission or stale grading attempt cannot overwrite the current run
+ok 68 - a different submission or stale grading attempt cannot overwrite the current run
+  ---
+  duration_ms: 1.9297
+  type: 'test'
+  ...
+# Subtest: completed grading is distinct from passing tests and an unknown score is never 9.5
+ok 69 - completed grading is distinct from passing tests and an unknown score is never 9.5
+  ---
+  duration_ms: 1.2129
+  type: 'test'
+  ...
+# Subtest: grading SSE keeps JWT in headers, decodes split Vietnamese frames and completes once
+ok 70 - grading SSE keeps JWT in headers, decodes split Vietnamese frames and completes once
+  ---
+  duration_ms: 786.2406
+  type: 'test'
+  ...
+# Subtest: recipient reads include nullable unread rows and scope writes to the authenticated user
+ok 71 - recipient reads include nullable unread rows and scope writes to the authenticated user
+  ---
+  duration_ms: 316.1045
+  type: 'test'
+  ...
+# Subtest: REST read/delete emits a user-scoped realtime event only after a successful write
+ok 72 - REST read/delete emits a user-scoped realtime event only after a successful write
+  ---
+  duration_ms: 128.4661
+  type: 'test'
+  ...
+# Subtest: publish deduplicates recipients, preserves persisted time, and excludes hidden reminders
+ok 73 - publish deduplicates recipients, preserves persisted time, and excludes hidden reminders
+  ---
+  duration_ms: 24.9079
+  type: 'test'
+  ...
+# Subtest: empty class announcements never fall back to all students; unrelated lecturers cannot manage them
+ok 74 - empty class announcements never fall back to all students; unrelated lecturers cannot manage them
+  ---
+  duration_ms: 276.9437
+  type: 'test'
+  ...
+# Subtest: absolute notification times use Vietnam time regardless of the device timezone
+ok 75 - absolute notification times use Vietnam time regardless of the device timezone
+  ---
+  duration_ms: 892.9754
+  type: 'test'
+  ...
+# Subtest: an update or snapshot missing a timestamp never erases a known date
+ok 76 - an update or snapshot missing a timestamp never erases a known date
+  ---
+  duration_ms: 381.2022
+  type: 'test'
+  ...
+# Subtest: snapshot accepts an empty inbox and all notification reads bypass the API cache
+ok 77 - snapshot accepts an empty inbox and all notification reads bypass the API cache
+  ---
+  duration_ms: 215.3676
+  type: 'test'
+  ...
+# Subtest: new events appear immediately, deduplicate and cannot be overwritten by an older snapshot
+ok 78 - new events appear immediately, deduplicate and cannot be overwritten by an older snapshot
+  ---
+  duration_ms: 143.5843
+  type: 'test'
+  ...
+# Subtest: failed deletion restores the affected row and preserves notifications arriving in-flight
+ok 79 - failed deletion restores the affected row and preserves notifications arriving in-flight
+  ---
+  duration_ms: 251.1068
+  type: 'test'
+  ...
+# Subtest: read/delete events synchronize badges immediately and ignore duplicate read frames
+ok 80 - read/delete events synchronize badges immediately and ignore duplicate read frames
+  ---
+  duration_ms: 199.9367
+  type: 'test'
+  ...
+# Subtest: stopped session rejects late responses and a new feed starts empty
+ok 81 - stopped session rejects late responses and a new feed starts empty
+  ---
+  duration_ms: 179.8706
+  type: 'test'
+  ...
+# Subtest: notification timestamps preserve the server instant and links never guess assignment IDs from titles
+ok 82 - notification timestamps preserve the server instant and links never guess assignment IDs from titles
+  ---
+  duration_ms: 184.2444
+  type: 'test'
+  ...
+# Subtest: missing timestamps sort last rather than appearing as newly created notifications
+ok 83 - missing timestamps sort last rather than appearing as newly created notifications
+  ---
+  duration_ms: 121.2645
+  type: 'test'
+  ...
+# Subtest: authenticated stream decodes split UTF-8/CRLF frames and stops on disconnect
+ok 84 - authenticated stream decodes split UTF-8/CRLF frames and stops on disconnect
+  ---
+  duration_ms: 243.5371
+  type: 'test'
+  ...
+# Subtest: equal rubric allocation preserves source details and totals ten after rounding
+ok 85 - equal rubric allocation preserves source details and totals ten after rounding
+  ---
+  duration_ms: 2.0612
+  type: 'test'
+  ...
+# Subtest: empty rubric stays empty
+ok 86 - empty rubric stays empty
+  ---
+  duration_ms: 0.3109
+  type: 'test'
+  ...
+# Subtest: assignment content becomes usable before delayed enrichment and submission history
+ok 87 - assignment content becomes usable before delayed enrichment and submission history
+  ---
+  duration_ms: 571.1791
+  type: 'test'
+  ...
+# Subtest: history failure is reported separately without replacing a valid document or inventing a missing submission
+ok 88 - history failure is reported separately without replacing a valid document or inventing a missing submission
+  ---
+  duration_ms: 218.5426
+  type: 'test'
+  ...
+# Subtest: extension target preserves the student account ID independently of submission ID and student code
+ok 89 - extension target preserves the student account ID independently of submission ID and student code
+  ---
+  duration_ms: 1.9528
+  type: 'test'
+  ...
+# Subtest: deadline notification versions change for extensions while read status does not trigger a reload
+ok 90 - deadline notification versions change for extensions while read status does not trigger a reload
+  ---
+  duration_ms: 221.7815
+  type: 'test'
+  ...
+# Subtest: deadline updates clear cached assignment, submission and dashboard snapshots before refreshing views
+ok 91 - deadline updates clear cached assignment, submission and dashboard snapshots before refreshing views
+  ---
+  duration_ms: 154.4293
+  type: 'test'
+  ...
+# [AiClientManager] Attempting fallback to GitHub Models (test)...
+# [AiClientManager] GitHub Models fallback failed: provider down
+# [AiClientManager] Attempting fallback to GitHub Models (test)...
+# [AiClientManager] GitHub Models fallback failed: AI_CODE_EVIDENCE_MISSING: repair required
+# [AiClientManager] Key \#1 failed (HTTP 0): SDK timed out
+# [AiClientManager] Global Pool Exhausted (Attempt 1/2). Cooling down for 3 seconds...
+# Subtest: independent console verification exposes real test outcomes without adding rubric criteria or changing score
+ok 92 - independent console verification exposes real test outcomes without adding rubric criteria or changing score
+  ---
+  duration_ms: 2.7846
+  type: 'test'
+  ...
+# Subtest: demo AI mode is refused for real grading
+ok 93 - demo AI mode is refused for real grading
+  ---
+  duration_ms: 24.0572
+  type: 'test'
+  ...
+# Subtest: AI provider failures and missing keys cannot silently synthesize grading responses
+ok 94 - AI provider failures and missing keys cannot silently synthesize grading responses
+  ---
+  duration_ms: 3775.4241
+  type: 'test'
+  ...
+# Subtest: grading evidence excludes invented snippets even if the AI claims they passed
+ok 95 - grading evidence excludes invented snippets even if the AI claims they passed
+  ---
+  duration_ms: 28.9565
+  type: 'test'
+  ...
+# [AiClientManager] Key \#1 failed (HTTP 0): SDK timed out
+# [AICodeReviewEngine] Attempt 1 failed (Error: AI_CODE_EVIDENCE_MISSING: AI chưa chỉ ra mã nguồn hợp lệ trong ZIP để xác minh điểm.). Retrying with reduced context (40000 chars)...
+# Subtest: Gemini uses the configured request timeout and caller cancellation; timeouts retain a retryable code
+ok 96 - Gemini uses the configured request timeout and caller cancellation; timeouts retain a retryable code
+  ---
+  duration_ms: 3100.1794
+  type: 'test'
+  ...
+# Subtest: evidence accepts formatting and archive prefixes but rejects altered literals and ambiguous paths
+ok 97 - evidence accepts formatting and archive prefixes but rejects altered literals and ambiguous paths
+  ---
+  duration_ms: 27.0821
+  type: 'test'
+  ...
+# Subtest: failed evaluation is not a zero grade; a previous completed grade survives a failed regrade
+ok 98 - failed evaluation is not a zero grade; a previous completed grade survives a failed regrade
+  ---
+  duration_ms: 13.8865
+  type: 'test'
+  ...
+# Subtest: AI line references extract original source; malformed scores and invented references are rejected
+ok 99 - AI line references extract original source; malformed scores and invented references are rejected
+  ---
+  duration_ms: 31.0235
+  type: 'test'
+  ...
+# Subtest: Windows ZIP references recover original evidence consistently across languages and legacy provider formats
+ok 100 - Windows ZIP references recover original evidence consistently across languages and legacy provider formats
+  ---
+  duration_ms: 24.0101
+  type: 'test'
+  ...
+# Subtest: an exact archive path wins over a nested basename; file IDs cannot contradict the cited file
+ok 101 - an exact archive path wins over a nested basename; file IDs cannot contradict the cited file
+  ---
+  duration_ms: 23.9971
+  type: 'test'
+  ...
+# [AICodeReviewEngine] Attempt 2 failed (Error: Temporary provider outage). Retrying with reduced context (20000 chars)...
+# Subtest: missing evidence and a transient provider outage recover before the full six-criterion rubric completes
+ok 102 - missing evidence and a transient provider outage recover before the full six-criterion rubric completes
+  ---
+  duration_ms: 3258.4723
+  type: 'test'
+  ...
+# Subtest: missing results never manufacture grades, criteria, tests or compilation success
+ok 103 - missing results never manufacture grades, criteria, tests or compilation success
+  ---
+  duration_ms: 0.9144
+  type: 'test'
+  ...
+# Subtest: failed reports expose staff diagnostics without leaking unpublished reports or inventing zero grades
+ok 104 - failed reports expose staff diagnostics without leaking unpublished reports or inventing zero grades
+  ---
+  duration_ms: 76.3505
+  type: 'test'
+  ...
+# Subtest: only recorded execution outcomes count; an AI assessment is not a passed testcase
+ok 105 - only recorded execution outcomes count; an AI assessment is not a passed testcase
+  ---
+  duration_ms: 0.453
+  type: 'test'
+  ...
+# Subtest: report belonging to another upload or assignment cannot supply scores or evidence
+ok 106 - report belonging to another upload or assignment cannot supply scores or evidence
+  ---
+  duration_ms: 0.361
+  type: 'test'
+  ...
+# Subtest: code evidence must match both a unique ZIP path and its content
+ok 107 - code evidence must match both a unique ZIP path and its content
+  ---
+  duration_ms: 1.0151
+  type: 'test'
+  ...
+# Subtest: ZIP preview reads submitted Kotlin paths and hashes actual archive bytes
+ok 108 - ZIP preview reads submitted Kotlin paths and hashes actual archive bytes
+  ---
+  duration_ms: 113.9378
+  type: 'test'
+  ...
+# Subtest: new attempts retain old ZIP, report and grade; sequence is locked before insert
+ok 109 - new attempts retain old ZIP, report and grade; sequence is locked before insert
+  ---
+  duration_ms: 66.2203
+  type: 'test'
+  ...
+# Subtest: source and history require authorization before accessing ZIP or other attempts
+ok 110 - source and history require authorization before accessing ZIP or other attempts
+  ---
+  duration_ms: 54.7631
+  type: 'test'
+  ...
+# Subtest: attempt history stays in the same student/exam/class scope and hides unpublished scores
+ok 111 - attempt history stays in the same student/exam/class scope and hides unpublished scores
+  ---
+  duration_ms: 49.4886
+  type: 'test'
+  ...
+# Subtest: workspace displays submission rows before delayed metadata and roster complete
+ok 112 - workspace displays submission rows before delayed metadata and roster complete
+  ---
+  duration_ms: 590.3917
+  type: 'test'
+  ...
+# Subtest: failed submission reads expose the error and stop loading without inventing an empty successful result
+ok 113 - failed submission reads expose the error and stop loading without inventing an empty successful result
+  ---
+  duration_ms: 200.4701
+  type: 'test'
+  ...
+# Subtest: upload proxy accepts a response beyond the previous 30-second cutoff
+ok 114 - upload proxy accepts a response beyond the previous 30-second cutoff # SKIP
+  ---
+  duration_ms: 1.3749
+  type: 'test'
+  ...
+1..114
+# tests 114
+# suites 0
+# pass 113
+# fail 0
+# cancelled 0
+# skipped 1
+# todo 0
+# duration_ms 14481.7221

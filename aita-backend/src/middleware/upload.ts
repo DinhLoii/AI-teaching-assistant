@@ -1,3 +1,4 @@
+import { publicUploadsRoot } from '../shared/infrastructure/runtime-storage.js'
 // import multer from 'multer';
 // import path from 'path';
 // import fs from 'fs';
@@ -123,7 +124,7 @@ import path from 'path';
 import fs from 'fs';
 import { randomUUID } from 'crypto';
 
-const UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'attachments');
+const UPLOAD_DIR = path.join(publicUploadsRoot(), 'attachments');
 
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -170,7 +171,7 @@ export const uploadMiddleware = multer({
   },
 });
 
-const AVATAR_UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'avatars');
+const AVATAR_UPLOAD_DIR = path.join(publicUploadsRoot(), 'avatars');
 if (!fs.existsSync(AVATAR_UPLOAD_DIR)) {
   fs.mkdirSync(AVATAR_UPLOAD_DIR, { recursive: true });
 }
@@ -201,7 +202,7 @@ export const uploadAvatarMiddleware = multer({
   },
 });
 
-const EXCEL_UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'imports');
+const EXCEL_UPLOAD_DIR = path.join(publicUploadsRoot(), 'imports');
 if (!fs.existsSync(EXCEL_UPLOAD_DIR)) {
   fs.mkdirSync(EXCEL_UPLOAD_DIR, { recursive: true });
 }

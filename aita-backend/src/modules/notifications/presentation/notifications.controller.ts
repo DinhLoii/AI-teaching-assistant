@@ -6,6 +6,7 @@ import { BaseController } from '../../../shared/presentation/base-controller.js'
 import type { ILogger } from '../../../shared/application/ports/logger.interface.js'
 import { prisma } from '../../../database/prisma.js'
 import { sseService } from '../../../shared/infrastructure/sse-service.js'
+import { authenticateLiveToken } from '../../../middleware/auth.js'
 
 export class NotificationsController extends BaseController {
     constructor(
@@ -77,9 +78,17 @@ export class NotificationsController extends BaseController {
             if (Number.isFinite(claims.exp)) lifetime = Math.max(1, Math.min(lifetime, claims.exp * 1000 - Date.now()))
         } catch { /* Bounded lifetime also applies to non-JWT test tokens. */ }
         const expiry = setTimeout(() => res.end(), lifetime)
+          let checking = false
+          const sessionCheck = setInterval(async () => {
+              if (checking) return
+              checking = true
+              try { await authenticateLiveToken(req.headers.authorization?.slice(7) || '') }
+              catch { res.end() }
+              finally { checking = false }
+          }, 30_000)
 
         // Clean up when the client closes the connection
-        const close = () => { clearTimeout(expiry); cleanup() }
+          const close = () => { clearTimeout(expiry); clearInterval(sessionCheck); cleanup() }
         res.on('close', close)
         res.on('error', close)
     }

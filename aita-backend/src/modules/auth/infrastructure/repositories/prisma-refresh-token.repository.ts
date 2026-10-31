@@ -3,6 +3,10 @@ import { RefreshToken } from '../../domain/entities/refresh-token.entity.js'
 
 export class PrismaRefreshTokenRepository implements IRefreshTokenRepository {
   constructor(private readonly prisma: any) {}
+  async consume(id: string): Promise<boolean> {
+    const result = await this.prisma.refreshToken.updateMany({ where: { Id: id, IsRevoked: false, ExpiresAt: { gt: new Date() } }, data: { IsRevoked: true } })
+    return result.count === 1
+  }
 
   async findByToken(token: string): Promise<RefreshToken | null> {
     const record = await this.prisma.refreshToken.findFirst({

@@ -9,7 +9,7 @@ import { canSeedDemoAccounts } from './dev-seed-policy.js'
  * Idempotent — safe to run on every boot. Full demo data (class, enrollment, exams)
  * still comes from `prisma/seed.ts` via `npm run setup`.
  */
-const ACCOUNTS = [
+export const ACCOUNTS = [
   { role: 'ADMIN', email: 'admin@fpt.vn', password: 'admin123', fullName: 'Quản trị viên (Admin)', code: 'ADM002' },
   { role: 'LECTURER', email: 'teacher@fpt.vn', password: 'teacher123', fullName: 'Giáo viên (Teacher)', code: 'GV999' },
   { role: 'ADMIN', email: 'admin@fpt.edu.vn', password: 'admin123', fullName: 'Quản trị AITA', code: 'ADM001' },

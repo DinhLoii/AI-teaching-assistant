@@ -5,7 +5,7 @@ import { MESSAGES } from '../../../shared/constants/messages.js'
 import { prisma } from '../../../database/prisma.js'
 import { memoryCache } from '../../../shared/infrastructure/memory-cache.js'
 import { NotFoundError } from '../../../shared/application/app.error.js'
-import { dashboardResultSummaries } from '../application/dashboard-result-view.js'
+import { dashboardResultSummaries, publishedStudentScore } from '../application/dashboard-result-view.js'
 import { studentExamDeadlines } from '../../exams/application/student-deadlines.js'
 
 export class StudentPortalController extends BaseController {
@@ -31,8 +31,10 @@ export class StudentPortalController extends BaseController {
       recentGradedSubmission
     ] = await Promise.all([
       prisma.submission.findMany({
-        where: { StudentId: studentId },
+        where: { StudentId: studentId, OR: [{ IsLatest: true }, { IsLatest: null }] },
+        orderBy: [{ IsLatest: { sort: 'desc', nulls: 'last' } }, { AttemptNumber: 'desc' }, { SubmittedAt: 'desc' }],
         select: {
+          Id: true,
           ExamId: true,
           TotalScore: true,
           FinalScore: true,
@@ -176,11 +178,9 @@ export class StudentPortalController extends BaseController {
       prisma.submission.findFirst({
         where: {
           StudentId: studentId,
-          OR: [
-            { ReviewStatus: 'PUBLISHED' },
-            { FinalScore: { not: null } },
-            { TotalScore: { not: null } }
-          ]
+          ReviewStatus: 'PUBLISHED',
+          GradingStatus: 'Graded',
+          OR: [{ IsLatest: true }, { IsLatest: null }],
         },
         include: {
           Exam: true,
@@ -205,7 +205,7 @@ export class StudentPortalController extends BaseController {
       })
     ]);
 
-    const subMap = new Map(studentSubmissions.map(s => [s.ExamId, s]));
+    const subMap = new Map(studentSubmissions.slice().reverse().map(s => [s.ExamId, s]));
     const deadlines = await studentExamDeadlines(prisma, studentId, rawAssignments.map((a: any) => a.Id))
 
     const upcomingAssignments = (rawAssignments as any[]).map(a => {
@@ -214,7 +214,7 @@ export class StudentPortalController extends BaseController {
       const due = deadlines.get(a.Id) ?? a.DueDate;
       const sub = subMap.get(a.Id);
       const isSubmitted = !!sub;
-      const isGraded = sub?.ReviewStatus === 'PUBLISHED' || (sub?.FinalScore !== null && sub?.FinalScore !== undefined);
+      const isGraded = publishedStudentScore(sub) != null;
 
       let status = 'PENDING';
       if (isGraded) {
@@ -249,7 +249,7 @@ export class StudentPortalController extends BaseController {
     const submittedAssignments = studentSubmissions.length
 
     // Calculate real avg AI score from student's graded submissions in Neon DB
-    const scoredSubmissions = studentSubmissions.filter(s => s.FinalScore != null || s.TotalScore != null)
+    const scoredSubmissions = [...subMap.values()].filter(s => publishedStudentScore(s) != null)
     const avgAiScore = scoredSubmissions.length > 0
       ? Number((scoredSubmissions.reduce((acc, s) => acc + Number(s.FinalScore ?? s.TotalScore), 0) / scoredSubmissions.length).toFixed(1))
       : null
@@ -257,7 +257,7 @@ export class StudentPortalController extends BaseController {
     let recentAiResult = null
     const aiFeedbackList: any[] = []
 
-    if (recentGradedSubmission) {
+    if (recentGradedSubmission && subMap.get(recentGradedSubmission.ExamId)?.Id === recentGradedSubmission.Id && publishedStudentScore(recentGradedSubmission) != null) {
       let report: any = null
       if (recentGradedSubmission.ReportData) {
         try {
@@ -469,6 +469,7 @@ export class StudentPortalController extends BaseController {
     // 1. Find class by Id, SubjectId, ClassCode, or ExamId
     let cls = await prisma.class.findFirst({
       where: {
+        StudentClass: { some: { UserId: studentId } },
         OR: [
           { Id: classId },
           { SubjectId: classId },
@@ -518,124 +519,8 @@ export class StudentPortalController extends BaseController {
       }
     })
 
-    // 2. If no direct class record matches, resolve via Subject or Exam and construct class view
-    if (!cls) {
-      const [subject, exam] = await Promise.all([prisma.subject.findFirst({
-        where: { OR: [{ Id: classId }, { SubjectCode: classId }] }
-      }), prisma.exam.findFirst({
-        where: { Id: classId },
-        include: { Subject: true }
-      })])
-
-      if (!subject && !exam) {
-        throw new NotFoundError('Không tìm thấy lớp học')
-      }
-
-      // Find lecturers
-      const lecturers = await prisma.user.findMany({
-        where: {
-          UserRole: { some: { Role: { RoleName: { in: ['LECTURER', 'Lecturer', 'lecturer', 'ADMIN', 'Admin'] } } } }
-        },
-        select: { Id: true, FullName: true, Email: true, Avatar: true, LecturerCode: true, Phone: true },
-        take: 3
-      })
-
-      const targetRefIds = [classId]
-      if (subject?.Id && !targetRefIds.includes(subject.Id)) targetRefIds.push(subject.Id)
-      if (subject?.SubjectCode && !targetRefIds.includes(subject.SubjectCode)) targetRefIds.push(subject.SubjectCode)
-
-      const announcementRows = await prisma.notification.findMany({
-        where: {
-          ReferenceId: { in: targetRefIds },
-          Type: { in: ['CLASS_ANNOUNCEMENT', 'CLASS', 'Announcement', 'ANNOUNCEMENT'] }
-        },
-        include: {
-          User: {
-            select: {
-              Id: true,
-              FullName: true,
-              Email: true,
-              Avatar: true
-            }
-          }
-        },
-        orderBy: { CreatedAt: 'desc' },
-        take: 50
-      })
-
-      const announcements = announcementRows.map(r => ({
-        id: r.Id,
-        title: r.Title || 'Thông báo lớp học',
-        content: r.Message,
-        createdAt: r.CreatedAt,
-        lecturer: {
-          id: r.User?.Id || r.CreatedBy,
-          name: r.User?.FullName || 'Giảng viên',
-          email: r.User?.Email || '',
-          avatar: r.User?.Avatar || null
-        }
-      }))
-
-      let examSubmissions: any[] = []
-      if (exam?.Id) {
-        examSubmissions = await prisma.submission.findMany({
-          where: { StudentId: studentId, ExamId: exam.Id },
-          select: {
-            Id: true,
-            ExamId: true,
-            TotalScore: true,
-            FinalScore: true,
-            GradingStatus: true,
-            ReviewStatus: true,
-            SubmittedAt: true,
-          }
-        })
-      }
-      const examSub = examSubmissions[0] || null
-      const deadlines = exam ? await studentExamDeadlines(prisma, studentId, [exam.Id]) : new Map<string, Date>()
-
-      const result = {
-        id: classId,
-        classCode: subject?.SubjectCode || exam?.Subject?.SubjectCode || 'LỚP HỌC',
-        subject: (subject || exam?.Subject) ? {
-          id: subject?.Id || exam?.Subject?.Id,
-          code: subject?.SubjectCode || exam?.Subject?.SubjectCode,
-          name: subject?.SubjectName || exam?.Subject?.SubjectName,
-          description: subject?.Description || exam?.Subject?.Description,
-          credit: subject?.Credit ?? exam?.Subject?.Credit ?? 3,
-        } : null,
-        semester: null,
-        lecturers: lecturers.map(l => ({
-          id: l.Id,
-          name: l.FullName,
-          email: l.Email,
-          avatar: l.Avatar,
-          lecturerCode: (l as any).LecturerCode || null,
-          phone: (l as any).Phone || null
-        })),
-        students: [],
-        announcements,
-        assignments: exam ? [{
-          id: exam.Id,
-          title: exam.Title,
-          description: exam.Description,
-          status: exam.Status,
-          dueDate: deadlines.get(exam.Id) ?? exam.DueDate,
-          totalPoints: exam.TotalPoints,
-          type: exam.ExamType,
-          isSubmitted: !!examSub,
-          submissionId: examSub?.Id || null,
-          score: examSub?.FinalScore ?? examSub?.TotalScore ?? null,
-          submittedAt: examSub?.SubmittedAt || null,
-          gradingStatus: examSub?.GradingStatus || null,
-          reviewStatus: examSub?.ReviewStatus || null,
-        }] : []
-      }
-
-      memoryCache.set(cacheKey, result, 15)
-      this.ok(res, result, MESSAGES.SUCCESS)
-      return
-    }
+    // A missing enrolled class must not fall back to a global subject/exam view.
+    if (!cls) throw new NotFoundError('Không tìm thấy lớp học trong danh sách đã ghi danh')
 
     const c = cls as any
 
@@ -668,7 +553,8 @@ export class StudentPortalController extends BaseController {
       orderBy: { CreatedAt: 'desc' },
       take: 50
     }), examIds.length > 0 ? prisma.submission.findMany({
-      where: { StudentId: studentId, ExamId: { in: examIds } },
+      where: { StudentId: studentId, ClassId: c.Id, ExamId: { in: examIds }, OR: [{ IsLatest: true }, { IsLatest: null }] },
+      orderBy: [{ IsLatest: { sort: 'desc', nulls: 'last' } }, { AttemptNumber: 'desc' }, { SubmittedAt: 'desc' }],
       select: {
         Id: true, ExamId: true, TotalScore: true, FinalScore: true,
         GradingStatus: true, ReviewStatus: true, SubmittedAt: true,
@@ -688,7 +574,7 @@ export class StudentPortalController extends BaseController {
       }
     }))
 
-    const subMap = new Map(submissions.map(s => [s.ExamId, s]))
+    const subMap = new Map(submissions.slice().reverse().map(s => [s.ExamId, s]))
     const deadlines = await studentExamDeadlines(prisma, studentId, examIds, c.Id)
 
     const result = {
@@ -730,7 +616,7 @@ export class StudentPortalController extends BaseController {
           type: exam?.ExamType,
           isSubmitted: !!sub,
           submissionId: sub?.Id || null,
-          score: sub?.FinalScore ?? sub?.TotalScore ?? null,
+          score: publishedStudentScore(sub),
           submittedAt: sub?.SubmittedAt || null,
           gradingStatus: sub?.GradingStatus || null,
           reviewStatus: sub?.ReviewStatus || null,
