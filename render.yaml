@@ -1,0 +1,50 @@
+# Review database baseline and complete docs/PRODUCTION_DEPLOYMENT.md before enabling deployment.
+services:
+  - type: web
+    name: aita-api
+    runtime: docker
+    plan: starter
+    rootDir: aita-backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/ready
+    autoDeployTrigger: "off"
+    # Run only after reconciling an existing database's migration ledger.
+    preDeployCommand: npm run db:migrate
+    disk:
+      name: aita-data
+      mountPath: /app/storage
+      sizeGB: 10
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3001"
+      - key: RUNTIME_DATA_DIR
+        value: /app/storage
+      - key: ENABLE_DEV_SEED
+        value: "false"
+      - key: AI_STUB_MODE
+        value: "false"
+      - key: SANDBOX_ENABLED
+        value: "false"
+      - key: STDIO_SANDBOX_ENABLED
+        value: "false"
+      - key: GRADING_WORKER_ENABLED
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: GEMINI_API_KEYS
+        sync: false

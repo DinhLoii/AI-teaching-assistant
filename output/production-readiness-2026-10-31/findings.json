@@ -1,0 +1,343 @@
+{
+  "date": "2026-10-31",
+  "verdict": "NOT_READY_FOR_PUBLIC_PRODUCTION",
+  "findings": [
+    {
+      "id": "F01",
+      "priority": "P0",
+      "category": "Tài khoản",
+      "title": "Database hiện tại còn tài khoản demo với mật khẩu mẫu",
+      "confidence": "Đã đối chiếu hash chỉ đọc",
+      "detail": "Cả 6 tài khoản demo tìm thấy vẫn dùng mật khẩu mẫu công khai trong dev-seed: 2 admin, 2 giảng viên, 2 sinh viên. Tất cả đang active và không bắt buộc đổi mật khẩu. Đây là trạng thái database hiện tại, không phải suy đoán về deployment chưa tồn tại.",
+      "action": "Trước khi dùng database này trên Internet: đổi mật khẩu hoặc vô hiệu hóa tài khoản demo, thu hồi phiên cũ, rà lại admin thực sự. Không chỉ tắt ENABLE_DEV_SEED: cờ đó không xóa tài khoản đã có.",
+      "files": [
+        {
+          "file": "aita-backend/src/database/dev-seed.ts",
+          "line": 12
+        }
+      ],
+      "evidence": "database-readonly-check.json"
+    },
+    {
+      "id": "F02",
+      "priority": "P0",
+      "category": "AI / thực thi",
+      "title": "Chạy JavaScript do AI tạo ngay trong tiến trình backend",
+      "confidence": "Đã tái hiện bằng solver vô hại",
+      "detail": "generateRubricRulesAsync dùng new Function để chạy javascriptSolver từ phản hồi mô hình, ngoài Docker và không có giới hạn thời gian riêng. Probe thay phản hồi AI bằng hàm chỉ đọc process.version đã đọc được phiên bản Node của host. Không đọc bí mật, không thực hiện payload tấn công. Kết quả chứng minh thiếu ranh giới thực thi; chưa chứng minh một prompt cụ thể khai thác được mô hình thật.",
+      "action": "Bỏ thực thi solver trong API; chỉ chấp nhận expectedOutput đã xác minh hoặc chạy solver trong worker cô lập, timeout, giới hạn CPU/RAM, không mạng và không truy cập bí mật.",
+      "files": [
+        {
+          "file": "aita-backend/src/modules/grading/engine/infrastructure/ai/GeminiAiProvider.ts",
+          "line": 716
+        }
+      ],
+      "evidence": "readiness-probes.json"
+    },
+    {
+      "id": "F03",
+      "priority": "P1",
+      "category": "Phân quyền",
+      "title": "Đường API AI bỏ lọt thao tác ghi của sinh viên và thiếu phạm vi dữ liệu",
+      "confidence": "Đã tái hiện HTTP middleware và use case cô lập",
+      "detail": "POST /ai/save-assignment chỉ yêu cầu đăng nhập. Use case nhận creatorId, không nhận vai trò/phạm vi lớp và tạo bài Published cho classId tùy chọn. Probe ghi fixture xác nhận tài khoản mang định danh sinh viên có thể tạo bài cho lớp khác. /ai/assess, /rag/assess, /rag/chat và /rag/diagnose cũng cần kiểm tra quyền theo submission/exam trước khi đọc ngữ cảnh hoặc tiêu quota AI. Không gọi AI hay ghi database thật trong probe.",
+      "action": "Áp dụng một chính sách quyền dùng chung cho toàn bộ API tương đương, không chỉ /grading. Chặn sinh viên tạo/công bố/chấm bài; kiểm tra sở hữu/ghi danh trước khi lấy source, rubric, điểm và ngữ cảnh RAG.",
+      "files": [
+        {
+          "file": "aita-backend/src/modules/ai/presentation/ai.router.ts",
+          "line": 24
+        },
+        {
+          "file": "aita-backend/src/modules/ai/application/use-cases/save-ai-assignment.use-case.ts",
+          "line": 7
+        },
+        {
+          "file": "aita-backend/src/modules/ai/infrastructure/rag/rag-engine.service.ts",
+          "line": 37
+        }
+      ],
+      "evidence": "readiness-probes.json"
+    },
+    {
+      "id": "F04",
+      "priority": "P1",
+      "category": "Phân quyền",
+      "title": "Lớp học còn lỗi truy cập chéo lớp",
+      "confidence": "Đã tái hiện roster; kiểm tra route và use case cập nhật",
+      "detail": "StudentPortalController.getClassDetail tìm lớp theo ID/môn/mã lớp mà không ràng buộc người gọi là thành viên. Probe sinh viên chưa ghi danh vẫn nhận danh sách và email fixture của lớp khác. PATCH /classes/:id cho mọi lecturer đi vào update; controller không chuyển user vào use case và use case không kiểm tra lớp phụ trách. Vì vậy có thể thay thông tin/phân công của lớp khác. Route danh sách sinh viên của giảng viên cũng thiếu kiểm tra sở hữu.",
+      "action": "Ràng buộc membership/ownership ở truy vấn và service, trả 403/404 cho tài nguyên ngoài phạm vi. Bổ sung ma trận student/lecturer/admin trên cả API chi tiết, roster, sửa lớp và phân công.",
+      "files": [
+        {
+          "file": "aita-backend/src/modules/student-portal/presentation/student-portal.controller.ts",
+          "line": 470
+        },
+        {
+          "file": "aita-backend/src/modules/classes/presentation/classes.controller.ts",
+          "line": 122
+        },
+        {
+          "file": "aita-backend/src/modules/classes/application/use-cases/update-class.use-case.ts",
+          "line": 12
+        }
+      ],
+      "evidence": "readiness-probes.json"
+    },
+    {
+      "id": "F05",
+      "priority": "P1",
+      "category": "Điểm / AI",
+      "title": "Một luồng đánh giá AI đang lỗi kết nối UoW và có quy tắc ghi điểm không tương thích",
+      "confidence": "Đã tái hiện UoW thật với cộng tác viên fixture",
+      "detail": "AssessSubmissionUseCase tìm client qua uow.prisma hoặc resolve(Symbol.for(\"PrismaClient\")), nhưng PrismaUnitOfWork chỉ có getClient() và DI không đăng ký factory này. Sau khi đánh giá sẽ lỗi thiếu factory. Khi tiêm client fixture để kiểm tra nhánh ghi, nhánh đó ghi đè điểm/report đã công bố, không chuyển về DRAFT, không áp dụng penalty/audit chuẩn và đặt GRADED_BY_AI trong khi bảng điểm dùng Graded. Không kết luận API hiện tại đã sửa được điểm thật: wiring đang chặn trước nhánh ghi.",
+      "action": "Đưa các đường chấm về cùng hàng đợi và hợp đồng trạng thái/điểm; sửa wiring đồng thời với quyền, review status, penalty và audit. Không chỉ thêm factory để nhánh ghi thiếu kiểm soát bắt đầu chạy.",
+      "files": [
+        {
+          "file": "aita-backend/src/modules/ai/application/use-cases/assess-submission.use-case.ts",
+          "line": 36
+        },
+        {
+          "file": "aita-backend/src/shared/infrastructure/prisma-unit-of-work.ts",
+          "line": 92
+        }
+      ],
+      "evidence": "readiness-probes.json"
+    },
+    {
+      "id": "F06",
+      "priority": "P1",
+      "category": "Xác thực",
+      "title": "Chưa có giới hạn thử đăng nhập/OTP và giới hạn tệp trên các API AI",
+      "confidence": "Đã tái hiện 120 yêu cầu qua middleware; rà soát source",
+      "detail": "Middleware rateLimiter có mã nhưng không được gắn vào auth routes. Probe 120 yêu cầu login fixture đều đi qua, không có 429. Forgot/reset password không có bộ đếm số lần thử OTP; OTP sinh bằng Math.random. AiRouter dùng multer.memoryStorage không có limits.fileSize, trong khi mọi tài khoản đăng nhập có thể tới nhiều endpoint AI. Các giới hạn JSON 100 MB không giới hạn upload multipart.",
+      "action": "Giới hạn theo IP và tài khoản cho login/reset/forgot, giới hạn attempts/TTL cho OTP, dùng crypto.randomInt, đặt giới hạn upload và quota/concurrency AI. Cấu hình proxy/IP tin cậy có kiểm thử thay vì tin mọi X-Forwarded-For.",
+      "files": [
+        {
+          "file": "aita-backend/src/modules/auth/presentation/auth.router.ts",
+          "line": 20
+        },
+        {
+          "file": "aita-backend/src/modules/auth/application/use-cases/forgot-password.use-case.ts",
+          "line": 31
+        },
+        {
+          "file": "aita-backend/src/modules/ai/presentation/ai.router.ts",
+          "line": 8
+        }
+      ],
+      "evidence": "readiness-probes.json"
+    },
+    {
+      "id": "F07",
+      "priority": "P1",
+      "category": "Xác thực",
+      "title": "Khóa tài khoản và đổi/reset mật khẩu chưa thu hồi đầy đủ phiên đăng nhập",
+      "confidence": "Xác nhận đường mã",
+      "detail": "authenticate chỉ xác minh JWT, không đối chiếu trạng thái/tokensVersion. ToggleLock chỉ lưu trạng thái user; đổi/reset password không gọi revokeAllForUser. Access token cũ tiếp tục hợp lệ tới khi hết hạn. Sau đổi mật khẩu, refresh token cũ vẫn có thể được dùng khi user còn active. Không coi JWT stateless tự thân là lỗi; điểm thiếu là hành vi thu hồi cần cho khóa tài khoản và phục hồi mật khẩu.",
+      "action": "Thiết kế thu hồi phiên theo token version/session hoặc danh sách thu hồi; revoke refresh tokens khi đổi/reset mật khẩu/khóa user và xác minh phiên đang dùng tại các API nhạy cảm.",
+      "files": [
+        {
+          "file": "aita-backend/src/middleware/auth.ts",
+          "line": 28
+        },
+        {
+          "file": "aita-backend/src/modules/users/application/use-cases/toggle-lock.use-case.ts",
+          "line": 31
+        },
+        {
+          "file": "aita-backend/src/modules/auth/application/use-cases/change-password.use-case.ts",
+          "line": 35
+        }
+      ],
+      "evidence": null
+    },
+    {
+      "id": "F08",
+      "priority": "P1",
+      "category": "Thư viện",
+      "title": "Dependency audit có cảnh báo nghiêm trọng, gồm thư viện xử lý ZIP trực tiếp",
+      "confidence": "npm audit và advisory đã đối chiếu",
+      "detail": "npm audit --omit=dev: frontend 4 package entries (1 critical, 3 high), backend 50 (2 critical, 19 high, 26 moderate, 3 low). Đây là package entries trong cây phụ thuộc, không phải 54 exploit độc lập hay 54 đường mã đã chứng minh khai thác. Next 16.3.6 nằm trong dải ảnh hưởng advisory critical; adm-zip 0.5.18 và xlsx 0.18.5 cũng bị cảnh báo. Mức khai thác phụ thuộc tính năng được dùng. Backend còn đưa test tooling vào dependencies nên audit production bao gồm cả nhánh đó.",
+      "action": "Nâng Next/eslint-config-next cùng lockfile lên bản đã vá tương thích; vá adm-zip và các parser nhận dữ liệu không tin cậy; chọn bản phân phối/thư viện Excel được duy trì. Phân loại đường thực sự dùng trước khi nâng major; không chạy audit fix --force mù quáng. Thêm security gate vào CI.",
+      "files": [
+        {
+          "file": "aita-fontend/package.json",
+          "line": 19
+        },
+        {
+          "file": "aita-backend/package.json",
+          "line": 34
+        }
+      ],
+      "evidence": "frontend-dependencies.json",
+      "sources": [
+        "https://github.com/advisories/GHSA-2464-fhr4-w9xw",
+        "https://github.com/advisories/GHSA-7q85-xj36-vmfc",
+        "https://github.com/advisories/GHSA-5pgg-2g8v-p4x9"
+      ]
+    },
+    {
+      "id": "F09",
+      "priority": "P1",
+      "category": "Database",
+      "title": "Schema hiện có nhưng lịch sử Prisma migration chưa sẵn sàng cho lệnh deploy mặc định",
+      "confidence": "Kiểm tra chỉ đọc database hiện tại",
+      "detail": "Prisma validate đạt, nhưng migrate status báo cả 3 migration chưa áp dụng theo ledger. Database hiện có bảng nghiệp vụ, queue và realtime. Docker CMD chạy db:migrate trước khi khởi động, nên không thể xem schema đang tồn tại là bằng chứng lệnh migrate deploy sẽ thành công. Diff chỉ đọc còn thấy khác biệt FK và index HNSW; index vector tùy chỉnh không tự động coi là lỗi hoặc xóa theo diff.",
+      "action": "Backup, đối chiếu baseline với schema thật, xác định migration nào đã chạy bằng SQL thủ công, rồi baseline/resolve có kiểm soát trên bản sao trước. Không chạy reset, không đánh dấu applied khi chưa xác minh, không thực thi SQL diff hiện tại chỉ để làm sạch báo cáo.",
+      "files": [
+        {
+          "file": "aita-backend/Dockerfile",
+          "line": 21
+        }
+      ],
+      "evidence": "migration-status.log"
+    },
+    {
+      "id": "F10",
+      "priority": "P1",
+      "category": "Container",
+      "title": "Dockerfile thiếu quyền ghi thư mục artifacts của người dùng runtime",
+      "confidence": "Tái hiện EACCES với chính lớp đã build",
+      "detail": "Image chuyển sang USER node nhưng chỉ tạo/chown temp, uploads và storage. LocalArtifactStore tạo /app/artifacts/files và được khởi tạo khi đăng ký grading routes. Mô phỏng quyền /app root-owned trong container không mạng, chạy lớp build hiện tại bằng user node, đã nhận EACCES. Clean image thiếu thư mục có thể lỗi khởi động; nếu thư mục được copy vào image nhưng root-owned thì lỗi khi ghi artifact.",
+      "action": "Chuẩn hóa thư mục dữ liệu runtime, tạo và cấp quyền trước USER node, đưa artifacts vào storage đã cấu hình. Kiểm thử khởi động image sạch và lưu/đọc báo cáo dưới đúng UID runtime; tránh mang dữ liệu artifact local vào build context.",
+      "files": [
+        {
+          "file": "aita-backend/Dockerfile",
+          "line": 16
+        },
+        {
+          "file": "aita-backend/src/modules/grading/engine/infrastructure/file-system/LocalArtifactStore.ts",
+          "line": 11
+        }
+      ],
+      "evidence": "docker-artifact-permissions.log"
+    },
+    {
+      "id": "F11",
+      "priority": "P1",
+      "category": "Vercel / Render",
+      "title": "Lưu trữ tệp và worker chấm cần thiết kế rõ trước khi chọn cấu hình Render",
+      "confidence": "Xác nhận source và giới hạn nền tảng chính thức",
+      "detail": "ZIP mới lưu trên filesystem; avatar/attachment và artifacts ở các thư mục khác. DB bền vững không giữ được các tệp này sau redeploy nếu dùng ổ đĩa ephemeral. Nếu tách worker, disk của một Render service không được chia sẻ với service khác. Bộ chấm dùng Docker daemon, bind đường dẫn cục bộ và probe cổng localhost; chỉ đưa API lên Docker hoặc đặt DOCKER_HOST không giải quyết việc source files/ports ở máy khác. Chưa có render.yaml hoặc mô hình runner từ xa hoàn chỉnh.",
+      "action": "Chốt phạm vi chấm source-only hay thực thi thật. Dùng object storage riêng tư hoặc gom toàn bộ dữ liệu vào persistent disk có backup; worker khác máy phải tải artifact từ nguồn chung. Chạy mã sinh viên trên worker cô lập có giao thức vận chuyển source và kết quả. Không suy diễn Render tự cung cấp Docker daemon bên trong container ứng dụng.",
+      "files": [
+        {
+          "file": "aita-backend/src/modules/submissions/infrastructure/submission-storage.ts",
+          "line": 6
+        },
+        {
+          "file": "aita-backend/src/modules/grading/engine/application/sandbox/ExecutionSandboxService.ts",
+          "line": 527
+        }
+      ],
+      "evidence": null,
+      "sources": [
+        "https://render.com/docs/disks",
+        "https://render.com/docs/free",
+        "https://render.com/docs/docker"
+      ]
+    },
+    {
+      "id": "F12",
+      "priority": "P1",
+      "category": "Email",
+      "title": "Thiếu SMTP hoặc gửi email thất bại vẫn có thể báo thành công",
+      "confidence": "Xác nhận đường mã",
+      "detail": "NodemailerService trả true trong nhánh mock khi thiếu cấu hình, kể cả production; khi gửi lỗi trả false thay vì throw. ForgotPasswordUseCase không kiểm tra boolean trả về, nên người dùng có thể được thông báo đã gửi OTP nhưng không nhận email. Trên Render Free, SMTP 25/465/587 bị chặn theo tài liệu hiện tại.",
+      "action": "Production phải kiểm tra khả năng gửi email, báo lỗi có thể retry và không coi mock là giao hàng thành công. Chọn dịch vụ email HTTP hoặc hạ tầng hỗ trợ SMTP; kiểm thử reset-password/import thật trên staging với địa chỉ thử nghiệm.",
+      "files": [
+        {
+          "file": "aita-backend/src/shared/infrastructure/email/nodemailer.service.ts",
+          "line": 41
+        },
+        {
+          "file": "aita-backend/src/modules/auth/application/use-cases/forgot-password.use-case.ts",
+          "line": 58
+        }
+      ],
+      "evidence": null,
+      "sources": [
+        "https://render.com/docs/free"
+      ]
+    },
+    {
+      "id": "F13",
+      "priority": "P2",
+      "category": "Tính năng",
+      "title": "Một số API AI vẫn phụ thuộc microservice chưa có mã chạy trong repo",
+      "confidence": "Xác nhận đường mã và inventory",
+      "detail": "ExternalAiService.generateExercise/assess/learningFeedback gọi AI_ENDPOINT, mặc định localhost:8000; một số fetch không có timeout. Thư mục aita-AI hiện chỉ có CONTRIBUTING.md và package-lock.json, không có main.py/requirements hay image triển khai. Điều này không có nghĩa engine Gemini/RAG hiện tại đều hỏng: các engine đó là luồng khác.",
+      "action": "Hợp nhất sang provider đang dùng hoặc bổ sung microservice có mã nguồn, health check, auth và timeout. Nếu bỏ luồng cũ, gỡ/ẩn endpoint và UI tương ứng thay vì để các chức năng lỗi sau deploy.",
+      "files": [
+        {
+          "file": "aita-backend/src/modules/ai/infrastructure/external-ai.service.ts",
+          "line": 32
+        },
+        {
+          "file": "aita-backend/src/config/env.ts",
+          "line": 17
+        }
+      ],
+      "evidence": null
+    },
+    {
+      "id": "F14",
+      "priority": "P2",
+      "category": "Lớp / học kỳ",
+      "title": "Kiểm tra trùng khi sửa lớp chưa xét đúng học kỳ",
+      "confidence": "Xác nhận đường mã",
+      "detail": "UpdateClassUseCase gọi findByCodeAndSubject khi đổi mã/môn/kỳ. Repository lọc ClassCode và SubjectId, bỏ SemesterId, trong khi ràng buộc database là bộ ba mã lớp/môn/kỳ và luồng tạo lớp đã xét đủ bộ ba. Có thể từ chối đổi sang kỳ hợp lệ vì một lớp của kỳ khác, hoặc bỏ sót trùng thật tùy bản ghi findFirst trả về.",
+      "action": "Kiểm tra trùng bằng đủ bộ ba, loại trừ ID hiện tại và xử lý xung đột unique của database. Bổ sung test cùng mã lớp/môn trên nhiều học kỳ.",
+      "files": [
+        {
+          "file": "aita-backend/src/modules/classes/application/use-cases/update-class.use-case.ts",
+          "line": 30
+        },
+        {
+          "file": "aita-backend/src/modules/classes/infrastructure/repositories/prisma-class-repository.ts",
+          "line": 65
+        }
+      ],
+      "evidence": null
+    },
+    {
+      "id": "F15",
+      "priority": "P2",
+      "category": "Build / chất lượng",
+      "title": "Cổng kiểm chứng build/lint/browser còn khoảng trống",
+      "confidence": "Các lệnh kiểm tra đã chạy",
+      "detail": "Lint src frontend có 0 lỗi và 1.027 cảnh báo. npm run lint toàn thư mục báo 1.407 lỗi/13.900 cảnh báo vì quét cả .next-local do thiếu ignore; không gọi đây là 1.407 lỗi mã ứng dụng. Backend có 115 file @ts-nocheck trên 469 file nguồn. Build Webpack đạt; build Turbopack mặc định lỗi xử lý CSS/font trong môi trường Windows này, chưa chứng minh Vercel Linux cũng lỗi. vercel.json ở root còn cấu hình dist/index.html cũ và root package không có build; cần chọn root aita-fontend.",
+      "action": "Chốt lệnh build production sau cập nhật Next và chạy CI Linux sạch. Loại build output khỏi lint, thêm lint/security/browser cần thiết vào CI và giảm nocheck dần. Chỉ coi test browser thất bại là bug sản phẩm sau khi phân loại fixture/môi trường.",
+      "files": [
+        {
+          "file": "aita-fontend/eslint.config.mjs",
+          "line": 14
+        },
+        {
+          "file": "vercel.json",
+          "line": 3
+        },
+        {
+          "file": ".github/workflows/ci.yml",
+          "line": 81
+        }
+      ],
+      "evidence": "frontend-source-lint.json"
+    },
+    {
+      "id": "F16",
+      "priority": "P2",
+      "category": "Giao diện",
+      "title": "Làm mới bài tập sinh viên tạm xóa danh sách đang xem",
+      "confidence": "Đã tái hiện browser và chụp màn hình",
+      "detail": "Trong loadData(true), latestAssignments khởi tạo bằng mảng rỗng. Khi dashboard trả về nhanh còn request assignments đang chờ, updateTasks kết hợp mảng rỗng và xóa tasks hiện hành. Probe giữ chậm API assignments: nút vẫn hiện Đang làm mới nhưng tổng bài tập về 0 và UI báo không tìm thấy bài. system-refresh.browser.cjs thất bại ở yêu cầu giữ nội dung cũ trong lúc refresh; đây là lỗi giao diện đã xác nhận. Không kết luận dữ liệu bị xóa khỏi database.",
+      "action": "Giữ snapshot đang hiển thị trong background refresh, chỉ thay phần dữ liệu đã tải thành công hoặc commit snapshot mới khi đủ dữ liệu. Không biến response phụ đến trước thành trạng thái trống. Chạy lại toàn bộ các scenario của test refresh sau sửa.",
+      "files": [
+        {
+          "file": "aita-fontend/src/features/assignments/screens/StudentAssignmentsPage.tsx",
+          "line": 210
+        }
+      ],
+      "evidence": "diagnose-refresh.log"
+    }
+  ]
+}

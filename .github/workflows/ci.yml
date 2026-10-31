@@ -65,6 +65,8 @@ jobs:
 
       - name: Generate Prisma Client
         run: npx prisma generate
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
 
       - name: TypeScript Compilation & Build
         run: npm run build
@@ -109,6 +111,12 @@ jobs:
       - name: Verify Architecture & Route Structure
         run: npm run check:structure
 
+      - name: Lint application source
+        run: npm run lint
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Run Automated Unit Tests
         run: npm test
 
@@ -121,6 +129,24 @@ jobs:
           API_PROXY_TARGET: http://localhost:3001
           NEXT_TELEMETRY_DISABLED: 1
         run: npm run build
+
+      - name: Install browser for gradebook and refresh regressions
+        working-directory: aita-backend
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser regressions against production frontend
+        env:
+          TEST_BASE_URL: http://localhost:5174
+        run: |
+          npm run start -- -p 5174 > /tmp/aita-next.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://localhost:5174/login > /dev/null; then break; fi
+            sleep 1
+          done
+          node tests/admin-gradebook.browser.cjs
+          node tests/system-refresh.browser.cjs
 
   # =========================================================================
   # 3. DOCKER BUILD VERIFICATION

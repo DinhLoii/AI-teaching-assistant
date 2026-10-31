@@ -1,0 +1,104 @@
+[
+  {
+    "file": "admin-analytics.browser.cjs",
+    "status": "passed",
+    "seconds": 19
+  },
+  {
+    "file": "admin-gradebook.browser.cjs",
+    "status": "passed",
+    "seconds": 3
+  },
+  {
+    "file": "assignment-analysis.browser.cjs",
+    "status": "passed",
+    "seconds": 2
+  },
+  {
+    "file": "assignment-documents.browser.cjs",
+    "status": "passed",
+    "seconds": 3
+  },
+  {
+    "file": "assignment-performance.browser.cjs",
+    "status": "passed",
+    "seconds": 2
+  },
+  {
+    "file": "assignment-trash.browser.cjs",
+    "status": "passed",
+    "seconds": 7
+  },
+  {
+    "file": "dashboard-summary.browser.cjs",
+    "status": "passed",
+    "seconds": 2
+  },
+  {
+    "file": "grading-log.browser.cjs",
+    "status": "passed",
+    "seconds": 3
+  },
+  {
+    "file": "navigation-performance.browser.cjs",
+    "status": "passed",
+    "seconds": 3
+  },
+  {
+    "file": "notification-time.browser.cjs",
+    "status": "passed",
+    "seconds": 4
+  },
+  {
+    "file": "notifications-realtime.browser.cjs",
+    "status": "passed",
+    "seconds": 12
+  },
+  {
+    "file": "student-classes-refresh.browser.cjs",
+    "status": "passed",
+    "seconds": 2
+  },
+  {
+    "file": "student-syllabus.browser.cjs",
+    "status": "passed",
+    "seconds": 5
+  },
+  {
+    "file": "submission-extension.browser.cjs",
+    "status": "passed",
+    "seconds": 3
+  },
+  {
+    "file": "submission-modal.browser.cjs",
+    "status": "passed",
+    "seconds": 7
+  },
+  {
+    "file": "submission-report.browser.cjs",
+    "status": "passed",
+    "seconds": 2,
+    "rerunEvidence": "submission-report-rerun.log",
+    "note": "Initial run failed writing a locked tracked PNG on Windows; rerun passed with TEST_ARTIFACT_DIR."
+  },
+  {
+    "file": "system-performance.browser.cjs",
+    "status": "passed",
+    "seconds": 3
+  },
+  {
+    "file": "system-refresh.browser.cjs",
+    "status": "passed",
+    "seconds": 6
+  },
+  {
+    "file": "ui-grading-start.browser.cjs",
+    "status": "passed",
+    "seconds": 3
+  },
+  {
+    "file": "user-action-menu.browser.cjs",
+    "status": "passed",
+    "seconds": 6
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "checks": [
+    "real Prisma Decimal revision",
+    "zero score",
+    "weighted totals",
+    "persisted audit and notification",
+    "stale edit 409",
+    "bulk rollback",
+    "class-specific weights"
+  ],
+  "database": "local temporary PostgreSQL; pgvector excluded",
+  "productionDataChanged": false
+}

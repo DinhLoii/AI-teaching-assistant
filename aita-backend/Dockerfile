@@ -13,9 +13,9 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN npx playwright install --with-deps chromium
 
 COPY . .
-RUN npm run build && mkdir -p /app/temp /app/uploads /app/storage && chown -R node:node /app/temp /app/uploads /app/storage
+RUN npm run build && mkdir -p /app/temp /app/uploads /app/storage /app/artifacts && chown -R node:node /app/temp /app/uploads /app/storage /app/artifacts
 USER node
 
 EXPOSE 3001
 
-CMD ["sh", "-c", "npm run db:migrate && exec node --import tsx src/server.ts"]
+CMD ["node", "dist/server.js"]

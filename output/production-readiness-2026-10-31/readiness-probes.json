@@ -1,0 +1,79 @@
+{
+  "date": "2026-10-31",
+  "mode": "isolated-fixtures-no-live-writes",
+  "probes": [
+    {
+      "id": "AUTH-AI-SAVE",
+      "title": "Student identity can create and publish an AI assignment for an arbitrary class",
+      "confirmed": true,
+      "evidence": {
+        "creatorRole": "STUDENT",
+        "published": true,
+        "foreignClassAccepted": true,
+        "transactionClientIgnored": true
+      }
+    },
+    {
+      "id": "GRADE-AI-OVERWRITE",
+      "title": "Latent update branch overwrites published grades without resetting publication; exercised only with an injected fixture client",
+      "confirmed": true,
+      "evidence": {
+        "runtimeScope": "injected-fixture-client-not-current-production-DI",
+        "oldScore": 9,
+        "newScore": 4,
+        "stillPublished": true,
+        "statusIncompatibleWithGradebook": "GRADED_BY_AI"
+      }
+    },
+    {
+      "id": "AI-ASSESS-DI",
+      "title": "Current UoW wiring fails after assessment because PrismaClient has no registered factory",
+      "confirmed": true,
+      "evidence": {
+        "actualUowClass": "PrismaUnitOfWork",
+        "error": "No repository factory registered for token: Symbol(PrismaClient)"
+      }
+    },
+    {
+      "id": "AI-HOST-EXECUTION",
+      "title": "Model-produced reference solver runs in the backend process and can access the process global",
+      "confirmed": true,
+      "evidence": {
+        "benignProbeOnly": true,
+        "readHostNodeVersion": true,
+        "noTimeoutBoundary": true
+      }
+    },
+    {
+      "id": "ROSTER-IDOR",
+      "title": "A non-enrolled student receives another class roster and contact information",
+      "confirmed": true,
+      "evidence": {
+        "nonEnrolledCaller": true,
+        "rosterRowsReturned": 1,
+        "contactInformationReturned": true
+      }
+    },
+    {
+      "id": "HTTP-ROLES",
+      "title": "Actual HTTP middleware permits student AI writes and any lecturer class updates while gradebook denies students",
+      "confirmed": true,
+      "evidence": {
+        "studentAiSave": 201,
+        "studentAiAssess": 200,
+        "lecturerForeignClassUpdate": 200,
+        "studentGradebook": 403
+      }
+    },
+    {
+      "id": "AUTH-RATE-LIMIT",
+      "title": "Authentication route has no active rate limit",
+      "confirmed": true,
+      "evidence": {
+        "attemptsInOneProcess": 120,
+        "acceptedByMiddleware": 120,
+        "rateLimited": 0
+      }
+    }
+  ]
+}

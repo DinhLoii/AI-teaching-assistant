@@ -1,0 +1,37 @@
+{
+  "mode": "read-only",
+  "date": "2026-10-31",
+  "knownDemoAccountsPresent": 6,
+  "accountsStillUsingPublishedDemoPasswords": [
+    {
+      "role": "LECTURER",
+      "active": true,
+      "forcedPasswordChange": false
+    },
+    {
+      "role": "ADMIN",
+      "active": true,
+      "forcedPasswordChange": false
+    },
+    {
+      "role": "STUDENT",
+      "active": true,
+      "forcedPasswordChange": false
+    },
+    {
+      "role": "LECTURER",
+      "active": true,
+      "forcedPasswordChange": false
+    },
+    {
+      "role": "ADMIN",
+      "active": true,
+      "forcedPasswordChange": false
+    },
+    {
+      "role": "STUDENT",
+      "active": true,
+      "forcedPasswordChange": false
+    }
+  ]
+}

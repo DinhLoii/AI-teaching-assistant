@@ -4,6 +4,7 @@ coverage
 temp
 uploads
 storage
+artifacts
 prisma/dev.db
 .git
 .vscode

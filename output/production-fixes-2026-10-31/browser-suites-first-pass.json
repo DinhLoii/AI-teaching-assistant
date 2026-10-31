@@ -1,0 +1,103 @@
+[
+  {
+    "file": "admin-analytics.browser.cjs",
+    "status": "passed",
+    "seconds": 19
+  },
+  {
+    "file": "admin-gradebook.browser.cjs",
+    "status": "passed",
+    "seconds": 3
+  },
+  {
+    "file": "assignment-analysis.browser.cjs",
+    "status": "passed",
+    "seconds": 2
+  },
+  {
+    "file": "assignment-documents.browser.cjs",
+    "status": "passed",
+    "seconds": 3
+  },
+  {
+    "file": "assignment-performance.browser.cjs",
+    "status": "passed",
+    "seconds": 2
+  },
+  {
+    "file": "assignment-trash.browser.cjs",
+    "status": "passed",
+    "seconds": 7
+  },
+  {
+    "file": "dashboard-summary.browser.cjs",
+    "status": "passed",
+    "seconds": 2
+  },
+  {
+    "file": "grading-log.browser.cjs",
+    "status": "passed",
+    "seconds": 3
+  },
+  {
+    "file": "navigation-performance.browser.cjs",
+    "status": "passed",
+    "seconds": 3
+  },
+  {
+    "file": "notification-time.browser.cjs",
+    "status": "passed",
+    "seconds": 4
+  },
+  {
+    "file": "notifications-realtime.browser.cjs",
+    "status": "passed",
+    "seconds": 12
+  },
+  {
+    "file": "student-classes-refresh.browser.cjs",
+    "status": "passed",
+    "seconds": 2
+  },
+  {
+    "file": "student-syllabus.browser.cjs",
+    "status": "passed",
+    "seconds": 5
+  },
+  {
+    "file": "submission-extension.browser.cjs",
+    "status": "passed",
+    "seconds": 3
+  },
+  {
+    "file": "submission-modal.browser.cjs",
+    "status": "passed",
+    "seconds": 7
+  },
+  {
+    "file": "submission-report.browser.cjs",
+    "status": "failed",
+    "seconds": 2,
+    "error": "Error: UNKNOWN: unknown error, open 'E:\\FPTU\\Term07\\SWD392\\AI-Teaching-Assistant\\aita-fontend\\tests\\submission-report-mobile.png'\n    at async open (node:internal/fs/promises:639:25)\n    at async Object.writeFile (node:internal/fs/promises:1213:14)\n    at async _Page.screenshot (E:\\FPTU\\Term07\\SWD392\\AI-Teaching-Assistant\\aita-backend\\node_modules\\playwright-core\\lib\\coreBundle.js:60157:11)\n    at async E:\\FPTU\\Term07\\SWD392\\AI-Teaching-Assistant\\aita-fontend\\tests\\submission-report.browser.cjs:55:5 {\n  errno: -4094,\n  code: 'UNKNOWN',\n  syscall: 'open',\n  path: 'E:\\\\FPTU\\\\Term07\\\\SWD392\\\\AI-Teaching-Assistant\\\\aita-fontend\\\\tests\\\\submission-report-mobile.png'\n}\n"
+  },
+  {
+    "file": "system-performance.browser.cjs",
+    "status": "passed",
+    "seconds": 3
+  },
+  {
+    "file": "system-refresh.browser.cjs",
+    "status": "passed",
+    "seconds": 6
+  },
+  {
+    "file": "ui-grading-start.browser.cjs",
+    "status": "passed",
+    "seconds": 3
+  },
+  {
+    "file": "user-action-menu.browser.cjs",
+    "status": "passed",
+    "seconds": 6
+  }
+]
