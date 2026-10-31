@@ -1,5 +1,4 @@
 import express from 'express'
-import path from 'path'
 import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
@@ -13,9 +12,15 @@ import { errorHandler } from './middleware/errorHandler.js'
 import { requestLogger } from './middleware/request-logger.js'
 import { ApiResponse } from './shared/presentation/api-response.js'
 import { analyticsMutationEvents } from './shared/infrastructure/analytics-realtime.js'
+import { publicUploadsRoot } from './shared/infrastructure/runtime-storage.js'
 
 export function createApp() {
   const app = express()
+  if (process.env.TRUST_PROXY_HOPS) {
+    const hops = Number(process.env.TRUST_PROXY_HOPS)
+    if (!Number.isInteger(hops) || hops < 1 || hops > 3) throw new Error('TRUST_PROXY_HOPS must be 1, 2 or 3 for a verified proxy topology')
+    app.set('trust proxy', hops)
+  }
 
   app.use(compression({ filter: (req, res) => String(res.getHeader('Content-Type') || '').includes('text/event-stream') ? false : compression.filter(req, res) }))
   app.use(helmet())
@@ -28,7 +33,7 @@ export function createApp() {
     .map((value) => value.trim())
     .filter(Boolean)
   const allowEveryOrigin = configuredOrigins.includes('*')
-  const allowedOrigins = new Set([...devOrigins, ...configuredOrigins])
+  const allowedOrigins = new Set([...(env.NODE_ENV === 'production' ? [] : devOrigins), ...configuredOrigins])
   const corsOptions = {
     origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
       // No Origin header at all means a same-origin GET, curl or another server.
@@ -48,8 +53,8 @@ export function createApp() {
   app.use(requestLogger)
   app.use(analyticsMutationEvents)
   if (env.LOG_LEVEL === 'debug') app.use(morgan(':method :safe-url :status :response-time ms', { immediate: false }))
-  app.use(express.json({ limit: '100mb' }))
-  app.use(express.urlencoded({ limit: '100mb', extended: true }))
+  app.use(express.json({ limit: '2mb' }))
+  app.use(express.urlencoded({ limit: '2mb', extended: true, parameterLimit: 500 }))
   // Uploaded avatars/attachments are fetched by the web client (:5173) and the Expo web build
   // (:8081), i.e. from a different origin than this API. helmet() defaults
   // Cross-Origin-Resource-Policy to same-origin, which made the browser download the image and
@@ -62,7 +67,7 @@ export function createApp() {
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
       next()
     },
-    express.static(path.join(process.cwd(), 'uploads')),
+    express.static(publicUploadsRoot()),
   )
 
   app.use('/api', routeManager.getRouter())

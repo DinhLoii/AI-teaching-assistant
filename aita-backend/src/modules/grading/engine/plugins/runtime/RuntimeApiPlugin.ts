@@ -6,7 +6,7 @@ import { Evidence } from '../../core/domain/evidence/Evidence';
 import { RuntimeTestDefinition, HttpTestStep, HttpAssertion } from '../../core/domain/tests/RuntimeTestDefinition';
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import Ajv from 'ajv';
-import jp from 'jsonpath';
+import { JSONPath } from 'jsonpath-plus';
 
 export class RuntimeApiPlugin implements IEvidenceProvider {
     public readonly pluginId = 'RuntimeApiPlugin';
@@ -76,7 +76,7 @@ export class RuntimeApiPlugin implements IEvidenceProvider {
                         for (const extract of step.extractVariables) {
                             let value: any;
                             if (extract.source === 'body' && extract.jsonPath && responseBody) {
-                                const nodes = jp.query(responseBody, extract.jsonPath);
+                                const nodes = JSONPath({ json: responseBody, path: extract.jsonPath, eval: false });
                                 if (nodes.length > 0) value = nodes[0];
                             } else if (extract.source === 'header' && extract.headerName) {
                                 value = response.headers[extract.headerName.toLowerCase()];
@@ -150,7 +150,7 @@ export class RuntimeApiPlugin implements IEvidenceProvider {
                 return { passed: false, errors: validate.errors?.map(e => `${e.instancePath} ${e.message}`) };
             case 'JsonPath':
                 if (!assertion.jsonPath) return { passed: false, errors: ['Missing jsonPath'] };
-                const nodes = jp.query(body, assertion.jsonPath);
+                const nodes = JSONPath({ json: body, path: assertion.jsonPath, eval: false });
                 return { passed: nodes.length > 0 && nodes[0] === assertion.expected };
             case 'HeaderEquals':
                 if (!assertion.jsonPath) return { passed: false }; // using jsonPath property to store header name for reuse

@@ -1,3 +1,9 @@
+export function publishedStudentScore(sub: { ReviewStatus?: string | null; GradingStatus?: string | null; FinalScore?: unknown; TotalScore?: unknown } | null | undefined): number | null {
+  if (sub?.ReviewStatus?.toUpperCase() !== 'PUBLISHED' || sub.GradingStatus?.toLowerCase() !== 'graded') return null
+  const score = sub.FinalScore ?? sub.TotalScore
+  return score == null || !Number.isFinite(Number(score)) ? null : Number(score)
+}
+
 export function dashboardResultSummaries(report: any, instructorFeedback: unknown) {
   const text = (value: unknown, fallback: string) => typeof value === 'string' && value.trim() ? value.trim() : fallback
   const execution = report?.executionSummary

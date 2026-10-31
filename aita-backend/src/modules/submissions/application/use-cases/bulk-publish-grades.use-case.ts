@@ -4,11 +4,13 @@ import type { ISubmissionRepository } from '../../domain/repositories/submission
 import type { AuthUser } from '../../../../types/express.js'
 import { prisma } from '../../../../database/prisma.js'
 import { v4 as uuidv4 } from 'uuid'
+import { assertAssignmentAccess } from '../../../grading/engine/assignment/assignment-access.js'
 
 export class BulkPublishGradesUseCase implements IUseCase<{ assignmentId: string; user: AuthUser }, { success: boolean, count: number }> {
   constructor(private readonly submissionRepo: ISubmissionRepository) { }
 
   async execute({ assignmentId, user }: { assignmentId: string; user: AuthUser }) {
+    await assertAssignmentAccess(assignmentId, user, true)
     // Find all submissions for this assignment
     const submissions = await this.submissionRepo.findMany({ examId: assignmentId, latestOnly: true })
     

@@ -1,6 +1,6 @@
 import type { IUseCase } from '../../../../shared/application/base-use-case.js'
 import type { ISubmissionRepository } from '../../domain/repositories/submission-repository.interface.js'
-import { NotFoundError } from '../../../../shared/application/app.error.js'
+import { ForbiddenError, NotFoundError } from '../../../../shared/application/app.error.js'
 import type { AuthUser } from '../../../../types/express.js'
 import { PublishGradeRequestDto, SubmissionResponseDto } from '../dtos/submission.dto.js'
 import { MESSAGES } from '../../../../shared/constants/messages.js'
@@ -12,7 +12,9 @@ export class PublishGradeUseCase implements IUseCase<{ id: string; dto: PublishG
   constructor(private readonly submissionRepo: ISubmissionRepository) { }
 
   async execute({ id, dto, user }: { id: string; dto: PublishGradeRequestDto, user: AuthUser }) {
-    const submission = await this.submissionRepo.findById(id)
+    const role = user.role.toUpperCase()
+    if (!['ADMIN', 'LECTURER'].includes(role)) throw new ForbiddenError('Bạn không có quyền điều chỉnh điểm')
+    const submission = role === 'LECTURER' ? await this.submissionRepo.findByIdForInstructor(id, user.id) : await this.submissionRepo.findById(id)
     if (!submission) throw new NotFoundError(MESSAGES.SUBMISSION_NOT_FOUND)
 
     // Fetch Exam details & SubmissionOverride if any

@@ -2,7 +2,7 @@ import http from 'http'
 import { createApp } from './app.js'
 import { env } from './config/env.js'
 import { seedTestAccounts } from './database/dev-seed.js'
-import { syncClassSemesters } from './database/sync-class-semesters.js'
+import { assertProductionPreflight } from './database/production-preflight.js'
 import { initNotificationWebSocket } from './shared/infrastructure/websocket/notification-ws.service.js'
 import { durableGradingQueue } from './modules/grading/engine/application/queue/durable-grading-queue.js'
 import { engineSubmissionController } from './modules/grading/engine/modules/submissions/routes/index.js'
@@ -20,6 +20,15 @@ try {
   process.exit(1)
 }
 
+if (env.NODE_ENV === 'production') {
+  try { await assertProductionPreflight() }
+  catch (error) {
+    console.error('[Preflight]', error instanceof Error ? error.message : 'Production requirements are not satisfied')
+    await prisma.$disconnect()
+    process.exit(1)
+  }
+}
+
 const app = createApp()
 const server = http.createServer(app)
 
@@ -35,11 +44,6 @@ if (env.NODE_ENV === 'development' && process.env.ENABLE_DEV_SEED === 'true') {
   seedTestAccounts()
     .then(() => console.log('🌱 Dev seed: test accounts ready (admin/lecturer/student @fpt.edu.vn)'))
     .catch((err) => console.warn('⚠️ Dev seed skipped:', err instanceof Error ? err.message : err))
-} else if (env.NODE_ENV === 'production') {
-  // In production, always ensure subject semester alignments are synced
-  syncClassSemesters()
-    .then(() => console.log('✅ Subject semesters synchronized successfully.'))
-    .catch((err) => console.warn('⚠️ Subject semester sync skipped:', err instanceof Error ? err.message : err))
 }
 
 // Start HTTP + WebSocket server

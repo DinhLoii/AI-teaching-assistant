@@ -1,3 +1,4 @@
+import { publicUploadsRoot } from '../../../shared/infrastructure/runtime-storage.js'
 import { MESSAGES } from '../../../shared/constants/messages.js'
 import type { Request, Response } from 'express'
 import { BaseController } from '../../../shared/presentation/base-controller.js'
@@ -124,7 +125,7 @@ export class ExamsController extends BaseController {
     }
 
     const filePath = path.resolve(process.cwd(), attachment.fileUrl.replace(/^\/+/, ''))
-    const uploadRoot = path.resolve(process.cwd(), 'uploads', 'attachments')
+    const uploadRoot = path.join(publicUploadsRoot(), 'attachments')
     if (!filePath.startsWith(uploadRoot + path.sep)) { res.status(422).json({ success: false, message: 'Vị trí tài liệu không hợp lệ.' }); return }
     if (!fs.existsSync(filePath)) {
       this.logger.error(`File not found on disk: ${filePath}`)
