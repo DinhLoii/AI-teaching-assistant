@@ -33,6 +33,16 @@ To skip Resend/SMTP as requested, set EMAIL_ENABLED=false on Render after deploy
 
 ## Database migrations from the local machine
 
+### Deployment-only demo with the existing database
+
+For the requested deployment-only demonstration while presenting functionality on localhost, use the latest code and set `MIGRATION_CHECK_MODE=schema`. Startup reads PostgreSQL column metadata and checks all Prisma model columns for presence, compatible scalar types and required nullability. It does not create tables, change account/password/grade data or record migration history. Missing/incompatible columns still block startup. The existing Neon database passed this check for 56 models and 472 columns on 2026-10-31.
+
+This compatibility check is not a migration baseline reconciliation: it does not verify indexes, constraints, native type sizes/precision, extension behavior or historical data transformations. Extra indexes are retained. The default `MIGRATION_CHECK_MODE=history` keeps the strict migration-ledger requirement for an actual production release. Invalid mode values fail closed.
+
+Set `GRADING_WORKER_ENABLED=false` on the deployment-only instance so it does not process the same database's pending grading jobs while localhost is used for the presentation. Keep `EMAIL_ENABLED=false` to skip mail. On Render, merge this code first, set these environment variables, then use Manual Deploy → Deploy latest commit. Keep Docker Command empty; do not run migrations/reset as part of this demo startup.
+
+### Full production migration reconciliation
+
 Free has no Shell or pre-deploy command. Manage the database from a trusted local terminal using its direct connection. Start with the read-only command from aita-backend:
 
 ```powershell
@@ -43,6 +53,6 @@ The existing database was previously observed with three unapplied migration rec
 
 ## Verify
 
-Deploy only after the migration baseline is ready and the latest email opt-out code is merged. Set EMAIL_ENABLED=false to skip mail configuration. Check /api/health and /api/ready, then connect Vercel and test each role. Allow for a cold start after inactivity. Free is a demonstration environment, not evidence of production reliability. Full isolated execution grading still needs a separate Docker grading host.
+For a deployment-only demo, use schema mode above after merging the latest code. For a full production release, reconcile the migration baseline and use history mode. Set EMAIL_ENABLED=false to skip mail configuration. Check /api/health and /api/ready, then connect Vercel and test each role. Allow for a cold start after inactivity. Free is a demonstration environment, not evidence of production reliability. Full isolated execution grading still needs a separate Docker grading host.
 
 Official references: https://render.com/docs/free and https://render.com/docs/deploys.
