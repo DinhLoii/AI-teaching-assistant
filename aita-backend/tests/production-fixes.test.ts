@@ -242,3 +242,27 @@ test('disabled mail rejects delivery and all password-recovery paths before touc
     await assert.rejects(assertProductionPreflight({ user: { findMany: async () => [] }, $queryRaw: async () => [{ ledger: null }] }), /migration baseline is not recorded/)
   } finally { if (previous === undefined) delete process.env.EMAIL_ENABLED; else process.env.EMAIL_ENABLED = previous }
 })
+
+test('demo schema validation rejects missing columns, incompatible types and unexpected nulls', async () => {
+  const { assertRuntimeSchema } = await import('../src/database/runtime-schema-check.js')
+  const models = [{ name: 'Fixture', fields: [{ name: 'Id', kind: 'scalar', type: 'String', isList: false, isRequired: true }] }]
+  const db = (columns: any[]) => ({ $queryRaw: async () => columns })
+  assert.deepEqual(await assertRuntimeSchema(db([{ table_name: 'Fixture', column_name: 'Id', udt_name: 'text', is_nullable: 'NO' }]), models), { models: 1, columns: 1 })
+  await assert.rejects(assertRuntimeSchema(db([]), models), /Fixture.Id: missing/)
+  await assert.rejects(assertRuntimeSchema(db([{ table_name: 'Fixture', column_name: 'Id', udt_name: 'int4', is_nullable: 'NO' }]), models), /incompatible type/)
+  await assert.rejects(assertRuntimeSchema(db([{ table_name: 'Fixture', column_name: 'Id', udt_name: 'text', is_nullable: 'YES' }]), models), /must be NOT NULL/)
+})
+
+test('schema mode checks all current Prisma model columns without changing or claiming migration history', async () => {
+  const { Prisma } = await import('@prisma/client')
+  const { assertMigrationReadiness } = await import('../src/database/production-preflight.js')
+  const types: Record<string, string> = { String: 'text', DateTime: 'timestamp', Boolean: 'bool', Int: 'int4', Decimal: 'numeric', BigInt: 'int8' }
+  const columns = Prisma.dmmf.datamodel.models.flatMap(m => m.fields.filter(f => f.kind !== 'object').map(f => ({ table_name: m.dbName || m.name, column_name: f.dbName || f.name, udt_name: types[f.type], is_nullable: f.isRequired ? 'NO' : 'YES' })))
+  let reads = 0
+  const db = { $queryRaw: async (sql: TemplateStringsArray) => { reads++; assert.match(sql.join(''), /information_schema.columns/); return columns } }
+  await assertMigrationReadiness(db, 'schema')
+  assert.equal(reads, 1)
+  await assert.rejects(assertMigrationReadiness(db, 'skip'), /MIGRATION_CHECK_MODE must be/)
+  assert.equal(reads, 1)
+  await assert.rejects(assertMigrationReadiness({ $queryRaw: async () => [{ ledger: null }] }, 'history'), /migration baseline is not recorded/)
+})
