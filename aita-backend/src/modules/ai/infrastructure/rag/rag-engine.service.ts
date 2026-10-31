@@ -9,6 +9,7 @@ import {
   RagDiagnoseOutput,
   RagAssessmentOutput,
   RagChunk,
+  RagDocumentType,
   RubricEvaluationSource,
   StructuredRubricCriteria,
   TestExecutionEvidence,
@@ -30,13 +31,13 @@ export class RagEngineService {
 
     // 1. Ingest context from relevant entities
     if (input.examId) {
-      const examChunks = await this.kb.getAssignmentKnowledge(input.examId)
+      const examChunks = input.role === 'STUDENT' ? await this.kb.getPublicAssignmentKnowledge(input.examId) : await this.kb.getAssignmentKnowledge(input.examId)
       candidateChunks.push(...examChunks)
     }
 
     if (input.submissionId) {
       const subChunks = await this.kb.getSubmissionKnowledge(input.submissionId)
-      candidateChunks.push(...subChunks)
+      candidateChunks.push(...(input.role === 'STUDENT' ? subChunks.filter(c => c.docType === RagDocumentType.STUDENT_SOURCE_FILE) : subChunks))
     }
 
     if (input.subjectCode) {
@@ -126,7 +127,8 @@ YÊU CẦU TRẢ LỜI:
    * Automated Root Cause Debugger & Diagnostics for Student Submissions.
    */
   async diagnose(input: RagDiagnoseInput): Promise<RagDiagnoseOutput> {
-    const candidateChunks = await this.kb.getSubmissionKnowledge(input.submissionId)
+    const chunks = await this.kb.getSubmissionKnowledge(input.submissionId)
+    const candidateChunks = input.userRole === 'STUDENT' ? chunks.filter(c => c.docType === RagDocumentType.STUDENT_SOURCE_FILE) : chunks
     const retrieved = this.retriever.retrieveRelevantChunks(
       `${input.testcaseName || ''} ${input.errorMessage || ''} ${input.userQuery || 'lỗi thực thi'}`,
       candidateChunks,

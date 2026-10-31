@@ -21,6 +21,8 @@ import { ApproveRubricUseCase } from '../application/use-cases/approve-rubric.us
 import { UpdateRubricUseCase } from '../application/use-cases/update-rubric.use-case.js'
 import { PgVectorRubricService } from '../infrastructure/rag/pgvector-rubric.service.js'
 import { prisma } from '../../../database/prisma.js'
+import { assertAssignmentAccess, assertClassAccess } from '../../grading/engine/assignment/assignment-access.js'
+import { assertAiSubmissionAccess } from '../application/ai-access.js'
 
 export class AiController {
     constructor(
@@ -43,6 +45,7 @@ export class AiController {
     ) { }
 
     async autoConfigureAssignment(req: Request, res: Response): Promise<void> {
+        if (req.body.classId && req.body.classId !== 'all') await assertClassAccess([req.body.classId], req.user!)
         const promptText = req.body.promptText || req.body.description || ''
         const title = req.body.title || ''
         const classId = req.body.classId
@@ -91,6 +94,7 @@ export class AiController {
     }
 
     async generateExercise(req: Request, res: Response): Promise<void> {
+        if (req.body.classId && req.body.classId !== 'all') await assertClassAccess([req.body.classId], req.user!)
         const input = z.object({
             classId: z.string().optional(),
             type: z.enum(['quiz', 'coding', 'group']),
@@ -135,19 +139,22 @@ export class AiController {
             publish: z.boolean().optional(),
         }).passthrough().parse(req.body)
 
-        const result = await this.saveAssignmentUseCase.execute({ dto: body, creatorId: req.user!.id })
+        const result = await this.saveAssignmentUseCase.execute({ dto: body, creatorId: req.user!.id, user: req.user! })
         res.status(201).json(ApiResponse.success(MESSAGES.AI_SAVE_SUCCESS, result, 201))
     }
 
     async assessSubmission(req: Request, res: Response): Promise<void> {
         const submissionId = String(req.params.submissionId)
-        const result = await this.assessSubmissionUseCase.execute(submissionId)
-        res.status(200).json(ApiResponse.success(MESSAGES.AI_ASSESS_SUCCESS, result))
+        const result = await this.assessSubmissionUseCase.execute(submissionId, req.user!)
+        res.status(202).json(ApiResponse.success('Đã đưa bài nộp vào hàng đợi chấm', result, 202))
     }
 
     async learningFeedback(req: Request, res: Response): Promise<void> {
         const studentId = String(req.params.studentId)
-        if (req.user!.role === 'STUDENT' && req.user!.id !== studentId) throw new ForbiddenError(MESSAGES.FORBIDDEN)
+        if (req.user!.role.toUpperCase() !== 'ADMIN' && req.user!.id !== studentId) {
+            const allowed = req.user!.role.toUpperCase() === 'LECTURER' && await prisma.studentClass.findFirst({ where: { UserId: studentId, Class: { InstructorClass: { some: { UserId: req.user!.id } } } } })
+            if (!allowed) throw new ForbiddenError(MESSAGES.FORBIDDEN)
+        }
         const result = await this.getLearningFeedbackUseCase.execute(studentId)
         res.status(200).json(ApiResponse.success(MESSAGES.AI_FEEDBACK_SUCCESS, result))
     }
@@ -204,6 +211,8 @@ export class AiController {
         })
         const input = schema.parse(req.body)
         const userRole = (req.user?.role || 'STUDENT').toUpperCase() as 'STUDENT' | 'LECTURER' | 'ADMIN'
+        if (input.examId) await assertAssignmentAccess(input.examId, req.user!)
+        if (input.submissionId) await assertAiSubmissionAccess(input.submissionId, req.user!)
 
         const result = await this.ragTutorChatUseCase.execute({
             query: input.query,
@@ -227,15 +236,15 @@ export class AiController {
             userQuery: z.string().optional()
         })
         const input = schema.parse(req.body)
-
-        const result = await this.ragCodeDiagnosticsUseCase.execute(input)
+        await assertAiSubmissionAccess(input.submissionId, req.user!)
+        const result = await this.ragCodeDiagnosticsUseCase.execute({ ...input, userRole: req.user!.role.toUpperCase() })
         res.status(200).json(ApiResponse.success('RAG diagnostic generated successfully', result))
     }
 
     async ragAssess(req: Request, res: Response): Promise<void> {
         const submissionId = String(req.params.submissionId)
-        const result = await this.assessSubmissionUseCase.execute(submissionId)
-        res.status(200).json(ApiResponse.success(MESSAGES.AI_ASSESS_SUCCESS, result))
+        const result = await this.assessSubmissionUseCase.execute(submissionId, req.user!)
+        res.status(202).json(ApiResponse.success('Đã đưa bài nộp vào hàng đợi chấm', result, 202))
     }
 
     // ── RAG Rubric Management & Semantic Retrieval ──

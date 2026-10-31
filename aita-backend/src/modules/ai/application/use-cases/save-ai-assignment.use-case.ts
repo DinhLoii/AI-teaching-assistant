@@ -1,18 +1,24 @@
 import { IUnitOfWork } from '../../../../shared/application/ports/unit-of-work.interface.js'
 import { randomUUID } from 'crypto'
+import type { AuthUser } from '../../../../types/express.js'
+import { ForbiddenError } from '../../../../shared/application/app.error.js'
+import { assertClassAccess, assertClassesMatchSubject } from '../../../grading/engine/assignment/assignment-access.js'
 
 export class SaveAiAssignmentUseCase {
     constructor(private readonly uow: IUnitOfWork) { }
 
-    async execute({ dto, creatorId }: { dto: any; creatorId: string }) {
-        return await this.uow.runInTransaction(async (_tx) => {
-            const client = this.uow.getClient();
+    async execute({ dto, creatorId, user }: { dto: any; creatorId: string; user: AuthUser }) {
+        if (!user || !['ADMIN', 'LECTURER'].includes(user.role.toUpperCase()) || creatorId !== user.id) throw new ForbiddenError()
+        return await this.uow.runInTransaction(async (tx) => {
+            const client = tx.getClient();
+            if (dto.classId && dto.classId !== 'all') await assertClassAccess([dto.classId], user, client)
             let subjectId = dto.subjectId;
 
             if (!subjectId && dto.classId && dto.classId !== 'all') {
                 const cls = await client.class.findUnique({ where: { Id: dto.classId } });
                 if (cls) subjectId = cls.SubjectId;
             }
+            if (dto.classId && dto.classId !== 'all') await assertClassesMatchSubject([dto.classId], subjectId, client)
 
             const examId = randomUUID();
             const examType = dto.examType === 'Exam' ? 'Exam' : 'Assignment';
@@ -41,7 +47,7 @@ export class SaveAiAssignmentUseCase {
                         AssignedAt: new Date(),
                         DueDate: dto.dueDate ? new Date(dto.dueDate) : null
                     }
-                }).catch(() => {});
+                });
             }
 
             // ── Link or create Rubric record in Neon ──
@@ -75,7 +81,7 @@ export class SaveAiAssignmentUseCase {
                             }))
                         }
                     }
-                }).catch((e: any) => console.warn('[SaveAiAssignment] Non-blocking rubric sync note:', e));
+                });
             }
 
             return createdExam;
