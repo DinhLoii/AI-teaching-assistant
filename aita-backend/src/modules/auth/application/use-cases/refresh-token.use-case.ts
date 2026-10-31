@@ -8,7 +8,8 @@ import type { RefreshTokenRequestDto } from '../dtos/auth.dto.js'
 import { AuthResponseDto } from '../dtos/auth.dto.js'
 import { MESSAGES } from '../../../../shared/constants/messages.js'
 import { RefreshToken } from '../../domain/entities/refresh-token.entity.js'
-import { randomUUID, randomBytes } from 'crypto'
+import { randomUUID } from 'crypto'
+import { credentialVersion, newRefreshToken as createRefreshToken, refreshMatchesCredentials } from '../credential-version.js'
 
 export interface RefreshTokenInput {
   dto: RefreshTokenRequestDto
@@ -32,14 +33,13 @@ export class RefreshTokenUseCase implements IUseCase<RefreshTokenInput, AuthResp
     }
 
     const user = await this.userRepo.findById(currentToken.userId)
-    if (!user || !user.isActive()) {
+    if (!user || !user.isActive() || !refreshMatchesCredentials(dto.refreshToken, user.passwordHash)) {
       this.logger.warn(`User ${currentToken.userId} not found or inactive during token refresh`)
       throw new UnauthorizedError(MESSAGES.AUTH_INVALID_REFRESH_TOKEN)
     }
 
     // Revoke old refresh token (Rotation strategy)
-    currentToken.revoke()
-    await this.refreshTokenRepo.save(currentToken)
+    if (!await this.refreshTokenRepo.consume(currentToken.id)) throw new UnauthorizedError(MESSAGES.AUTH_INVALID_REFRESH_TOKEN)
 
     // Generate new tokens
     const primaryRole = user.roles[0] ?? 'STUDENT'
@@ -48,9 +48,10 @@ export class RefreshTokenUseCase implements IUseCase<RefreshTokenInput, AuthResp
       email: user.email ?? '',
       role: primaryRole,
       fullName: user.fullName ?? '',
+      credentialVersion: credentialVersion(user.passwordHash),
     })
 
-    const newRefreshTokenString = randomBytes(64).toString('hex')
+    const newRefreshTokenString = createRefreshToken(user.passwordHash)
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 7)
 

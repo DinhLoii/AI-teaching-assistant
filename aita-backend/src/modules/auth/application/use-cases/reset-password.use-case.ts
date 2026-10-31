@@ -3,6 +3,8 @@ import type { IUserRepository } from '../../../users/domain/repositories/user-re
 import type { ResetPasswordRequestDto } from '../dtos/auth.dto.js'
 import { NotFoundError, ValidationError } from '../../../../shared/application/app.error.js'
 import type { IHashService } from '../../../../shared/application/ports/i-hash-service.js'
+import { createHash } from 'node:crypto'
+import { PasswordResetAttempts } from '../password-reset-attempts.js'
 
 export interface ResetPasswordInput {
   dto: ResetPasswordRequestDto
@@ -11,7 +13,8 @@ export interface ResetPasswordInput {
 export class ResetPasswordUseCase implements IUseCase<ResetPasswordInput, void> {
   constructor(
     private readonly userRepository: IUserRepository,
-    private readonly hashService: IHashService
+    private readonly hashService: IHashService,
+    private readonly attempts = new PasswordResetAttempts(),
   ) {}
 
   async execute({ dto }: ResetPasswordInput): Promise<void> {
@@ -26,7 +29,8 @@ export class ResetPasswordUseCase implements IUseCase<ResetPasswordInput, void> 
       throw new ValidationError('Tài khoản đã bị khoá hoặc chưa kích hoạt')
     }
 
-    if (!user.resetPasswordOtp || user.resetPasswordOtp !== otp) {
+    await this.attempts.consume(user.id)
+    if (!user.resetPasswordOtp || user.resetPasswordOtp !== createHash('sha256').update(otp).digest('hex')) {
       throw new ValidationError('Mã xác thực không hợp lệ')
     }
 
@@ -40,5 +44,7 @@ export class ResetPasswordUseCase implements IUseCase<ResetPasswordInput, void> 
     user.setResetPasswordOtp(null, null)
 
     await this.userRepository.save(user)
+    await this.userRepository.setRequirePasswordChange(user.id, false)
+    await this.attempts.clear(user.id)
   }
 }

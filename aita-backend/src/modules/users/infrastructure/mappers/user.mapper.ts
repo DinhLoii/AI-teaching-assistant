@@ -23,6 +23,9 @@ type PrismaUserWithRoles = {
 }
 
 export class UserMapper {
+  private static readonly securityStates = new WeakMap<User, { PasswordHash: string | null; Status: string | null }>()
+  static securityState(user: User) { return this.securityStates.get(user) }
+  static rememberSecurityState(user: User) { this.securityStates.set(user, { PasswordHash: user.passwordHash, Status: user.status }) }
   /**
    * Map a Prisma user record (with eager-loaded roles) to a domain User entity.
    */
@@ -49,6 +52,7 @@ export class UserMapper {
     )
     // Cờ ép đổi mật khẩu lần đầu — gắn ngoài entity (pattern như subjectName ở ExamMapper)
     ;(user as any).requirePasswordChange = (raw as any).RequirePasswordChange ?? false
+    this.rememberSecurityState(user)
     return user
   }
 

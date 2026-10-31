@@ -41,7 +41,7 @@ export class RegisterStudentRequestDto {
         (e) => e.toLowerCase().endsWith('@gmail.com'),
         'Chỉ chấp nhận email Gmail (@gmail.com)',
       ),
-    password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
+    password: z.string().min(12, 'Mật khẩu phải có ít nhất 12 ký tự').max(128),
     fullName: z.string().min(2, 'Họ tên phải có ít nhất 2 ký tự'),
     externalId: z.string().optional(),
   })
@@ -93,7 +93,7 @@ export class ChangePasswordRequestDto {
 
   static readonly schema = z.object({
     oldPassword: z.string().min(1, 'Mật khẩu cũ là bắt buộc'),
-    newPassword: z.string().min(6, 'Mật khẩu mới phải có ít nhất 6 ký tự'),
+    newPassword: z.string().min(12, 'Mật khẩu mới phải có ít nhất 12 ký tự').max(128),
   })
 
   static from(data: unknown): ChangePasswordRequestDto {
@@ -128,7 +128,7 @@ export class ResetPasswordRequestDto {
   static readonly schema = z.object({
     email: z.string().email('Email không hợp lệ'),
     otp: z.string().length(6, 'Mã xác thực phải gồm 6 chữ số'),
-    newPassword: z.string().min(6, 'Mật khẩu mới phải có ít nhất 6 ký tự'),
+    newPassword: z.string().min(12, 'Mật khẩu mới phải có ít nhất 12 ký tự').max(128),
   })
 
   static from(data: unknown): ResetPasswordRequestDto {

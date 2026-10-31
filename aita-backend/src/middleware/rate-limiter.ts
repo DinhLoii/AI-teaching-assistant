@@ -8,12 +8,14 @@ interface RateLimitStore {
   }
 }
 
-const store: RateLimitStore = {}
+const stores = new Set<RateLimitStore>()
 
 // Very simple in-memory rate limiter
-export function rateLimiter(limit: number = 100, windowMs: number = 60000) {
+export function rateLimiter(limit: number = 100, windowMs: number = 60000, keyFor?: (req: Request) => string) {
+  const store: RateLimitStore = Object.create(null)
+  stores.add(store)
   return (req: Request, res: Response, next: NextFunction) => {
-    const ip = req.ip || req.socket.remoteAddress || 'unknown'
+    const ip = keyFor ? keyFor(req) : req.user?.id || req.ip || req.socket.remoteAddress || 'unknown'
     const now = Date.now()
     
     if (!store[ip]) {
@@ -42,7 +44,7 @@ export function rateLimiter(limit: number = 100, windowMs: number = 60000) {
 // Cleanup interval to prevent memory leaks
 const cleanupInterval = setInterval(() => {
   const now = Date.now()
-  for (const ip in store) {
+  for (const store of stores) for (const ip in store) {
     if (now > store[ip].resetTime) {
       delete store[ip]
     }

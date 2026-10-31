@@ -1,6 +1,7 @@
 import type { RefreshToken } from '../entities/refresh-token.entity.js'
 
 export interface IRefreshTokenRepository {
+  consume(id: string): Promise<boolean>
   /**
    * Find a refresh token by its token string.
    */
