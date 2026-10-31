@@ -47,8 +47,8 @@ export function PasswordReset() {
         <label className="block space-y-2"><span>Account Email</span><Input type="email" placeholder="name@fpt.edu.vn" required disabled={sent || busy} autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} /></label>
         {sent && <>
           <label className="block space-y-2"><span>OTP Code</span><Input required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6} placeholder="6-digit code" value={otp} onChange={e => setOtp(e.target.value)} /></label>
-          <label className="block space-y-2"><span>New Password</span><Input type="password" autoComplete="new-password" required minLength={6} placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} /></label>
-          <label className="block space-y-2"><span>Confirm New Password</span><Input type="password" autoComplete="new-password" required minLength={6} placeholder="••••••••" value={confirmation} onChange={e => setConfirmation(e.target.value)} /></label>
+          <label className="block space-y-2"><span>New Password</span><Input type="password" autoComplete="new-password" required minLength={12} maxLength={128} placeholder="Ít nhất 12 ký tự" value={password} onChange={e => setPassword(e.target.value)} /></label>
+          <label className="block space-y-2"><span>Confirm New Password</span><Input type="password" autoComplete="new-password" required minLength={12} maxLength={128} placeholder="Ít nhất 12 ký tự" value={confirmation} onChange={e => setConfirmation(e.target.value)} /></label>
           <Button type="button" variant="outline" disabled={busy} onClick={() => void send()}>Resend Code</Button>
           <Button type="button" variant="ghost" disabled={busy} onClick={() => { setSent(false); setOtp(''); setMessage('') }}>Change Email</Button>
         </>}

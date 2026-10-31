@@ -556,7 +556,7 @@ const messages: Record<string, string> = {
   'profile.role_lecturer': 'Giảng viên',
   'profile.role_student': 'Sinh viên',
   'profile.pwd_mismatch': 'Mật khẩu xác nhận không khớp!',
-  'profile.pwd_length': 'Mật khẩu mới phải có ít nhất 6 ký tự!',
+  'profile.pwd_length': 'Mật khẩu mới phải có ít nhất 12 ký tự!',
   'profile.pwd_success': 'Đổi mật khẩu thành công!',
   'profile.pwd_error': 'Lỗi khi đổi mật khẩu.',
   'profile.header_title': 'Hồ sơ người dùng',

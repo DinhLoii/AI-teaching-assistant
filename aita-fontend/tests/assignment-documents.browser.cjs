@@ -60,7 +60,7 @@ const attachmentId = '33333333-3333-4333-8333-333333333333'
     await document.getByRole('tab', { name: 'Nội dung đề', exact: true }).click()
     await page.setViewportSize({ width: 390, height: 844 })
     await document.scrollIntoViewIfNeeded()
-    await page.screenshot({ path: 'tests/assignment-document-mobile.png', fullPage: true })
+    await page.screenshot({ path: process.env.TEST_ARTIFACT_DIR ? process.env.TEST_ARTIFACT_DIR + '/assignment-document-mobile.png' : 'tests/assignment-document-mobile.png', fullPage: true })
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false)
     fail = true
     await page.getByRole('button', { name: 'Tải đề bài gốc', exact: true }).click()

@@ -205,11 +205,15 @@ export default function StudentAssignmentsPage() {
   }, [])
 
   const loadSequence = React.useRef(0)
-  const loadData = React.useCallback(async (background = false) => {
+  const loadInFlight = React.useRef<Promise<void> | null>(null)
+  const fetchData = React.useCallback(async (background = false) => {
     const sequence = ++loadSequence.current
-    let latestAssignments: any = [], latestDashboard: any = null
+    let latestAssignments: any = null, latestDashboard: any = null
     const updateTasks = (allAssignments: any, dashboard: any) => {
       if (sequence !== loadSequence.current) return
+      // Background reads may finish in any order. Keep the existing snapshot
+      // until both sources arrive instead of rendering a transient empty list.
+      if (background && (allAssignments === null || dashboard === null)) return
       // Merge upcoming assignments from dashboard with general assignments
       const upcoming = dashboard?.upcomingAssignments || []
       const taskMap = new Map<string, any>()
@@ -281,6 +285,15 @@ export default function StudentAssignmentsPage() {
       if (sequence === loadSequence.current) setLoading(false)
     }
   }, [isVi])
+
+  const loadData = React.useCallback((background = false) => {
+    if (loadInFlight.current) return loadInFlight.current
+    const pending = fetchData(background)
+    loadInFlight.current = pending
+    const release = () => { if (loadInFlight.current === pending) loadInFlight.current = null }
+    void pending.then(release, release)
+    return pending
+  }, [fetchData])
 
   React.useEffect(() => {
     loadData()

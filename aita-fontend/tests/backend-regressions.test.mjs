@@ -148,7 +148,7 @@ test('draft, publish, unpublish, republish preserve raw score and feedback witho
     'infrastructure/sse-service.js': { sseService: { push() {} } },
   })
   const entity = { totalScore: 8, isGraded: () => true, unpublish() {}, review() {} }
-  const repo = { findById: async () => entity, save: async () => {} }
+  const repo = { findById: async () => entity, findByIdForInstructor: async () => entity, save: async () => {} }
   const { PublishGradeUseCase } = load('modules/submissions/application/use-cases/publish-grade.use-case.ts')
   const useCase = new PublishGradeUseCase(repo)
   const execute = data => useCase.execute({ id: 'submission', dto: { data }, user: { id: 'lecturer', role: 'LECTURER' } })

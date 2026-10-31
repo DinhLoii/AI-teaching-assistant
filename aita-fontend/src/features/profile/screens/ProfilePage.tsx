@@ -1,7 +1,6 @@
 'use client'
 
 import * as React from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { STUDENT_NAV, LECTURER_NAV, ADMIN_NAV } from '@/config/navigation'
@@ -11,7 +10,6 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/providers/auth-provider'
 import { authApi } from '@/lib/api/modules/auth'
-import { loginDestination } from '@/lib/auth/redirect'
 import { useLanguage } from '@/providers/language-provider'
 import {
   User,
@@ -28,9 +26,7 @@ import {
 } from 'lucide-react'
 
 export default function ProfilePage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const { user, role, refreshProfile } = useAuth()
+  const { user, role, refreshProfile, logout } = useAuth()
   const { t } = useLanguage()
   const [oldPassword, setOldPassword] = React.useState('')
   const [newPassword, setNewPassword] = React.useState('')
@@ -63,8 +59,8 @@ export default function ProfilePage() {
       setPassMessage({ text: t('profile.pwd_mismatch', 'Mật khẩu xác nhận không trùng khớp!'), error: true })
       return
     }
-    if (newPassword.length < 6) {
-      setPassMessage({ text: t('profile.pwd_length', 'Mật khẩu mới phải có tối thiểu 6 ký tự!'), error: true })
+    if (newPassword.length < 12) {
+      setPassMessage({ text: t('profile.pwd_length', 'Mật khẩu mới phải có tối thiểu 12 ký tự!'), error: true })
       return
     }
 
@@ -72,16 +68,9 @@ export default function ProfilePage() {
     setPassMessage(null)
     try {
       await authApi.changePassword({ oldPassword, newPassword })
-      await refreshProfile()
-      setPassMessage({ text: t('profile.pwd_success', 'Đổi mật khẩu thành công!'), error: false })
-      setOldPassword('')
-      setNewPassword('')
-      setConfirmPassword('')
-      if (searchParams?.get('changePassword') === 'required') {
-        setTimeout(() => {
-          router.replace(loginDestination('/', role ?? 'student'))
-        }, 1500)
-      }
+      // Password changes revoke the current session as well as other sessions.
+      // Return to login instead of requesting a profile with a revoked token.
+      logout()
     } catch (err: any) {
       setPassMessage({ text: err?.message || t('profile.pwd_error', 'Lỗi khi đổi mật khẩu.'), error: true })
     } finally {

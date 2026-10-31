@@ -10,16 +10,25 @@ export function useAssignmentSync(refresh: () => unknown) {
   useEffect(() => { latest.current = refresh }, [refresh])
   useEffect(() => {
     const reload = () => { void Promise.resolve().then(() => latest.current()).catch(error => console.warn('Assignment refresh failed:', error)) }
-    const resume = () => { if (document.visibilityState === 'visible') emitAssignmentsChanged() }
+    let needsRefresh = false
+    const suspend = () => { needsRefresh = true }
+    const resume = () => {
+      if (document.visibilityState !== 'visible' || !needsRefresh) return
+      needsRefresh = false
+      emitAssignmentsChanged()
+    }
+    const visibility = () => { if (document.visibilityState === 'hidden') suspend(); else resume() }
     window.addEventListener(ASSIGNMENTS_EVENT, reload)
     window.addEventListener('focus', resume)
-    document.addEventListener('visibilitychange', resume)
+    window.addEventListener('blur', suspend)
+    document.addEventListener('visibilitychange', visibility)
     // Keep relative deadline labels current without polling the API.
     const clock = setInterval(() => { if (document.visibilityState === 'visible') setClock(value => value + 1) }, 30_000)
     return () => {
       window.removeEventListener(ASSIGNMENTS_EVENT, reload)
       window.removeEventListener('focus', resume)
-      document.removeEventListener('visibilitychange', resume)
+      window.removeEventListener('blur', suspend)
+      document.removeEventListener('visibilitychange', visibility)
       clearInterval(clock)
     }
   }, [])

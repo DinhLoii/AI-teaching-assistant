@@ -36,6 +36,7 @@ test('REST read/delete emits a user-scoped realtime event only after a successfu
   const events = [], operations = []
   class BaseController { ok() {} }
   const { NotificationsController } = load('modules/notifications/presentation/notifications.controller.ts', {
+    'middleware/auth.js': { authenticateLiveToken: async () => ({ id: 'user-a' }) },
     'messages.js': { MESSAGES: {} }, 'base-controller.js': { BaseController }, 'database/prisma.js': { prisma: {} },
     'sse-service.js': { sseService: { push: (id, event) => events.push({ id, event }) } },
   })
@@ -76,6 +77,7 @@ test('empty class announcements never fall back to all students; unrelated lectu
     user: { findMany: async () => { lookupUsers++; throw new Error('Unexpected broad user lookup') } },
   }
   const { ClassesController } = load('modules/classes/presentation/classes.controller.ts', {
+    'middleware/auth.js': { authenticateLiveToken: async () => ({ id: 'teacher' }) },
     'class.dto.js': {},
     'database/prisma.js': { prisma }, 'base-controller.js': { BaseController }, 'messages.js': { MESSAGES: {} },
     'class-events.js': { classEvents: { emit() {} } }, 'nodemailer.service.js': { NodemailerService: class {} },
