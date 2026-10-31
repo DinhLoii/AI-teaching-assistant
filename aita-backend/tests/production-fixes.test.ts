@@ -266,3 +266,11 @@ test('schema mode checks all current Prisma model columns without changing or cl
   assert.equal(reads, 1)
   await assert.rejects(assertMigrationReadiness({ $queryRaw: async () => [{ ledger: null }] }, 'history'), /migration baseline is not recorded/)
 })
+
+test('listing users maps database rows without losing the mapper security-state context', async () => {
+  const repo = new PrismaUserRepository({ user: { findMany: async () => [user, { ...user, Id: 'u2' }] } })
+  const users = await repo.findMany({}, { skip: 0, take: 10 })
+  assert.deepEqual(users.map(u => u.id), ['u1', 'u2'])
+  assert.equal(UserMapper.securityState(users[0])?.PasswordHash, user.PasswordHash)
+  assert.equal(UserMapper.securityState(users[1])?.Status, 'Active')
+})

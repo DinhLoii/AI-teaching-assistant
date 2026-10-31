@@ -52,7 +52,8 @@ export class UserMapper {
     )
     // Cờ ép đổi mật khẩu lần đầu — gắn ngoài entity (pattern như subjectName ở ExamMapper)
     ;(user as any).requirePasswordChange = (raw as any).RequirePasswordChange ?? false
-    this.rememberSecurityState(user)
+    // Also called as Array.map(UserMapper.toDomain), without a bound `this`.
+    UserMapper.rememberSecurityState(user)
     return user
   }
 
