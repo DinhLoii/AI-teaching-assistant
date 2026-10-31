@@ -2,11 +2,16 @@ import nodemailer from 'nodemailer'
 import { IEmailService } from '../../application/email.service.interface.js'
 import { logger } from '../logger.js'
 import { ServiceUnavailableError } from '../../application/app.error.js'
+import { assertEmailEnabled, isEmailEnabled } from '../../application/email-policy.js'
 
 export class NodemailerService implements IEmailService {
   private transporter: ReturnType<typeof nodemailer.createTransport> | null = null
 
   constructor() {
+    if (!isEmailEnabled()) {
+      logger.info('Email delivery is disabled by EMAIL_ENABLED=false.')
+      return
+    }
     const host = process.env.SMTP_HOST
     const port = Number(process.env.SMTP_PORT) || 587
     const user = process.env.SMTP_USER
@@ -28,6 +33,7 @@ export class NodemailerService implements IEmailService {
   }
 
   async sendEmail(to: string | string[], subject: string, html: string): Promise<boolean> {
+    assertEmailEnabled()
     try {
       if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
         const response = await fetch('https://api.resend.com/emails', { method: 'POST',

@@ -2,6 +2,8 @@
 
 Ngày kiểm tra: 31/10/2026. Mục tiêu triển khai: frontend Vercel, backend Render. Chưa tạo hoặc triển khai tài nguyên trên hai dịch vụ này.
 
+> Cập nhật theo lựa chọn demo Render Free: có thể bỏ cấu hình email bằng `EMAIL_ENABLED=false` sau khi merge mã mới. Gửi mail và khôi phục mật khẩu qua email sẽ trả chưa khả dụng trước khi sửa dữ liệu; đăng nhập và account/mật khẩu cũ được giữ nguyên. Yêu cầu email trong kết quả trước đây chỉ áp dụng khi email được bật (mặc định). Kiểm tra migration không được bỏ qua.
+
 ## Kết luận
 
 Các lỗi đã tái hiện về phân quyền, thực thi JavaScript do AI sinh, phiên đăng nhập, luồng chấm AI cũ, cập nhật lớp theo kỳ và làm mới bài tập đã được sửa trong mã nguồn và kiểm tra hồi quy. Quản lý điểm admin theo kỳ/lớp học phần/môn đã có đầy đủ luồng xem, chỉnh sửa, công bố và lưu lịch sử.

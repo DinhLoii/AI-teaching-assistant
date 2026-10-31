@@ -217,3 +217,28 @@ test('AI assignment saves use the transaction client and propagate class-link fa
   await assert.rejects(useCase.execute({ user: { ...actor, role: 'ADMIN' }, creatorId: actor.id, dto: { classId: 'class', subjectId: 'subject', title: 'Fixture' } }), /fixture link failure/)
   assert.deepEqual(events, ['exam', 'rollback'])
 })
+
+test('email remains required by default and demo opt-out bypasses only mail configuration', async () => {
+  const { assertProductionEmailConfiguration } = await import('../src/shared/application/email-policy.js')
+  assert.throws(() => assertProductionEmailConfiguration({}), /Production requires an email provider/)
+  assert.throws(() => assertProductionEmailConfiguration({ EMAIL_ENABLED: 'true' }), /Production requires an email provider/)
+  assert.doesNotThrow(() => assertProductionEmailConfiguration({ EMAIL_ENABLED: 'false' }))
+  assert.doesNotThrow(() => assertProductionEmailConfiguration({ RESEND_API_KEY: 'fixture-only', EMAIL_FROM: 'test@example.invalid' }))
+})
+
+test('disabled mail rejects delivery and all password-recovery paths before touching user data', async () => {
+  const previous = process.env.EMAIL_ENABLED
+  try {
+    process.env.EMAIL_ENABLED = 'false'
+    const { NodemailerService } = await import('../src/shared/infrastructure/email/nodemailer.service.js')
+    await assert.rejects(new NodemailerService().sendEmail('test@example.invalid', 'Fixture', '<p>Test</p>'), { statusCode: 503 })
+    const unavailableRepo = new Proxy({}, { get: () => { throw new Error('Account data must remain untouched') } })
+    await assert.rejects(new ForgotPasswordUseCase(unavailableRepo as any, {} as any).execute({ dto: { email: user.Email } } as any), { statusCode: 503 })
+    const { ResetPasswordUseCase: OtpReset } = await import('../src/modules/auth/application/use-cases/reset-password.use-case.js')
+    await assert.rejects(new OtpReset(unavailableRepo as any, {} as any).execute({ dto: { email: user.Email, otp: '123456', newPassword: 'fixture-only' } } as any), { statusCode: 503 })
+    const { ResetPasswordUseCase: AdminReset } = await import('../src/modules/users/application/use-cases/reset-password.use-case.js')
+    await assert.rejects(new AdminReset(unavailableRepo as any, {} as any, {} as any, {} as any).execute('u1'), { statusCode: 503 })
+    const { assertProductionPreflight } = await import('../src/database/production-preflight.js')
+    await assert.rejects(assertProductionPreflight({ user: { findMany: async () => [] }, $queryRaw: async () => [{ ledger: null }] }), /migration baseline is not recorded/)
+  } finally { if (previous === undefined) delete process.env.EMAIL_ENABLED; else process.env.EMAIL_ENABLED = previous }
+})

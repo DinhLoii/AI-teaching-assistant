@@ -4,6 +4,7 @@ import type { ForgotPasswordRequestDto } from '../dtos/auth.dto.js'
 import { ServiceUnavailableError } from '../../../../shared/application/app.error.js'
 import { randomInt, createHash } from 'node:crypto'
 import type { IEmailService } from '../../../../shared/application/email.service.interface.js'
+import { assertEmailEnabled } from '../../../../shared/application/email-policy.js'
 
 export interface ForgotPasswordInput {
   dto: ForgotPasswordRequestDto
@@ -16,6 +17,7 @@ export class ForgotPasswordUseCase implements IUseCase<ForgotPasswordInput, void
   ) {}
 
   async execute({ dto }: ForgotPasswordInput): Promise<void> {
+    assertEmailEnabled()
     const { email } = dto
     
     // 1. Find user by email
