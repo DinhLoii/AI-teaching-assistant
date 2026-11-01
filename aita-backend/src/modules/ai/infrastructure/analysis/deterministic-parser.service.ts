@@ -1,3 +1,5 @@
+import { verifiedPaper } from './verified-paper.js'
+import { extractQuestionSamples } from './question-samples.js'
 import type {
   AnalyzedRubricCriterion,
   AnalyzedTestCase,
@@ -607,6 +609,8 @@ export class DeterministicParserService {
    * Extract Test Cases / Examples from text
    */
   private extractTestCases(text: string, _sections: DocumentSection[]): AnalyzedTestCase[] {
+    const questionSamples = extractQuestionSamples(text)
+    if (questionSamples.length) return questionSamples
     const referenceCases = extractLabeledConsoleTests(text)
     if (referenceCases.length) return referenceCases
     const testCases: AnalyzedTestCase[] = []
@@ -708,7 +712,22 @@ export class DeterministicParserService {
     criteriaPointsSum: number
     analysisNotes: string
   } {
-    const documentCriteria = extractDocumentRubric(text)
+    const markers = [...text.matchAll(/\((\d+(?:\.\d+)?)\s+marks?,\s*file\s+to\s+be\s+edited:\s*(Q\d+\.c)\)/gi)]
+    const verified = text.trim() === verifiedPaper.text.trim()
+    const questionCriteria: AnalyzedRubricCriterion[] = markers.map((match, index) => {
+      const file = match[2]
+      const details = verified ? verifiedPaper.rubricDetails[file as keyof typeof verifiedPaper.rubricDetails] : undefined
+      const sourceRequirement = text.slice(match.index! + match[0].length, markers[index + 1]?.index ?? text.length).split(/Test\s+cases?\s*:/i)[0].replace(/Question\s+\d+\s*$/i, '').trim()
+      const requirement = details?.requirement || sourceRequirement || ('Thực hiện đúng yêu cầu của ' + file + ' trong đề bài.')
+      return {
+        id: 'question-' + file, name: details ? file + ' — ' + details.title : file,
+        description: file + ': ' + requirement, maxPoints: Number(match[1]), method: 'ai_assessment', source: 'EXTRACTED', evidence: match[0], reviewNeeded: false,
+        passCondition: 'Đạt testcase của ' + file + '. ' + requirement + ' Mã nguồn có xử lý theo dữ liệu đầu vào, không in cứng kết quả mẫu.',
+        failCondition: 'Không đạt testcase của ' + file + '. ' + (details?.failure || 'Thiếu xử lý theo yêu cầu, sai kết quả hoặc định dạng đầu ra.') + ' Nêu rõ testcase và đoạn mã liên quan khi nhận xét.',
+        aiGuidance: 'Kiểm tra đúng file ' + file + '. ' + requirement + ' Đối chiếu mã nguồn với input/output và trường hợp biên trong đề; chỉ rõ lỗi logic, phần chưa triển khai hoặc dấu hiệu hardcode. Nhận xét cách tổ chức code, tên biến và khả năng đọc hiểu. Điểm chức năng dựa trên kết quả thực thi testcase của riêng câu này; không tự cộng hoặc trừ điểm chất lượng code ngoài tiêu chí đã cấu hình.'
+      }
+    })
+    const documentCriteria = questionCriteria.length ? questionCriteria : extractDocumentRubric(text)
     if (documentCriteria.length) {
       const sum = Number(documentCriteria.reduce((total, criterion) => total + criterion.maxPoints, 0).toFixed(2))
       const stated = text.match(/(?:thang điểm|total points|rubric[^\n]*?\()\s*[:(]?\s*(\d+(?:[.,]\d+)?)/i)?.[1]

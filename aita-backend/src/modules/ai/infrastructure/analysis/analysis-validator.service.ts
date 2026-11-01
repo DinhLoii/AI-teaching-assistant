@@ -2,6 +2,8 @@ import { z } from 'zod'
 import type { AdaptiveAnalysisOutput } from '../../domain/analysis/analysis.types.js'
 
 export const AnalyzedTestCaseSchema = z.object({
+  questionId: z.string().optional(),
+  entryFile: z.string().optional(),
   id: z.string(),
   input: z.string(),
   expectedOutput: z.string(),
@@ -14,6 +16,8 @@ export const AnalyzedTestCaseSchema = z.object({
 })
 
 export const AnalyzedRubricCriterionSchema = z.object({
+  browserProbe: z.object({testIds:z.array(z.string()),description:z.string().optional(),path:z.string().optional()}).optional(),
+  sqlProbe: z.any().optional(),
   id: z.string(),
   name: z.string().min(1),
   description: z.string(),
@@ -31,6 +35,7 @@ export const AnalyzedRubricCriterionSchema = z.object({
 })
 
 export const AdaptiveAnalysisOutputSchema = z.object({
+  testSuites: z.object({browser:z.array(z.any())}).optional(),
   suggestedTitle: z.string().min(1),
   detectedLanguage: z.enum(['C', 'C++', 'Java', 'Python', 'SQL', 'C#', 'JavaScript', 'TypeScript', 'Kotlin', 'Dart', 'Swift', 'Go', 'Rust', 'PHP', 'Unknown']),
   allowedLanguages: z.array(z.string()).optional(),
@@ -52,6 +57,7 @@ export const AdaptiveAnalysisOutputSchema = z.object({
     category: z.enum(['standard', 'sql', 'multimodule']),
   }),
   sqlConfig: z.object({
+    referenceId: z.string().optional(),
     dbms: z.enum(['postgresql', 'mysql', 'sqlserver', 'sqlite']),
     schemaDdl: z.string(),
     seedData: z.string(),

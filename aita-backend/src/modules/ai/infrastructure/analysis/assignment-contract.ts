@@ -1,3 +1,4 @@
+import { questionSourceFiles } from '../../../submissions/application/submission-language.js'
 import type { AdaptiveAnalysisOutput, AnalyzedRubricCriterion } from '../../domain/analysis/analysis.types.js'
 
 export const assignmentLanguages = ['C', 'C++', 'Java', 'Python', 'SQL', 'C#', 'JavaScript', 'TypeScript', 'Kotlin', 'Dart', 'Swift', 'Go', 'Rust', 'PHP', 'Unknown'] as const
@@ -26,6 +27,7 @@ export function detectAssignmentProfile(text: string, filename = '') {
   }
   if (!language && !mobile && !web && !desktop && /\bsql\b|\bselect\b[\s\S]*?\bfrom\b|\bcreate table\b/i.test(positive)) language = 'SQL'
   if (!language && /(?:ngôn ngữ|lập trình|programming)\s+c(?:\s|$)/i.test(positive)) language = 'C'
+  if (!language && /\b(?:create|write|implement)\s+(?:a\s+)?C\s+program\b|file\s+to\s+be\s+edited\s*:\s*\w+\.c\b/i.test(positive)) language = 'C'
   if (!language && /\bnode\.js\b/i.test(positive)) language = 'JavaScript'
   if (!language && /asp\.net/i.test(positive)) language = 'C#'
   language ||= 'Unknown'
@@ -111,17 +113,30 @@ export function extractAcceptanceScenarios(text: string): AcceptanceScenario[] {
     const line = lines[index].trim()
     if (/^```|^~~~/.test(line)) { inCodeBlock = !inCodeBlock; continue }
     if (inCodeBlock) continue
-    if (/acceptance tests?|tình huống kiểm thử/i.test(line)) { inTests = true; numericRowsAllowed = true; continue }
+    if (/acceptance tests?|tình huống kiểm thử|kịch bản kiểm thử/i.test(line)) { inTests = true; numericRowsAllowed = true; continue }
     if (/^(?:#{1,6}\s*)?(?:\d+[.)]\s*)?test cases?\b/i.test(line)) { inTests = true; numericRowsAllowed = false; continue }
     if (/^(?:#{1,6}\s+|\d+[.)]\s+\p{L})/u.test(line)) { inTests = false; continue }
     if (!inTests) continue
-    const match = line.match(/^\|?\s*(?:TC\s*)?(\d{1,3})(\*)?\s*(?:\||\t|$)(.*)$/i)
+    const match = line.match(/^\|?\s*(?:TC\s*)?(\d{1,3})(\*)?\s*(?:\||\t|\s+(?=\S)|$)(.*)$/i)
     if (!match) continue
     // A console input such as Q=4 or output 0 is not an acceptance-test ID.
     if (Number(match[1]) === 0 && !/^\|?\s*TC\s*0/i.test(line)) continue
-    if (!numericRowsAllowed && !/^\|?\s*TC\s*\d/i.test(line) && !/^\|/.test(line) && !/^\d+\*?\s*(?:\||\t)/.test(line)) continue
+    if (!numericRowsAllowed && (!/[|\t]/.test(line) || (!/^\|?\s*TC\s*\d/i.test(line) && !/^\|/.test(line) && !/^\d+\*?\s*(?:\||\t)/.test(line)))) continue
     let values = match[3].split(/\||\t/).map(value => value.trim()).filter(Boolean)
     let quote = line
+    // Two-column browser tables combine the action and expected result in one cell.
+    // PDF extraction can also put the TC identifier on its own line.
+    if (/^\|?\s*TC\s*\d/i.test(line)) {
+      if (!values.length && lines[index + 1]?.trim() && !/^\s*TC\s*\d/i.test(lines[index + 1])) {
+        quote += '\n' + lines[++index].trim()
+        values = [lines[index].trim()]
+      }
+      if (values.length === 1) {
+        const separator = values[0].indexOf(':')
+        if (separator > 0) values = [values[0].slice(0, separator).trim(), values[0].slice(separator + 1).trim()]
+        else values = [values[0], values[0]]
+      }
+    }
     if (!values.length) {
       const following: string[] = []
       let next = index + 1
@@ -166,6 +181,10 @@ export function enforceAssignmentContract(output: AdaptiveAnalysisOutput, text: 
   }
   // Only actual source examples with exact I/O evidence can become executable cases.
   output.testCases = profile.mode === 'console' ? output.testCases.filter(test => test.source === 'EXTRACTED' && test.input.trim() && test.expectedOutput.trim() && sourceText.includes(normalize(test.input)) && sourceText.includes(normalize(test.expectedOutput))) : []
+  const questionFiles = questionSourceFiles(output, text)
+  if (questionFiles.length && language === 'C') {
+    Object.assign(output.submissionFormat, { entryFile: '', entryFiles: questionFiles, directoryStructure: questionFiles.map((file, i) => `material_${i}/${file}`).join('\n') })
+  }
   if (!output.testCases.length) warnings.push('Chưa có bộ kiểm thử tự động đã xác minh. Tình huống acceptance cần giảng viên kiểm tra hoặc cấu hình runner phù hợp.')
   const excluded = requirements.filter(row => row.level === 'excluded').map(row => row.text)
   if (originalCriteria.length) {

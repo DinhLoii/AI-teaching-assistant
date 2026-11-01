@@ -32,6 +32,7 @@ export type RubricDetectionStatus =
   | 'NO_RUBRIC'                  // Conclusive evidence that no grading rubric exists in the document
 
 export interface AnalyzedRubricCriterion {
+  sqlProbe?: any
   id: string
   name: string
   description: string
@@ -51,6 +52,8 @@ export interface AnalyzedRubricCriterion {
 }
 
 export interface AnalyzedTestCase {
+  questionId?: string
+  entryFile?: string
   id: string
   input: string
   expectedOutput: string
@@ -80,6 +83,7 @@ export interface DocumentSection {
 }
 
 export interface RawExtractionResult {
+  verifiedReference?: boolean
   rawText: string
   cleanedText: string
   filename?: string
@@ -122,6 +126,7 @@ export interface AnalysisProvenanceReport {
 }
 
 export interface AdaptiveAnalysisOutput {
+  testSuites?: {browser: any[]}
   suggestedTitle: string
   description?: string
   detectedLanguage: string
