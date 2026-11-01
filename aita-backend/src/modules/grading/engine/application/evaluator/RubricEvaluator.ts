@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { consoleFunctionalScore } from './console-functional-score.js';
 import { RubricDefinition } from '../../core/domain/rubric/RubricDefinition';
 import { RubricRule } from '../../core/domain/rubric/RubricRule';
 import { Evidence } from '../../core/domain/evidence/Evidence';
@@ -30,6 +31,7 @@ export interface EvaluationContext {
     extractedDocument?: ExtractedDocument;
     crashLogs?: string;
     runtimeTestSummary?: string;
+    consoleVerification?: any;
     submissionId?: string;
     subjectCode?: string;
     assignmentTitle?: string;
@@ -191,7 +193,8 @@ export class RubricEvaluator {
                 onProgress(currentRuleIndex - 1, totalRules, `Đang phân tích: ${rule.title}`, hackerMeta);
             }
 
-            const ruleResult = await this.evaluateRuleAsync(rule, context, sharedVariables);
+            const executionScore = consoleFunctionalScore(rule, context.consoleVerification);
+            const ruleResult = executionScore ? { ruleId: rule.id, ...executionScore } : await this.evaluateRuleAsync(rule, context, sharedVariables);
             if (ruleResult.reviewWarning) {
                 requiresManualReview = true;
                 manualReviewNotes.push(`${rule.title}: ${ruleResult.reviewWarning}`);
@@ -222,14 +225,15 @@ export class RubricEvaluator {
             ruleResult.score = Math.round(ruleResult.score * 100) / 100;
 
             totalScore += ruleResult.score;
+            context.onExecutionEvent?.({ stage: 3, status: 'info', message: `[Điểm tiêu chí] ${rule.description?.match(/\bQ\d+\.(?:c|sql)\b/i)?.[0] || rule.title}: ${ruleResult.score}/${rule.weight}. ${ruleResult.reason}` });
 
             const scoredRule: ScoredRule = {
                 ruleId: rule.id,
-                title: rule.title,
+                title: rule.description?.match(/\bQ\d+\.(?:c|sql)\b/i)?.[0] || rule.title,
                 description: rule.description,
                 weight: rule.weight,
                 earnedScore: ruleResult.score,
-                scoringStrategy: rule.scoringStrategy,
+                scoringStrategy: executionScore ? 'StdInOutProbe' : rule.scoringStrategy,
                 passed: ruleResult.passed,
                 evidenceIds: [],
                 evidence: ruleResult.evidence || {},
@@ -334,10 +338,11 @@ export class RubricEvaluator {
             if (onProgress) {
                 onProgress(totalRules, totalRules, `Đang tổng hợp nhận xét (AI Feedback)...`, null);
             }
+            const feedbackRules = (rules: any[]) => rules.map(rule => rule.scoringStrategy === 'SqlExecutionProbe' ? { ...rule, evidence: {}, details: `SQL đã thực thi: ${rule.earnedScore}/${rule.weight} điểm.` } : rule);
             overallFeedback = await this.aiProvider.generateOverallFeedbackAsync(
                 rubric.title || (context as any).assignmentTitle || "Bài tập rèn luyện",
-                passedRules,
-                failedRules,
+                feedbackRules(passedRules),
+                feedbackRules(failedRules),
                 totalScore,
                 rubric.totalWeight
             );
@@ -1114,7 +1119,8 @@ export class RubricEvaluator {
                     const sqlResult = await this.sqlProbe.evaluateAsync(
                         context.submissionPath,
                         sqlSpec.sqlProbe,
-                        context.submissionId
+                        context.submissionId,
+                        context.onExecutionEvent
                     );
                     const sqlProportionalScore = sqlResult.totalPoints > 0
                         ? (sqlResult.earnedPoints / sqlResult.totalPoints) * rule.weight
@@ -1129,6 +1135,8 @@ export class RubricEvaluator {
                                 .join('\n'),
                         evidence: {
                             sqlTestCases: sqlResult.caseResults.map(c => ({
+                                entryFile: sqlSpec.sqlProbe.studentFile,
+                                executionMs: c.executionMs,
                                 caseId: c.caseId,
                                 title: c.title,
                                 passed: c.passed,
@@ -1178,6 +1186,8 @@ export class RubricEvaluator {
                         evidence: {
                             compilationPassed: stdResult.compilationPassed,
                             ioTestCases: stdResult.caseResults.map(c => ({
+                                entryFile: c.entryFile,
+                                executionMs: c.executionMs,
                                 caseId: c.caseId,
                                 isHidden: c.isHidden,
                                 input: c.input,

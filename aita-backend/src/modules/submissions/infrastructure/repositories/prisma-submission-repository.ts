@@ -128,7 +128,7 @@ export class PrismaSubmissionRepository implements ISubmissionRepository {
       const continuous = submission.zipFileUrl && exam?.GradingStrategy !== 'BATCH_POST_DEADLINE' && !requiresManualUiStart(exam)
       // Return the same state that is committed, so student clients start tracking
       // the new attempt instead of displaying the entity's default Pending state.
-      if (continuous) submission.gradingStatus = 'Processing'
+      submission.gradingStatus = continuous ? 'Processing' : 'Pending'
       await tx.submission.create({ data: { ...SubmissionMapper.toPersistence(submission), ...(continuous ? { GradingStatus: 'Processing' } : {}) } })
       if (continuous) await tx.$executeRaw`INSERT INTO "SubmissionGradingTask" ("SubmissionId", "Lane") VALUES (${submission.id}, 'continuous') ON CONFLICT ("SubmissionId") DO NOTHING`
     }

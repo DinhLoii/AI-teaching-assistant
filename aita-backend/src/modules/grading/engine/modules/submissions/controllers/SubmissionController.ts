@@ -55,10 +55,12 @@ const mapDatabaseRubricRule = (rule: any, testCases: any[]) => {
         steps: config.steps
     } : null)).find(Boolean);
     const firstSqlProbe = configs.map((config: any) => config.sqlProbe).find(Boolean);
+    const firstBrowserProbe = configs.map((config: any) => config.browserProbe).find(Boolean);
     const staticPatterns = configs.flatMap((config: any) => Array.isArray(config.staticPatterns) ? config.staticPatterns : []);
 
     let scoringStrategy = 'AICodeReview';
-    let category = 'CodeQuality';
+    const explicitCategory = configs.find((config: any) => config.category)?.category;
+    let category = explicitCategory || (/code quality|clean code|chất lượng mã|coding (?:style|standard)|quy tắc đặt tên|hardcod/i.test(rule.Description || '') ? 'CodeQuality' : 'Functional');
     let requiredEvidence: any[] = [{
         evidenceType: 'ai.code.reviewed',
         minimumConfidence: 0.7,
@@ -68,6 +70,10 @@ const mapDatabaseRubricRule = (rule: any, testCases: any[]) => {
     if (rule.IsManualOnly) {
         scoringStrategy = 'Manual';
         requiredEvidence = [{ evidenceType: 'manual.teacher.reviewed', minimumConfidence: 1 }];
+    } else if (firstBrowserProbe) {
+        scoringStrategy = 'AIVision';
+        category = 'UI';
+        requiredEvidence = [{evidenceType:'browser.workflow.completed',minimumConfidence:1,browserProbe:firstBrowserProbe}];
     } else if (firstSqlProbe) {
         scoringStrategy = 'SqlExecutionProbe';
         category = 'Functional';
@@ -608,6 +614,8 @@ export class SubmissionController extends BaseController {
                     if (sourceSnapshot.files.length > 8) globalJobManager.recordEvent(submissionId, { stage: 0, status: 'info', message: `[Mã nguồn] Còn ${sourceSnapshot.files.length - 8} tệp trong snapshot; danh sách xem tại trình đọc mã nguồn.` });
                     globalJobManager.recordEvent(submissionId, { stage: 0, status: 'completed', message: '[Nhận diện] Hoàn tất lập snapshot mã nguồn từ bài nộp này.' });
                     const isConsole = detectAssignmentProfile(sourceExam?.Description || '').mode === 'console';
+                    const isSql = publishedAssignment.rubric.rules.some((rule: any) => rule.scoringStrategy === 'SqlExecutionProbe');
+                    const hasOwnRunner = isConsole || isSql;
                     for (const rule of publishedAssignment.rubric?.rules || []) {
                         for (const evidence of rule.requiredEvidence || []) {
                             if (evidence.stdInOutProbe && requiredLanguage) evidence.stdInOutProbe.requiredLanguage = requiredLanguage;
@@ -615,9 +623,10 @@ export class SubmissionController extends BaseController {
                     }
                     globalJobManager.updateProgress(submissionId, 5, 'Đang chuẩn bị môi trường thực thi...');
                     try {
-                        if (!isConsole) globalJobManager.recordEvent(submissionId, { stage: 1, status: 'started', message: '[Môi trường] Đang nhận diện runtime và khởi tạo sandbox ứng dụng.' });
-                        const startSandboxPromise = isConsole
-                            ? Promise.resolve({ containerId: null, baseUrl: null, projectType: 'algorithm', runtimeStack: 'unknown', isReady: false, crashLogs: 'Bài console dùng runner stdin/stdout riêng; không khởi động máy chủ Web.' })
+                        if (isSql) globalJobManager.recordEvent(submissionId, {stage:1,status:'info',message:'[Runner SQL] Dùng SQL Server Docker riêng để nạp dữ liệu và kiểm thử từng câu.'});
+                        if (!hasOwnRunner) globalJobManager.recordEvent(submissionId, { stage: 1, status: 'started', message: '[Môi trường] Đang nhận diện runtime và khởi tạo sandbox ứng dụng.' });
+                        const startSandboxPromise = hasOwnRunner
+                            ? Promise.resolve({ containerId: null, baseUrl: null, projectType: isSql ? 'sql' : 'algorithm', runtimeStack: 'unknown', isReady: false, crashLogs: isSql ? 'Bài SQL dùng runner SQL Server riêng; không khởi động máy chủ Web.' : 'Bài console dùng runner stdin/stdout riêng; không khởi động máy chủ Web.' })
                             : this.sandboxService.startAsync(extractDir, publishedAssignment.metadata?.projectType as any);
                         let sandboxStartTimer: ReturnType<typeof setTimeout> | undefined;
                         let sandboxStartTimedOut = false;
@@ -743,6 +752,10 @@ export class SubmissionController extends BaseController {
                         if (typeof consoleVerification.compilationPassed === 'boolean') executionEvidence.compilationSummary = { passed: consoleVerification.compilationPassed };
                         executionEvidence.executionSummary = { runtimeStack: 'console', ready: consoleVerification.status === 'completed', limitation: consoleVerification.status === 'completed' ? null : consoleVerification.error || 'Chưa thực thi testcase.' };
                     }
+                    context.consoleVerification = consoleVerification;
+                    if (consoleVerification && consoleVerification.status !== 'completed') {
+                        throw new Error('Chưa thực thi được testcase của đề: ' + (consoleVerification.error || consoleVerification.status));
+                    }
                     if (consoleVerification) context.crashLogs = undefined; // An unavailable web server is not a console-program crash.
                     if (consoleVerification?.status === 'completed') context.runtimeTestSummary = JSON.stringify({ compilationPassed: consoleVerification.compilationPassed, passed: consoleVerification.passedCases, total: consoleVerification.totalCases });
                     globalJobManager.updateProgress(submissionId, 50, 'Đang đánh giá các tiêu chí theo barem...');
@@ -773,6 +786,7 @@ export class SubmissionController extends BaseController {
 
 
                 report.executionSummary = { runtimeStack: sandboxHandle?.runtimeStack || 'unknown', ready: sandboxHandle?.isReady === true, limitation: sandboxHandle?.isReady ? null : sandboxHandle?.crashLogs || 'No executable test environment was available.' };
+                if ([...(report.passedRules || []), ...(report.failedRules || [])].some((rule: any) => rule.evidence?.sqlTestCases?.length)) report.executionSummary = { runtimeStack: 'sqlserver', ready: true, limitation: null };
                 if (report.consoleVerification?.status === 'completed') report.executionSummary = { runtimeStack: 'console', ready: true, limitation: null };
                 // --- Save to History DB ---
                 try {

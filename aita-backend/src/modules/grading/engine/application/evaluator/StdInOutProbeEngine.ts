@@ -10,6 +10,7 @@ import { StdInOutProbeSpec, StdInOutTestCase } from '../../core/domain/rubric/Ev
 import { executionFailureMessage, type ExecutionObserver } from './execution-events.js';
 
 export interface StdInOutCaseResult {
+  entryFile?: string;
   isHidden?: boolean;
   caseId: string;
   passed: boolean | null;
@@ -62,6 +63,23 @@ export class StdInOutProbeEngine {
     contextHint?: string,
     onEvent?: ExecutionObserver
   ): Promise<StdInOutResult> {
+    if (!probeSpec.entryFile && probeSpec.testCases.some(test => test.entryFile)) {
+      const groups = new Map<string, typeof probeSpec.testCases>();
+      for (const test of probeSpec.testCases) {
+        const key = test.entryFile || '';
+        groups.set(key, [...(groups.get(key) || []), test]);
+      }
+      const results: StdInOutResult[] = [];
+      for (const [entryFile, testCases] of groups) {
+        onEvent?.({ stage: 2, status: 'started', message: '[Chấm từng câu] ' + (entryFile || 'Chương trình') + ': ' + testCases.length + ' testcase.' });
+        const result = await this.evaluateAsync(submissionPath, { ...probeSpec, entryFile: entryFile || undefined, testCases: testCases.map(test => ({...test, entryFile: undefined})) }, contextHint, onEvent);
+        results.push(result);
+        onEvent?.({ stage: 2, status: 'info', message: '[Kết quả từng câu] ' + (entryFile || 'Chương trình') + ': ' + result.passedCases + '/' + result.totalCases + ' testcase đạt; tỷ lệ ' + (result.totalCases ? (100 * result.passedCases / result.totalCases).toFixed(2) : '0') + '%. Biên dịch: ' + (result.compilationPassed === true ? 'thành công' : result.compilationPassed === false ? 'thất bại' : 'chưa xác minh') + '.' });
+      }
+      const caseResults = results.flatMap(result => result.caseResults);
+      const passedCases = caseResults.filter(test => test.passed).length;
+      return { caseResults, passedCases, totalCases: caseResults.length, passed: caseResults.length > 0 && passedCases === caseResults.length, confidence: caseResults.length ? passedCases / caseResults.length : 0, compilationPassed: results.some(result => result.compilationPassed === false) ? false : results.every(result => result.compilationPassed === true) ? true : null };
+    }
     let executionStarted = false;
     try {
     onEvent?.({ stage: 1, status: 'started', message: '[Runner console] Đang kiểm tra cấu hình và nhận diện trình biên dịch từ bài nộp.' });
@@ -88,7 +106,8 @@ export class StdInOutProbeEngine {
     const candidates = this.orderCandidatesByHint(
       await this.findProgramCandidates(submissionPath, detection),
       `${contextHint || ''} ${probeSpec.description || ''}`
-    ).slice(0, 8);
+    ).filter(candidate => !probeSpec.entryFile || candidate.label.replace(/\\/g, '/').split('/').pop()?.toLowerCase() === probeSpec.entryFile.toLowerCase()).slice(0, 8);
+    if (!candidates.length) throw new Error('Không tìm thấy file chương trình được chỉ định: ' + probeSpec.entryFile);
     onEvent?.({ stage: 2, status: 'started', message: `[Kế hoạch kiểm thử] ${probeSpec.testCases.length} testcase; ${candidates.length} chương trình ứng viên; đối chiếu output theo chế độ của từng testcase.` });
     executionStarted = true;
 
@@ -112,6 +131,7 @@ export class StdInOutProbeEngine {
           dockerImage,
           onEvent
         );
+        result.entryFile = candidate.label;
         caseResults.push(result);
         onEvent?.({ stage: 2, status: result.passed === true ? 'info' : 'warning', message: `[Test ${testCase.id}] ${result.passed === null ? 'CHƯA CHẠY (biên dịch hoặc khởi động chưa hoàn tất)' : result.passed ? 'PASS' : 'FAIL'}; biên dịch: ${result.compilationPassed === true ? 'thành công' : result.compilationPassed === false ? 'thất bại' : 'không có kết quả riêng'}; ${result.executionMs} ms${result.timedOut ? '; vượt thời gian' : ''}.` });
         if (result.compilationPassed === false && result.stderr) onEvent?.({ stage: 2, status: 'warning', message: `[Chẩn đoán biên dịch ${testCase.id}] ${result.stderr.slice(0, 1200)}` });

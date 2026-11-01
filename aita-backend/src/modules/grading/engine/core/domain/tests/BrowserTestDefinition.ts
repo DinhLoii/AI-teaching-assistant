@@ -1,6 +1,6 @@
 // @ts-nocheck
 export interface BrowserAction {
-    action: 'navigate' | 'click' | 'fill' | 'waitForSelector' | 'assertVisible' | 'assertText' | 'assertValidation' | 'screenshot';
+    action: 'navigate' | 'reload' | 'click' | 'fill' | 'waitForSelector' | 'assertVisible' | 'assertText' | 'assertValidation' | 'screenshot';
     target?: string; // CSS Selector
     value?: string;  // Text input or expected text
     screenshotName?: string;

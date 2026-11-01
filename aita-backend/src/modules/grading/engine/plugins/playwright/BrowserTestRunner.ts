@@ -41,6 +41,9 @@ export class BrowserTestRunner {
         let success = true;
         let stepsExecuted = 0;
         let executionError = false;
+        let failureMessage: string | undefined;
+        const stepResults: any[] = [];
+        const startedAt = Date.now();
 
         if (!this.page) throw new Error('BrowserTestRunner not initialized');
 
@@ -52,11 +55,27 @@ export class BrowserTestRunner {
             if (test.startUrl) {
                 await this.navigateToSubmission(test.startUrl);
             }
+            if (this.visible) await this.page.bringToFront();
             for (const step of test.steps) {
                 stepsExecuted++;
                 const names = { navigate: 'Mở trang', click: 'Bấm nút/phần tử', fill: 'Điền thông tin', waitForSelector: 'Chờ phần tử', assertVisible: 'Kiểm tra hiển thị', assertText: 'Đối chiếu nội dung kết quả', assertValidation: 'Kiểm tra form từ chối dữ liệu không hợp lệ', screenshot: 'Chụp ảnh' };
                 this.executionContext.onBrowserMessage?.(`[Thao tác UI ${stepsExecuted}/${test.steps.length}] ${names[step.action] || step.action}${step.target ? ': ' + step.target : ''}`);
-                const evidence = await this.executeActionAsync(step);
+                if (this.visible) await this.presentStep(test.id, stepsExecuted, test.steps.length, names[step.action] || step.action, step.target);
+                const trace: any = { index: stepsExecuted, action: step.action, target: step.target,
+                    expected: step.action === 'assertText' ? step.value : ['assertVisible','waitForSelector'].includes(step.action) ? 'Phần tử xuất hiện và hiển thị' : step.action === 'assertValidation' ? 'Form từ chối dữ liệu không hợp lệ' : names[step.action] || step.action,
+                    status: 'running' };
+                stepResults.push(trace);
+                let evidence;
+                try {
+                    evidence = await this.executeActionAsync(step);
+                    trace.status = 'passed';
+                    trace.actual = await this.observeTarget(step.target);
+                } catch (error) {
+                    trace.status = 'failed';
+                    trace.error = error instanceof Error ? error.message : String(error);
+                    trace.actual = await this.observeTarget(step.target);
+                    throw error;
+                }
                 if (evidence) {
                     evidencePool.push(...evidence);
                 }
@@ -65,13 +84,20 @@ export class BrowserTestRunner {
         } catch (error) {
             console.error(`[BrowserTestRunner] Test ${test.name} failed at step ${stepsExecuted}:`, error);
             success = false;
+            failureMessage = error instanceof Error ? error.message : String(error);
             executionError = /(?:browser|context|page|target).*closed|browser.*disconnected/i.test(String(error));
         }
 
         evidencePool.push(this.createEvidence('browser.workflow.completed', 1.0, {
             testId: test.id,
+            testName: test.name,
             success,
             stepsExecuted,
+            steps: stepResults,
+            failedStep: stepResults.find(step => step.status === 'failed'),
+            executionMs: Date.now() - startedAt,
+            isHidden: test.isHidden === true,
+            ...(failureMessage ? { error: failureMessage } : {}),
             ...(executionError ? { executionError: true } : {})
         }));
 
@@ -84,6 +110,10 @@ export class BrowserTestRunner {
         const page = this.page!;
 
         switch (action.action) {
+            case 'reload':
+                await page.reload({ waitUntil: 'domcontentloaded' });
+                evidence.push(this.createEvidence('browser.navigation.completed', 1, { reload: true }));
+                break;
             case 'assertText':
                 if (!action.target || action.value === undefined) throw new Error('Text assertion needs a target and expected text');
                 await page.locator(action.target).filter({ hasText: action.value }).waitFor({ state: 'visible' });
@@ -153,7 +183,7 @@ export class BrowserTestRunner {
                     const screenshotName = action.screenshotName.replace(/[^a-zA-Z0-9_-]/g, '_');
                     fs.mkdirSync(this.executionContext.artifactsDir, { recursive: true });
                     const tempPath = path.join(this.executionContext.artifactsDir, `${screenshotName}.png`);
-                    await page.screenshot({ path: tempPath, fullPage: true });
+                    await page.screenshot({ path: tempPath, fullPage: true, style: '[data-aita-runner] { visibility: hidden !important; }' });
                     
                     const buffer = fs.readFileSync(tempPath);
                     const artifact = await this.artifactStore.storeArtifactAsync(
@@ -175,6 +205,20 @@ export class BrowserTestRunner {
         return evidence;
     }
 
+    private async observeTarget(target?: string) {
+        if (!target || !this.page || this.page.isClosed?.()) return undefined;
+        try {
+            const locator = this.page.locator(target);
+            const count = await locator.count();
+            if (!count) return { count: 0, visible: false, description: 'Không tìm thấy phần tử khớp điều kiện kiểm tra.' };
+            return await locator.first().evaluate((element, count) => ({ count,
+                visible: !!element.getClientRects().length,
+                text: (element.textContent || '').trim().slice(0, 1000),
+                ...(element instanceof HTMLInputElement && element.type === 'number' ? { value: element.value } : {})
+            }), count);
+        } catch { return { description: 'Không thu thập được trạng thái phần tử sau thao tác.' }; }
+    }
+
     private async navigateToSubmission(target: string) {
         const url = new URL(target, this.executionContext.baseUrl);
         if (url.origin !== new URL(this.executionContext.baseUrl).origin) throw new Error('Browser test navigation must stay in the running submission');
@@ -184,6 +228,34 @@ export class BrowserTestRunner {
         // Playwright returns null for a valid hash-only navigation in an SPA.
         if (response ? !response.ok() : !sameDocument) throw new Error(`Navigation returned ${response?.status() || 0}`);
         return response;
+    }
+
+    /** Observation only: actions and pass/fail assertions still execute against the submitted app. */
+    private async presentStep(testId: string, index: number, total: number, action: string, target?: string) {
+        const page = this.page!;
+        await page.bringToFront();
+        let box = null;
+        if (target) {
+            const locator = page.locator(target).first();
+            if (await locator.count()) {
+                await locator.scrollIntoViewIfNeeded({ timeout: 1000 }).catch(() => {});
+                box = await locator.boundingBox({ timeout: 1000 }).catch(() => null);
+            }
+        }
+        if (box) await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 8 });
+        await page.evaluate(({testId,index,total,action,box}) => {
+            document.querySelectorAll('[data-aita-runner]').forEach(node => node.remove());
+            const label = document.createElement('div'); label.setAttribute('data-aita-runner','status');
+            label.textContent = `${testId} · ${index}/${total} · ${action}`;
+            label.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:2147483647;pointer-events:none;background:#163a50;color:white;padding:12px 18px;border-radius:8px;font:14px Arial,sans-serif;box-shadow:0 2px 12px #0004';
+            document.body.appendChild(label);
+            if (box) {
+                const marker = document.createElement('div'); marker.setAttribute('data-aita-runner','target');
+                marker.style.cssText = `position:fixed;left:${box.x-4}px;top:${box.y-4}px;width:${box.width+8}px;height:${box.height+8}px;z-index:2147483646;pointer-events:none;border:3px solid #ff8c00;border-radius:6px;background:#ff8c0015`;
+                document.body.appendChild(marker);
+            }
+        }, {testId,index,total,action,box});
+        await page.waitForTimeout(350);
     }
 
     public async teardownAsync(): Promise<void> {
