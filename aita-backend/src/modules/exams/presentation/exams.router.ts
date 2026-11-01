@@ -23,6 +23,7 @@ export class ExamsRouter {
     // Must be before /:id to avoid treating 'attachments' as an exam ID
     this.router.get('/attachments/:attachmentId/download', authenticate, asyncHandler((req, res) => controller.downloadAttachment(req, res)))
 
+    this.router.get('/:id/starter/download', authenticate, asyncHandler((req, res) => controller.downloadStarter(req, res)))
     this.router.get('/:id', authenticate, asyncHandler((req, res) => controller.getOne(req, res)))
     // Put or Patch for update depending on UI needs. Keeping both for compatibility if needed, but PUT is what was there.
     this.router.put('/:id', authenticate, asyncHandler((req, res) => controller.update(req, res)))

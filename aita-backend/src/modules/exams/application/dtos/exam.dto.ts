@@ -37,6 +37,7 @@ export const CreateExamSchema = z.object({
   runtimeConfig: z.record(z.string(), z.any()).optional(),
   sqlConfig: z.record(z.string(), z.any()).optional(),
   testCases: z.array(z.record(z.string(), z.any())).optional(),
+  testSuites: z.object({browser:z.array(z.record(z.string(),z.any()))}).optional(),
   rubricCriteria: z.array(z.record(z.string(), z.any())).optional(),
   aiConfig: z.record(z.string(), z.any()).optional(),
   sampleSolution: z.string().optional(),
