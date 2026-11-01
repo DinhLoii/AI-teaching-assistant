@@ -1,0 +1,215 @@
+{
+  "examId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+  "config": "{\"submissionFormat\":{\"submissionType\":\"single_file\",\"allowedFormats\":[\".c\",\".zip\"],\"requiredLanguage\":\"C\",\"entryFile\":\"main.c\",\"directoryStructure\":\"Tệp mã nguồn main.c hoặc dự án nén zip.\",\"resubmissionPolicy\":\"highest\",\"attachedPromptFile\":{\"name\":\"paper.pdf\",\"size\":\"973.9 KB\"}},\"runtimeConfig\":{\"language\":\"C\",\"version\":\"GCC 11 (C17)\",\"submissionStyle\":\"project_archive\",\"buildCommand\":\"gcc -O2 main.c -o main\",\"runCommand\":\"./main\",\"category\":\"standard\",\"sandboxSafetyDefaults\":{\"cpuTimeLimitSec\":2,\"memoryLimitMb\":256,\"networkAccess\":false,\"isolatedContainer\":true}},\"testCases\":[{\"questionId\":\"Q1\",\"entryFile\":\"Q1.c\",\"input\":\"3.5 4.2\",\"expectedOutput\":\"5.47\",\"points\":0,\"isHidden\":false,\"comparisonMode\":\"exact\"},{\"questionId\":\"Q1\",\"entryFile\":\"Q1.c\",\"input\":\"5.9 12.0\",\"expectedOutput\":\"13.00\",\"points\":0,\"isHidden\":false,\"comparisonMode\":\"exact\"},{\"questionId\":\"Q2\",\"entryFile\":\"Q2.c\",\"input\":\"1234\",\"expectedOutput\":\"19\",\"points\":0,\"isHidden\":false,\"comparisonMode\":\"exact\"},{\"questionId\":\"Q2\",\"entryFile\":\"Q2.c\",\"input\":\"9999\",\"expectedOutput\":\"36\",\"points\":0,\"isHidden\":false,\"comparisonMode\":\"exact\"},{\"questionId\":\"Q3\",\"entryFile\":\"Q3.c\",\"input\":\"6\\n3814107\",\"expectedOutput\":\"19 8 4\",\"points\":0,\"isHidden\":false,\"comparisonMode\":\"exact\"},{\"questionId\":\"Q3\",\"entryFile\":\"Q3.c\",\"input\":\"4\\n557\",\"expectedOutput\":\"No even numbers among the 4 elements\",\"points\":0,\"isHidden\":false,\"comparisonMode\":\"exact\"},{\"questionId\":\"Q4\",\"entryFile\":\"Q4.c\",\"input\":\"59\\n18365\",\"expectedOutput\":\"(1, 8)\\n(3, 6)\",\"points\":0,\"isHidden\":false,\"comparisonMode\":\"exact\"},{\"questionId\":\"Q4\",\"entryFile\":\"Q4.c\",\"input\":\"4 100\\n1.234\",\"expectedOutput\":\"No pair found\",\"points\":0,\"isHidden\":false,\"comparisonMode\":\"exact\"},{\"questionId\":\"Q5\",\"entryFile\":\"Q5.c\",\"input\":\"3\\n\\nzg \\\"1575\\n\\n50 1.60\\n\\n95 1.70\",\"expectedOutput\":\"Normal\\n\\nUnderweight\\n\\nObese\",\"points\":0,\"isHidden\":false,\"comparisonMode\":\"exact\"},{\"questionId\":\"Q5\",\"entryFile\":\"Q5.c\",\"input\":\"4\\n\\n45 1.65\\n\\n65 1.68\\n\\n80 1.72\\n\\n110 1.75\",\"expectedOutput\":\"Underweight\\n\\nNormal\\n\\nOverweight\\n\\nObese\",\"points\":0,\"isHidden\":false,\"comparisonMode\":\"exact\"},{\"questionId\":\"Q5\",\"entryFile\":\"Q5.c\",\"input\":\"3\\n\\n60 1.70\\n\\n9 1.65\",\"expectedOutput\":\"Invalid input\",\"points\":0,\"isHidden\":false,\"comparisonMode\":\"exact\"},{\"questionId\":\"Q5\",\"entryFile\":\"Q5.c\",\"input\":\"2\\n\\n70 3.2\",\"expectedOutput\":\"Invalid input\",\"points\":0,\"isHidden\":false,\"comparisonMode\":\"exact\"},{\"questionId\":\"Q6\",\"entryFile\":\"Q6.c\",\"input\":\"5\\nAna Bob Eve Ava Tim\",\"expectedOutput\":\"Ana\\nBob\\nEve\\nAva\\nTotal palindromes: 4\",\"points\":0,\"isHidden\":false,\"comparisonMode\":\"exact\"},{\"questionId\":\"Q6\",\"entryFile\":\"Q6.c\",\"input\":\"4\\nLevel Racecar John Noon\",\"expectedOutput\":\"Level\\nRacecar\\nNoon\\nTotal palindromes: 3\",\"points\":0,\"isHidden\":false,\"comparisonMode\":\"exact\"},{\"questionId\":\"Q6\",\"entryFile\":\"Q6.c\",\"input\":\"EJ\\nAlice\\nTom\\nJohn\",\"expectedOutput\":\"No palindrome found\\nTotal palindromes: ©\",\"points\":0,\"isHidden\":false,\"comparisonMode\":\"exact\"},{\"questionId\":\"Q7\",\"entryFile\":\"Q7.c\",\"input\":\"4\\nS@1 Alice 80 98 85\\nS92 Bob 79 65 75\\nS93 Carol 95 88 92\\nS94 Dave 69 79 65\\n1\",\"expectedOutput\":\"1. S93 Carol 275\\n2. sel Alice 255\\n3. S92 Bob 210\\n4. S94 Dave 195\",\"points\":0,\"isHidden\":false,\"comparisonMode\":\"exact\"},{\"questionId\":\"Q7\",\"entryFile\":\"Q7.c\",\"input\":\"4\\nS91 Alice 80 98 85\\nS92 Bob 79 65 75\\nS93 Carol 95 88 92\\nS94 Dave 69 79 65\\n2\",\"expectedOutput\":\"Se1 Alice 255\\nSe3 Carol 275\",\"points\":0,\"isHidden\":false,\"comparisonMode\":\"exact\"},{\"questionId\":\"Q7\",\"entryFile\":\"Q7.c\",\"input\":\"4\\nSe1 Alice 80 99 85\\nS92 Bob 70 65 75\\nS93 Carol 95 88 92\\nS94 Dave 80 90 85\\n2\",\"expectedOutput\":\"S91 Alice 255\\nS93 Carol 275\\nS94 Dave 255\",\"points\":0,\"isHidden\":false,\"comparisonMode\":\"exact\"},{\"questionId\":\"Q7\",\"entryFile\":\"Q7.c\",\"input\":\"3\\nSV991 Alice 80 90 70\\nSVvee2 Bob 60 70 80\\nSV993 Charlie 98 85 95\\n5\",\"expectedOutput\":\"Invalid option\",\"points\":0,\"isHidden\":false,\"comparisonMode\":\"exact\"}],\"rubricCriteria\":[{\"name\":\"Create a C program that takes two real numbers W and H from standard input, representing the width and height of a recta\",\"description\":\"Create a C program that takes two real numbers W and H from standard input, representing the width and height of a rectangle.\",\"maxPoints\":1.67,\"method\":\"ai_assessment\",\"passCondition\":\"Create a C program that takes two real numbers W and H from standard input, representing the width and height of a rectangle.\",\"failCondition\":\"Không đáp ứng yêu cầu được trích dẫn; cần nêu bằng chứng cụ thể.\",\"aiGuidance\":\"Chỉ đánh giá yêu cầu này trên bài nộp.  Không bổ sung chức năng ngoài đề.\",\"evidence\":\"Create a C program that takes two real numbers W and H from standard input, representing the width and height of a rectangle.\",\"source\":\"AI_SUGGESTED\"},{\"name\":\"Create a C program that reads a positive integer N and prints the sum of all of its digits.\",\"description\":\"Create a C program that reads a positive integer N and prints the sum of all of its digits.\",\"maxPoints\":1.67,\"method\":\"ai_assessment\",\"passCondition\":\"Create a C program that reads a positive integer N and prints the sum of all of its digits.\",\"failCondition\":\"Không đáp ứng yêu cầu được trích dẫn; cần nêu bằng chứng cụ thể.\",\"aiGuidance\":\"Chỉ đánh giá yêu cầu này trên bài nộp.  Không bổ sung chức năng ngoài đề.\",\"evidence\":\"Create a C program that reads a positive integer N and prints the sum of all of its digits.\",\"source\":\"AI_SUGGESTED\"},{\"name\":\"Create a C program that reads an integer N and then N integers.\",\"description\":\"Create a C program that reads an integer N and then N integers.\",\"maxPoints\":1.67,\"method\":\"ai_assessment\",\"passCondition\":\"Create a C program that reads an integer N and then N integers.\",\"failCondition\":\"Không đáp ứng yêu cầu được trích dẫn; cần nêu bằng chứng cụ thể.\",\"aiGuidance\":\"Chỉ đánh giá yêu cầu này trên bài nộp.  Không bổ sung chức năng ngoài đề.\",\"evidence\":\"Create a C program that reads an integer N and then N integers.\",\"source\":\"AI_SUGGESTED\"},{\"name\":\"Create a C program that reads integers N and T, then N integers.\",\"description\":\"Create a C program that reads integers N and T, then N integers.\",\"maxPoints\":1.67,\"method\":\"ai_assessment\",\"passCondition\":\"Create a C program that reads integers N and T, then N integers.\",\"failCondition\":\"Không đáp ứng yêu cầu được trích dẫn; cần nêu bằng chứng cụ thể.\",\"aiGuidance\":\"Chỉ đánh giá yêu cầu này trên bài nộp.  Không bổ sung chức năng ngoài đề.\",\"evidence\":\"Create a C program that reads integers N and T, then N integers.\",\"source\":\"AI_SUGGESTED\"},{\"name\":\"Create a C program that reads N person records. Each record contains weight in kg (double) and height in metres (double)\",\"description\":\"Create a C program that reads N person records. Each record contains weight in kg (double) and height in metres (double) on the same line.\",\"maxPoints\":1.66,\"method\":\"ai_assessment\",\"passCondition\":\"Create a C program that reads N person records. Each record contains weight in kg (double) and height in metres (double) on the same line.\",\"failCondition\":\"Không đáp ứng yêu cầu được trích dẫn; cần nêu bằng chứng cụ thể.\",\"aiGuidance\":\"Chỉ đánh giá yêu cầu này trên bài nộp.  Không bổ sung chức năng ngoài đề.\",\"evidence\":\"Create a C program that reads N person records. Each record contains weight in kg (double) and height in metres (double) on the same line.\",\"source\":\"AI_SUGGESTED\"},{\"name\":\"Create a C program that reads an integer N, followed by N names (no spaces) on one line.\",\"description\":\"Create a C program that reads an integer N, followed by N names (no spaces) on one line.\",\"maxPoints\":1.66,\"method\":\"ai_assessment\",\"passCondition\":\"Create a C program that reads an integer N, followed by N names (no spaces) on one line.\",\"failCondition\":\"Không đáp ứng yêu cầu được trích dẫn; cần nêu bằng chứng cụ thể.\",\"aiGuidance\":\"Chỉ đánh giá yêu cầu này trên bài nộp.  Không bổ sung chức năng ngoài đề.\",\"evidence\":\"Create a C program that reads an integer N, followed by N names (no spaces) on one line.\",\"source\":\"AI_SUGGESTED\"}],\"aiConfig\":{\"analysisReview\":{\"status\":\"extraction_only\",\"profile\":{\"language\":\"C\",\"platform\":\"Console\",\"mode\":\"console\",\"evidence\":\"\",\"reviewNeeded\":false},\"warnings\":[\"Đề chưa có barem điểm đầy đủ. Đây là barem đề xuất, cần giảng viên duyệt trọng số và phạm vi.\",\"Dịch vụ AI chưa trả được phân tích hợp lệ. Chỉ hiển thị dữ liệu trích xuất từ đề; chưa xác nhận là phân tích AI hoàn tất.\",\"Tổng điểm trích xuất 0đ chưa khớp thang 10đ. Đã chia đều 10đ cho 6 tiêu chí; giữ nguyên nội dung và trích dẫn gốc, cần giảng viên duyệt.\"],\"acknowledged\":true},\"acceptanceTests\":[],\"requirementGroups\":{\"required\":[{\"text\":\"Create a C program that takes two real numbers W and H from standard input, representing the width and height of a rectangle.\",\"sourceQuote\":\"Create a C program that takes two real numbers W and H from standard input, representing the width and height of a rectangle.\",\"level\":\"required\"},{\"text\":\"Create a C program that reads a positive integer N and prints the sum of all of its digits.\",\"sourceQuote\":\"Create a C program that reads a positive integer N and prints the sum of all of its digits.\",\"level\":\"required\"},{\"text\":\"Create a C program that reads an integer N and then N integers.\",\"sourceQuote\":\"Create a C program that reads an integer N and then N integers.\",\"level\":\"required\"},{\"text\":\"Create a C program that reads integers N and T, then N integers.\",\"sourceQuote\":\"Create a C program that reads integers N and T, then N integers.\",\"level\":\"required\"},{\"text\":\"Create a C program that reads N person records. Each record contains weight in kg (double) and height in metres (double) on the same line.\",\"sourceQuote\":\"Create a C program that reads N person records. Each record contains weight in kg (double) and height in metres (double) on the same line.\",\"level\":\"required\"},{\"text\":\"Create a C program that reads an integer N, followed by N names (no spaces) on one line.\",\"sourceQuote\":\"Create a C program that reads an integer N, followed by N names (no spaces) on one line.\",\"level\":\"required\"}],\"advanced\":[],\"excluded\":[]},\"documentHash\":\"a831dccfbd2282d5ba770f09f6473b29812bbd1a91f90881ba5e10ab1580bc09\",\"ragAutoIndexing\":true,\"attachedPromptFile\":{\"name\":\"paper.pdf\",\"size\":\"973.9 KB\"}},\"allowResubmission\":true,\"maxAttempts\":null}",
+  "tests": [
+    {
+      "Id": "201008e3-9ef6-4df5-80ea-3d3bb71070a4",
+      "ExamId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+      "Input": "3.5 4.2",
+      "ExpectedOutput": "5.47",
+      "IsHidden": false,
+      "TimeoutMs": null,
+      "MemoryLimitMb": null,
+      "Points": "0",
+      "SortOrder": 1
+    },
+    {
+      "Id": "ea9cff9e-489c-4fe9-829a-8662811f394f",
+      "ExamId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+      "Input": "5.9 12.0",
+      "ExpectedOutput": "13.00",
+      "IsHidden": false,
+      "TimeoutMs": null,
+      "MemoryLimitMb": null,
+      "Points": "0",
+      "SortOrder": 2
+    },
+    {
+      "Id": "62df9871-5b80-4c8d-8fa7-ffd1304007e0",
+      "ExamId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+      "Input": "1234",
+      "ExpectedOutput": "19",
+      "IsHidden": false,
+      "TimeoutMs": null,
+      "MemoryLimitMb": null,
+      "Points": "0",
+      "SortOrder": 3
+    },
+    {
+      "Id": "ec0da22f-23fa-4c08-9cd3-93f8687eb807",
+      "ExamId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+      "Input": "9999",
+      "ExpectedOutput": "36",
+      "IsHidden": false,
+      "TimeoutMs": null,
+      "MemoryLimitMb": null,
+      "Points": "0",
+      "SortOrder": 4
+    },
+    {
+      "Id": "0cef3bcc-6d14-42ab-944f-f0bc0c951454",
+      "ExamId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+      "Input": "6\n3814107",
+      "ExpectedOutput": "19 8 4",
+      "IsHidden": false,
+      "TimeoutMs": null,
+      "MemoryLimitMb": null,
+      "Points": "0",
+      "SortOrder": 5
+    },
+    {
+      "Id": "dfc8de2a-c336-479f-a754-6bf8b1dcb436",
+      "ExamId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+      "Input": "4\n557",
+      "ExpectedOutput": "No even numbers among the 4 elements",
+      "IsHidden": false,
+      "TimeoutMs": null,
+      "MemoryLimitMb": null,
+      "Points": "0",
+      "SortOrder": 6
+    },
+    {
+      "Id": "e08f6e11-2153-4efb-9c73-5d2b0002f20e",
+      "ExamId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+      "Input": "59\n18365",
+      "ExpectedOutput": "(1, 8)\n(3, 6)",
+      "IsHidden": false,
+      "TimeoutMs": null,
+      "MemoryLimitMb": null,
+      "Points": "0",
+      "SortOrder": 7
+    },
+    {
+      "Id": "5bf4929b-7a39-41c2-9848-f954e892b701",
+      "ExamId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+      "Input": "4 100\n1.234",
+      "ExpectedOutput": "No pair found",
+      "IsHidden": false,
+      "TimeoutMs": null,
+      "MemoryLimitMb": null,
+      "Points": "0",
+      "SortOrder": 8
+    },
+    {
+      "Id": "1092bcd6-0cdb-4b32-aedc-e9e419b8afa8",
+      "ExamId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+      "Input": "3\n\nzg \"1575\n\n50 1.60\n\n95 1.70",
+      "ExpectedOutput": "Normal\n\nUnderweight\n\nObese",
+      "IsHidden": false,
+      "TimeoutMs": null,
+      "MemoryLimitMb": null,
+      "Points": "0",
+      "SortOrder": 9
+    },
+    {
+      "Id": "92ab64e1-be13-4ed3-bfcb-52a23104d679",
+      "ExamId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+      "Input": "4\n\n45 1.65\n\n65 1.68\n\n80 1.72\n\n110 1.75",
+      "ExpectedOutput": "Underweight\n\nNormal\n\nOverweight\n\nObese",
+      "IsHidden": false,
+      "TimeoutMs": null,
+      "MemoryLimitMb": null,
+      "Points": "0",
+      "SortOrder": 10
+    },
+    {
+      "Id": "cc84caa9-6919-458f-87f1-906dd51a8cbe",
+      "ExamId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+      "Input": "3\n\n60 1.70\n\n9 1.65",
+      "ExpectedOutput": "Invalid input",
+      "IsHidden": false,
+      "TimeoutMs": null,
+      "MemoryLimitMb": null,
+      "Points": "0",
+      "SortOrder": 11
+    },
+    {
+      "Id": "8982283f-27c0-494d-a2b9-1ad107e31a98",
+      "ExamId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+      "Input": "2\n\n70 3.2",
+      "ExpectedOutput": "Invalid input",
+      "IsHidden": false,
+      "TimeoutMs": null,
+      "MemoryLimitMb": null,
+      "Points": "0",
+      "SortOrder": 12
+    },
+    {
+      "Id": "8892c8e7-df90-45c2-b2dd-995ee88b474e",
+      "ExamId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+      "Input": "5\nAna Bob Eve Ava Tim",
+      "ExpectedOutput": "Ana\nBob\nEve\nAva\nTotal palindromes: 4",
+      "IsHidden": false,
+      "TimeoutMs": null,
+      "MemoryLimitMb": null,
+      "Points": "0",
+      "SortOrder": 13
+    },
+    {
+      "Id": "cef89e42-3bf7-467c-a829-b644dc6562d5",
+      "ExamId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+      "Input": "4\nLevel Racecar John Noon",
+      "ExpectedOutput": "Level\nRacecar\nNoon\nTotal palindromes: 3",
+      "IsHidden": false,
+      "TimeoutMs": null,
+      "MemoryLimitMb": null,
+      "Points": "0",
+      "SortOrder": 14
+    },
+    {
+      "Id": "f91b6c6c-2008-4809-877b-f2ee1ac9ef57",
+      "ExamId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+      "Input": "EJ\nAlice\nTom\nJohn",
+      "ExpectedOutput": "No palindrome found\nTotal palindromes: ©",
+      "IsHidden": false,
+      "TimeoutMs": null,
+      "MemoryLimitMb": null,
+      "Points": "0",
+      "SortOrder": 15
+    },
+    {
+      "Id": "11711b25-8751-4478-a069-58d931028285",
+      "ExamId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+      "Input": "4\nS@1 Alice 80 98 85\nS92 Bob 79 65 75\nS93 Carol 95 88 92\nS94 Dave 69 79 65\n1",
+      "ExpectedOutput": "1. S93 Carol 275\n2. sel Alice 255\n3. S92 Bob 210\n4. S94 Dave 195",
+      "IsHidden": false,
+      "TimeoutMs": null,
+      "MemoryLimitMb": null,
+      "Points": "0",
+      "SortOrder": 16
+    },
+    {
+      "Id": "7bb3c2fe-4c3f-43fb-b5f8-1938de002b70",
+      "ExamId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+      "Input": "4\nS91 Alice 80 98 85\nS92 Bob 79 65 75\nS93 Carol 95 88 92\nS94 Dave 69 79 65\n2",
+      "ExpectedOutput": "Se1 Alice 255\nSe3 Carol 275",
+      "IsHidden": false,
+      "TimeoutMs": null,
+      "MemoryLimitMb": null,
+      "Points": "0",
+      "SortOrder": 17
+    },
+    {
+      "Id": "899c5486-5879-4714-8de0-a5c67395fbbc",
+      "ExamId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+      "Input": "4\nSe1 Alice 80 99 85\nS92 Bob 70 65 75\nS93 Carol 95 88 92\nS94 Dave 80 90 85\n2",
+      "ExpectedOutput": "S91 Alice 255\nS93 Carol 275\nS94 Dave 255",
+      "IsHidden": false,
+      "TimeoutMs": null,
+      "MemoryLimitMb": null,
+      "Points": "0",
+      "SortOrder": 18
+    },
+    {
+      "Id": "ffb094b2-5b82-4657-bf41-7671ac8c60c2",
+      "ExamId": "f1e4ff05-aebb-4ced-8296-c85116134f4c",
+      "Input": "3\nSV991 Alice 80 90 70\nSVvee2 Bob 60 70 80\nSV993 Charlie 98 85 95\n5",
+      "ExpectedOutput": "Invalid option",
+      "IsHidden": false,
+      "TimeoutMs": null,
+      "MemoryLimitMb": null,
+      "Points": "0",
+      "SortOrder": 19
+    }
+  ]
+}

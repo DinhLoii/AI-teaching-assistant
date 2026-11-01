@@ -1,0 +1,343 @@
+{
+  "verifiedAt": "2026-11-01T02:50:55.972Z",
+  "functionalScore": 2,
+  "visualPointsPending": 2,
+  "externalAiCalls": 0,
+  "tests": [
+    {
+      "testId": "TC01",
+      "testName": "Hiển thị trang đăng nhập",
+      "success": true,
+      "stepsExecuted": 4
+    },
+    {
+      "testId": "TC02",
+      "testName": "Đăng ký thiếu họ tên",
+      "success": true,
+      "stepsExecuted": 2
+    },
+    {
+      "testId": "TC03",
+      "testName": "Email đăng ký sai định dạng",
+      "success": true,
+      "stepsExecuted": 6
+    },
+    {
+      "testId": "TC04",
+      "testName": "Mật khẩu đăng ký quá ngắn",
+      "success": false,
+      "stepsExecuted": 6,
+      "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=register-error]:has-text(\"Mật khẩu phải\")') to be visible\u001b[22m\n"
+    },
+    {
+      "testId": "TC05",
+      "testName": "Xác nhận mật khẩu không khớp",
+      "success": false,
+      "stepsExecuted": 6,
+      "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=register-error]:has-text(\"Xác nhận mật khẩu không khớp\")') to be visible\u001b[22m\n"
+    },
+    {
+      "testId": "TC06",
+      "testName": "Đăng ký thành công",
+      "success": false,
+      "stepsExecuted": 7,
+      "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=login-page]') to be visible\u001b[22m\n"
+    },
+    {
+      "testId": "TC07",
+      "testName": "Chặn email trùng không phân biệt hoa thường",
+      "success": false,
+      "stepsExecuted": 6,
+      "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=register-error]:has-text(\"Email đã được đăng ký\")') to be visible\u001b[22m\n"
+    },
+    {
+      "testId": "TC08",
+      "testName": "Đăng nhập sai mật khẩu",
+      "success": false,
+      "stepsExecuted": 4,
+      "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=login-error]:has-text(\"Email hoặc mật khẩu không đúng\")') to be visible\u001b[22m\n"
+    },
+    {
+      "testId": "TC09",
+      "testName": "Đăng nhập tài khoản chưa tồn tại",
+      "success": false,
+      "stepsExecuted": 4,
+      "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=login-error]:has-text(\"Email hoặc mật khẩu không đúng\")') to be visible\u001b[22m\n"
+    },
+    {
+      "testId": "TC10",
+      "testName": "Đăng nhập đúng và hiển thị hồ sơ",
+      "success": false,
+      "stepsExecuted": 4,
+      "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=dashboard-page]') to be visible\u001b[22m\n"
+    },
+    {
+      "testId": "TC11",
+      "testName": "Tải lại vẫn giữ phiên trong cùng tab",
+      "success": false,
+      "stepsExecuted": 2,
+      "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=dashboard-page]') to be visible\u001b[22m\n"
+    },
+    {
+      "testId": "TC12",
+      "testName": "Đăng xuất trở lại trang đăng nhập",
+      "success": false,
+      "stepsExecuted": 1,
+      "error": "page.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=logout]')\u001b[22m\n"
+    },
+    {
+      "testId": "TC13",
+      "testName": "Chặn truy cập trang cá nhân khi chưa đăng nhập",
+      "success": false,
+      "stepsExecuted": 1,
+      "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=login-page]') to be visible\u001b[22m\n"
+    }
+  ],
+  "criteria": [
+    {
+      "title": "Khởi động React và hiển thị form đăng nhập",
+      "passed": true,
+      "score": 1,
+      "needsReview": false,
+      "reason": "1/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+      "evidence": {
+        "browserWorkflows": [
+          {
+            "id": "ev-browser-1793501350025-82v5c95hl",
+            "source": "PlaywrightPlugin",
+            "type": "browser.workflow.completed",
+            "confidence": 1,
+            "timestamp": "2026-11-01T02:49:10.025Z",
+            "payload": {
+              "testId": "TC01",
+              "testName": "Hiển thị trang đăng nhập",
+              "success": true,
+              "stepsExecuted": 4
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "Form đăng ký và kiểm tra dữ liệu đầu vào",
+      "passed": false,
+      "score": 1,
+      "needsReview": false,
+      "reason": "2/4 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+      "evidence": {
+        "browserWorkflows": [
+          {
+            "id": "ev-browser-1793501351893-2hjnywvnh",
+            "source": "PlaywrightPlugin",
+            "type": "browser.workflow.completed",
+            "confidence": 1,
+            "timestamp": "2026-11-01T02:49:11.893Z",
+            "payload": {
+              "testId": "TC02",
+              "testName": "Đăng ký thiếu họ tên",
+              "success": true,
+              "stepsExecuted": 2
+            }
+          },
+          {
+            "id": "ev-browser-1793501352030-nw44j1rl3",
+            "source": "PlaywrightPlugin",
+            "type": "browser.workflow.completed",
+            "confidence": 1,
+            "timestamp": "2026-11-01T02:49:12.030Z",
+            "payload": {
+              "testId": "TC03",
+              "testName": "Email đăng ký sai định dạng",
+              "success": true,
+              "stepsExecuted": 6
+            }
+          },
+          {
+            "id": "ev-browser-1793501362151-6vrhe9f6b",
+            "source": "PlaywrightPlugin",
+            "type": "browser.workflow.completed",
+            "confidence": 1,
+            "timestamp": "2026-11-01T02:49:22.151Z",
+            "payload": {
+              "testId": "TC04",
+              "testName": "Mật khẩu đăng ký quá ngắn",
+              "success": false,
+              "stepsExecuted": 6,
+              "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=register-error]:has-text(\"Mật khẩu phải\")') to be visible\u001b[22m\n"
+            }
+          },
+          {
+            "id": "ev-browser-1793501372256-vphqet6ak",
+            "source": "PlaywrightPlugin",
+            "type": "browser.workflow.completed",
+            "confidence": 1,
+            "timestamp": "2026-11-01T02:49:32.256Z",
+            "payload": {
+              "testId": "TC05",
+              "testName": "Xác nhận mật khẩu không khớp",
+              "success": false,
+              "stepsExecuted": 6,
+              "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=register-error]:has-text(\"Xác nhận mật khẩu không khớp\")') to be visible\u001b[22m\n"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "Lưu tài khoản và chặn email trùng",
+      "passed": false,
+      "score": 0,
+      "needsReview": false,
+      "reason": "0/2 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+      "evidence": {
+        "browserWorkflows": [
+          {
+            "id": "ev-browser-1793501382468-4cqrvyps1",
+            "source": "PlaywrightPlugin",
+            "type": "browser.workflow.completed",
+            "confidence": 1,
+            "timestamp": "2026-11-01T02:49:42.468Z",
+            "payload": {
+              "testId": "TC06",
+              "testName": "Đăng ký thành công",
+              "success": false,
+              "stepsExecuted": 7,
+              "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=login-page]') to be visible\u001b[22m\n"
+            }
+          },
+          {
+            "id": "ev-browser-1793501392591-9owttren8",
+            "source": "PlaywrightPlugin",
+            "type": "browser.workflow.completed",
+            "confidence": 1,
+            "timestamp": "2026-11-01T02:49:52.591Z",
+            "payload": {
+              "testId": "TC07",
+              "testName": "Chặn email trùng không phân biệt hoa thường",
+              "success": false,
+              "stepsExecuted": 6,
+              "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=register-error]:has-text(\"Email đã được đăng ký\")') to be visible\u001b[22m\n"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "Đăng nhập đúng và báo lỗi thông tin sai",
+      "passed": false,
+      "score": 0,
+      "needsReview": false,
+      "reason": "0/3 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+      "evidence": {
+        "browserWorkflows": [
+          {
+            "id": "ev-browser-1793501402694-v4730pi85",
+            "source": "PlaywrightPlugin",
+            "type": "browser.workflow.completed",
+            "confidence": 1,
+            "timestamp": "2026-11-01T02:50:02.694Z",
+            "payload": {
+              "testId": "TC08",
+              "testName": "Đăng nhập sai mật khẩu",
+              "success": false,
+              "stepsExecuted": 4,
+              "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=login-error]:has-text(\"Email hoặc mật khẩu không đúng\")') to be visible\u001b[22m\n"
+            }
+          },
+          {
+            "id": "ev-browser-1793501412781-6f1v6kfan",
+            "source": "PlaywrightPlugin",
+            "type": "browser.workflow.completed",
+            "confidence": 1,
+            "timestamp": "2026-11-01T02:50:12.781Z",
+            "payload": {
+              "testId": "TC09",
+              "testName": "Đăng nhập tài khoản chưa tồn tại",
+              "success": false,
+              "stepsExecuted": 4,
+              "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=login-error]:has-text(\"Email hoặc mật khẩu không đúng\")') to be visible\u001b[22m\n"
+            }
+          },
+          {
+            "id": "ev-browser-1793501422885-x6w0qsf46",
+            "source": "PlaywrightPlugin",
+            "type": "browser.workflow.completed",
+            "confidence": 1,
+            "timestamp": "2026-11-01T02:50:22.885Z",
+            "payload": {
+              "testId": "TC10",
+              "testName": "Đăng nhập đúng và hiển thị hồ sơ",
+              "success": false,
+              "stepsExecuted": 4,
+              "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=dashboard-page]') to be visible\u001b[22m\n"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "Bảo vệ trang cá nhân và giữ phiên khi tải lại",
+      "passed": false,
+      "score": 0,
+      "needsReview": false,
+      "reason": "0/2 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+      "evidence": {
+        "browserWorkflows": [
+          {
+            "id": "ev-browser-1793501432985-0cso5v0cf",
+            "source": "PlaywrightPlugin",
+            "type": "browser.workflow.completed",
+            "confidence": 1,
+            "timestamp": "2026-11-01T02:50:32.985Z",
+            "payload": {
+              "testId": "TC11",
+              "testName": "Tải lại vẫn giữ phiên trong cùng tab",
+              "success": false,
+              "stepsExecuted": 2,
+              "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=dashboard-page]') to be visible\u001b[22m\n"
+            }
+          },
+          {
+            "id": "ev-browser-1793501453009-jsrm2o6m1",
+            "source": "PlaywrightPlugin",
+            "type": "browser.workflow.completed",
+            "confidence": 1,
+            "timestamp": "2026-11-01T02:50:53.009Z",
+            "payload": {
+              "testId": "TC13",
+              "testName": "Chặn truy cập trang cá nhân khi chưa đăng nhập",
+              "success": false,
+              "stepsExecuted": 1,
+              "error": "locator.waitFor: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=login-page]') to be visible\u001b[22m\n"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "title": "Đăng xuất và xóa phiên đăng nhập",
+      "passed": false,
+      "score": 0,
+      "needsReview": false,
+      "reason": "0/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+      "evidence": {
+        "browserWorkflows": [
+          {
+            "id": "ev-browser-1793501443002-jvk4zjrbl",
+            "source": "PlaywrightPlugin",
+            "type": "browser.workflow.completed",
+            "confidence": 1,
+            "timestamp": "2026-11-01T02:50:43.002Z",
+            "payload": {
+              "testId": "TC12",
+              "testName": "Đăng xuất trở lại trang đăng nhập",
+              "success": false,
+              "stepsExecuted": 1,
+              "error": "page.click: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=logout]')\u001b[22m\n"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

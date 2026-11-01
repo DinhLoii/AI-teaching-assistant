@@ -1,0 +1,1 @@
+SELECT g.GuestID,g.FirstName,g.LastName,b.BookingID,b.BookingDate,s.ServiceName,s.Category,bs.ServiceDate FROM Guest g LEFT JOIN Booking b ON g.GuestID=b.GuestID LEFT JOIN BookingService bs ON b.BookingID=bs.BookingID LEFT JOIN Service s ON bs.ServiceID=s.ServiceID WHERE g.Nationality='Japanese' ORDER BY s.ServiceName ASC,b.BookingDate DESC;

@@ -1,0 +1,21 @@
+[
+  "3.54.2\nOUTPUT:\n5.47",
+  "5.8 12.0\nOUTPUT:\n13.ee",
+  "1234\nOUTPUT:\n1e",
+  "9999\nOUTPUT:\n36",
+  "[3\n3814187\nOUTPUT:\n\n1e 8 4",
+  "4\n\n1357\n\nOUTPUT:\n\nNo even numbers among the 4 elements",
+  "59\n18365\nOUTPUT:\n(1, 8)\n3, 6)",
+  "4 180\n1234\nOUTPUT:\n\nNo pair found",
+  "3\n\n76 1.75\n\n56 1.60\n\n95 1.70\nOUTPUT:\nNormal\nUnderweight\nObese",
+  "4\n\n45 1.65\n\n65 1.68\n\n88 1.72\n118 1.75\nOUTPUT:\nUnderweight\nNormal\nOverweight\nObese",
+  "3\n\n68 1.78\n\n9 1.65\nOUTPUT:\nInvalid input",
+  "r                                                                                                                                    A\n2\n7¢ 3.2\nOUTPUT:\nInvalid input",
+  "5\nAna Bob Eve Ava Tim\nOUTPUT:\nAna\nBob\nEve\nAva\nTotal palindromes: 4\nC                                                                                                                          pl",
+  "4\n\nLevel Racecar John Noon\nOUTPUT:\n\nLevel\n\nRacecar\n\nNoon\n\nTotal palindromes: 3",
+  "3\n\nAlice\n\nTom\n\nJohn\n\nOUTPUT:\n\nNo palindrome found\nTotal palindromes: @",
+  "r                                                                                                                                    Al\n4\n$e1 Alice 8@ 99 85\n582 Bob 7@ 65 75\nS83 Carol 95 88 92\nSed Dave 68 7@ 65\n1\nOUTPUT:\n1. 583 Carol 275\n2. S81 Alice 255\n3. S82 Bob 218\n4. 584 Dave 195",
+  "4\n\n561 Alice 80 99 85\n562 Bob 7@ 65 75\nse3 Carol 95 88 92\nSe4 Dave 68 7@ 65\n2\n\nOUTPUT:\n\nSel Alice 255\n\n$63 Carol 275",
+  "r                                                                                                                                    pl\n4\n$81 Alice 88 98 85\n582 Bab 78 65 75\nse3 Carol 95 88 92\nSe4 Dave 80 90 85\n2\nOUTPUT:\n$81 Alice 255\n583 Carol 275\n$64 Dave 255",
+  "3\n\nsveel Alice 88 98 7\nSVee2 Bob 60 70 86\nSvee3 Charlie 96 85 95\n5\n\nOUTPUT:\n\nInvalid option"
+]

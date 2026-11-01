@@ -1,0 +1,21 @@
+FER202 - GIỎ HÀNG
+
+paperfer202.pdf: đề thi, dữ liệu sản phẩm, testcase và barem 10 điểm.
+submit_1-2_diem/: bản bài làm chưa hoàn thiện; dùng ZIP cùng tên để nộp.
+submit_8-9_diem/: bản bài làm gần hoàn thiện; dùng ZIP cùng tên để nộp.
+
+Điểm mục tiêu theo barem đi kèm:
+- Bản thấp: TC01 đạt = 1 điểm chức năng, còn tối đa 1 điểm giao diện.
+- Bản cao: TC01-TC07 và TC09 đạt = 8 điểm chức năng; TC08 chưa đạt vì chưa lưu localStorage, còn tối đa 1 điểm giao diện.
+- Điểm giao diện/chất lượng React cần đối chiếu thực tế, không cố định theo tên thư mục.
+
+Mỗi ZIP chỉ chứa mã nguồn và cấu hình chạy, không chứa đáp án hoặc nhận xét của người chấm.
+Chạy: npm install, npm run dev. Kiểm tra build: npm run build.
+
+Dành cho giảng viên:
+teacher-browser-contract.json chứa 9 kịch bản trình duyệt và liên kết rubric.
+Cần nhập/gắn cấu hình này vào bộ chạy trình duyệt của bài giỏ hàng trước khi chấm tự động.
+Không dùng bộ stdin/stdout hoặc bộ đăng ký/đăng nhập cho bài này.
+Chỉ upload PDF không có nghĩa 9 kịch bản đã được cấu hình thực thi.
+
+verification.json ghi kết quả kiểm tra tại máy; không dùng tên file ZIP để quyết định điểm.

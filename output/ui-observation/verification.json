@@ -1,0 +1,47 @@
+[
+  {
+    "label": "submit_8-9_diem",
+    "workflow": {
+      "testId": "TC06",
+      "testName": "Tính tổng nhiều sản phẩm",
+      "success": true,
+      "stepsExecuted": 9
+    },
+    "total": "450000",
+    "messages": [
+      "[Trình duyệt] Đã mở cửa sổ Chromium trên máy để quan sát kiểm thử UI; sẽ tự đóng khi chạy xong.",
+      "[Kiểm thử UI] Bắt đầu: Tính tổng nhiều sản phẩm.",
+      "[Thao tác UI 1/9] Bấm nút/phần tử: [data-testid=clear-cart]",
+      "[Thao tác UI 2/9] Bấm nút/phần tử: [data-testid=add-P01]",
+      "[Thao tác UI 3/9] Bấm nút/phần tử: [data-testid=add-P01]",
+      "[Thao tác UI 4/9] Bấm nút/phần tử: [data-testid=add-P02]",
+      "[Thao tác UI 5/9] Bấm nút/phần tử: [data-testid=add-P03]",
+      "[Thao tác UI 6/9] Kiểm tra hiển thị: [data-testid=quantity-P01][value=\"2\"]",
+      "[Thao tác UI 7/9] Kiểm tra hiển thị: [data-testid=quantity-P02][value=\"1\"]",
+      "[Thao tác UI 8/9] Kiểm tra hiển thị: [data-testid=quantity-P03][value=\"1\"]",
+      "[Thao tác UI 9/9] Kiểm tra hiển thị: [data-testid=cart-total]:text-is(\"450000\")",
+      "[Kiểm thử UI] Tính tổng nhiều sản phẩm: ĐẠT."
+    ],
+    "clicks": 5
+  },
+  {
+    "label": "submit_1-2_diem",
+    "workflow": {
+      "testId": "TC02",
+      "testName": "Thêm vào giỏ",
+      "success": false,
+      "stepsExecuted": 3,
+      "error": "locator.waitFor: Timeout 2500ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=quantity-P01][value=\"1\"]') to be visible\u001b[22m\n"
+    },
+    "total": "0",
+    "messages": [
+      "[Trình duyệt] Đã mở cửa sổ Chromium trên máy để quan sát kiểm thử UI; sẽ tự đóng khi chạy xong.",
+      "[Kiểm thử UI] Bắt đầu: Thêm vào giỏ.",
+      "[Thao tác UI 1/4] Bấm nút/phần tử: [data-testid=clear-cart]",
+      "[Thao tác UI 2/4] Bấm nút/phần tử: [data-testid=add-P01]",
+      "[Thao tác UI 3/4] Kiểm tra hiển thị: [data-testid=quantity-P01][value=\"1\"]",
+      "[Kiểm thử UI] Thêm vào giỏ: CHƯA ĐẠT."
+    ],
+    "clicks": 2
+  }
+]

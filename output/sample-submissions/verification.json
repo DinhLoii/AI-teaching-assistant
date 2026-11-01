@@ -1,0 +1,112 @@
+[
+  {
+    "label": "Bai_lam_1-2_diem",
+    "passed": 2,
+    "total": 19,
+    "weightedScore": 1,
+    "equalTestScore": 1.0526315789473684,
+    "failed": [
+      {
+        "id": "Q2-TC1",
+        "expected": "10",
+        "actual": "4"
+      },
+      {
+        "id": "Q2-TC2",
+        "expected": "36",
+        "actual": "9"
+      },
+      {
+        "id": "Q3-TC1",
+        "expected": "10 8 4",
+        "actual": ""
+      },
+      {
+        "id": "Q3-TC2",
+        "expected": "No even numbers among the 4 elements",
+        "actual": ""
+      },
+      {
+        "id": "Q4-TC1",
+        "expected": "(1, 8)\n(3, 6)",
+        "actual": ""
+      },
+      {
+        "id": "Q4-TC2",
+        "expected": "No pair found",
+        "actual": ""
+      },
+      {
+        "id": "Q5-TC1",
+        "expected": "Normal\nUnderweight\nObese",
+        "actual": ""
+      },
+      {
+        "id": "Q5-TC2",
+        "expected": "Underweight\nNormal\nOverweight\nObese",
+        "actual": ""
+      },
+      {
+        "id": "Q5-TC3",
+        "expected": "Invalid input",
+        "actual": ""
+      },
+      {
+        "id": "Q5-TC4",
+        "expected": "Invalid input",
+        "actual": ""
+      },
+      {
+        "id": "Q6-TC1",
+        "expected": "Ana\nBob\nEve\nAva\nTotal palindromes: 4",
+        "actual": ""
+      },
+      {
+        "id": "Q6-TC2",
+        "expected": "Level\nRacecar\nNoon\nTotal palindromes: 3",
+        "actual": ""
+      },
+      {
+        "id": "Q6-TC3",
+        "expected": "No palindrome found\nTotal palindromes: 0",
+        "actual": ""
+      },
+      {
+        "id": "Q7-TC1",
+        "expected": "1. S03 Carol 275\n2. S01 Alice 255\n3. S02 Bob 210\n4. S04 Dave 195",
+        "actual": ""
+      },
+      {
+        "id": "Q7-TC2",
+        "expected": "S01 Alice 255\nS03 Carol 275",
+        "actual": ""
+      },
+      {
+        "id": "Q7-TC3",
+        "expected": "S01 Alice 255\nS03 Carol 275\nS04 Dave 255",
+        "actual": ""
+      },
+      {
+        "id": "Q7-TC4",
+        "expected": "Invalid option",
+        "actual": ""
+      }
+    ],
+    "compilationPassed": true
+  },
+  {
+    "label": "Bai_lam_9-10_diem",
+    "passed": 18,
+    "total": 19,
+    "weightedScore": 9.5,
+    "equalTestScore": 9.473684210526315,
+    "failed": [
+      {
+        "id": "Q5-TC1",
+        "expected": "Normal\nUnderweight\nObese",
+        "actual": "Normal\nNormal\nObese"
+      }
+    ],
+    "compilationPassed": true
+  }
+]

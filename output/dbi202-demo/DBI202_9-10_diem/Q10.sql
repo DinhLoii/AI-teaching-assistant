@@ -1,0 +1,1 @@
+UPDATE b SET TotalAmount=COALESCE((SELECT SUM(d.SubTotal) FROM BookingDetail d WHERE d.BookingID=b.BookingID),0)+COALESCE((SELECT SUM(s.TotalCost) FROM BookingService s WHERE s.BookingID=b.BookingID),0) FROM Booking b WHERE b.BookingID BETWEEN 10 AND 20;

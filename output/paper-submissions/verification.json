@@ -1,0 +1,600 @@
+[
+  {
+    "label": "Bai_lam_3-4_diem",
+    "score": 4,
+    "verification": {
+      "status": "completed",
+      "configuredCount": 21,
+      "scoringImpact": "functional",
+      "executedAt": "2026-11-01T02:17:04.124Z",
+      "caseResults": [
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q1-TC1",
+          "passed": true,
+          "input": "5.00",
+          "expected": "31.42\n78.54",
+          "actual": "31.42\n78.54",
+          "timedOut": false,
+          "executionMs": 681
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q1-TC2",
+          "passed": true,
+          "input": "1.00",
+          "expected": "6.28\n3.14",
+          "actual": "6.28\n3.14",
+          "timedOut": false,
+          "executionMs": 730
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q2-TC1",
+          "passed": true,
+          "input": "1 20",
+          "expected": "2 3 5 7 11 13 17 19",
+          "actual": "2 3 5 7 11 13 17 19",
+          "timedOut": false,
+          "executionMs": 603
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q2-TC2",
+          "passed": true,
+          "input": "24 28",
+          "expected": "No prime found in [24, 28]",
+          "actual": "No prime found in [24, 28]",
+          "timedOut": false,
+          "executionMs": 618
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q3-TC1",
+          "passed": true,
+          "input": "6\n3 8 1 4 10 7",
+          "expected": "10 8 4",
+          "actual": "10 8 4",
+          "timedOut": false,
+          "executionMs": 635
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q3-TC2",
+          "passed": true,
+          "input": "4\n1 3 5 7",
+          "expected": "No even numbers among the 4 elements",
+          "actual": "No even numbers among the 4 elements",
+          "timedOut": false,
+          "executionMs": 687
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q4-TC1",
+          "passed": true,
+          "input": "5\n10 3 7 20 15",
+          "expected": "Second largest = 15, index = 4",
+          "actual": "Second largest = 15, index = 4",
+          "timedOut": false,
+          "executionMs": 624
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q4-TC2",
+          "passed": true,
+          "input": "4\n10 30 20 40",
+          "expected": "Second largest = 30, index = 1",
+          "actual": "Second largest = 30, index = 1",
+          "timedOut": false,
+          "executionMs": 597
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q5-TC1",
+          "passed": false,
+          "input": "3\n70 1.75\n50 1.60\n95 1.70",
+          "expected": "Normal\nUnderweight\nObese",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 594
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q5-TC2",
+          "passed": false,
+          "input": "4\n45 1.65\n65 1.68\n80 1.72\n110 1.75",
+          "expected": "Underweight\nNormal\nOverweight\nObese",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 625
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q5-TC3",
+          "passed": false,
+          "input": "3\n60 1.70\n0 1.65",
+          "expected": "Invalid input",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 576
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q5-TC4",
+          "passed": false,
+          "input": "2\n70 3.2",
+          "expected": "Invalid input",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 636
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q6-TC1",
+          "passed": false,
+          "input": "3\nAlice Bob Carol",
+          "expected": "Alice: 3 vowel(s)\nBob: 1 vowel(s)\nCarol: 2 vowel(s)\nMost vowels: Alice",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 552
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q6-TC2",
+          "passed": false,
+          "input": "4\nAna Eve Iris Uma",
+          "expected": "Ana: 2 vowel(s)\nEve: 2 vowel(s)\nIris: 2 vowel(s)\nUma: 2 vowel(s)\nMost vowels: Ana",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 580
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q6-TC3",
+          "passed": false,
+          "input": "4\nDan Kim Leo Mia",
+          "expected": "Dan: 1 vowel(s)\nKim: 1 vowel(s)\nLeo: 2 vowel(s)\nMia: 2 vowel(s)\nMost vowels: Leo",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 564
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q7-TC1",
+          "passed": false,
+          "input": "3\nP01 Pen 2.5 100\nP02 Bag 15.0 30\nP03 Book 5.0 80\n1",
+          "expected": "P02 Bag 15.00 450.00\nP03 Book 5.00 400.00\nP01 Pen 2.50 250.00",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 599
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q7-TC2",
+          "passed": false,
+          "input": "3\nA01 Mug 4.5 200\nA02 Cup 9.0 100\nA03 Pen 2.0 50\n1",
+          "expected": "A01 Mug 4.50 900.00\nA02 Cup 9.00 900.00\nA03 Pen 2.00 100.00",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 570
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q7-TC3",
+          "passed": false,
+          "input": "3\nX01 Ghost 99.0 0\nX02 Bolt 3.0 50\nX03 Cap 8.0 20\n1",
+          "expected": "X03 Cap 8.00 160.00\nX02 Bolt 3.00 150.00\nX01 Ghost 99.00 0.00",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 569
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q7-TC4",
+          "passed": false,
+          "input": "1\nS01 Solo 7.5 40\n1",
+          "expected": "S01 Solo 7.50 300.00",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 593
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q7-TC5",
+          "passed": false,
+          "input": "4\nP01 Pen 2.5 100\nP02 Bag 15.0 30\nP03 Book 5.0 80\nP04 Clip 1.0 10\n2\n50",
+          "expected": "P02 Bag 30\nP04 Clip 10",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 603
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q7-TC6",
+          "passed": false,
+          "input": "2\nP01 Pen 2.5 100\nP02 Bag 15.0 30\n5",
+          "expected": "Invalid option",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 604
+        }
+      ],
+      "passedCases": 8,
+      "totalCases": 21,
+      "passed": false,
+      "confidence": 0.38095238095238093,
+      "compilationPassed": true
+    },
+    "criteria": [
+      {
+        "title": "Q1.c",
+        "score": 1
+      },
+      {
+        "title": "Q2.c",
+        "score": 1
+      },
+      {
+        "title": "Q3.c",
+        "score": 1
+      },
+      {
+        "title": "Q4.c",
+        "score": 1
+      },
+      {
+        "title": "Q5.c",
+        "score": 0
+      },
+      {
+        "title": "Q6.c",
+        "score": 0
+      },
+      {
+        "title": "Q7.c",
+        "score": 0
+      }
+    ]
+  },
+  {
+    "label": "Bai_lam_6-7_diem",
+    "score": 6,
+    "verification": {
+      "status": "completed",
+      "configuredCount": 21,
+      "scoringImpact": "functional",
+      "executedAt": "2026-11-01T02:17:18.813Z",
+      "caseResults": [
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q1-TC1",
+          "passed": true,
+          "input": "5.00",
+          "expected": "31.42\n78.54",
+          "actual": "31.42\n78.54",
+          "timedOut": false,
+          "executionMs": 592
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q1-TC2",
+          "passed": true,
+          "input": "1.00",
+          "expected": "6.28\n3.14",
+          "actual": "6.28\n3.14",
+          "timedOut": false,
+          "executionMs": 586
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q2-TC1",
+          "passed": true,
+          "input": "1 20",
+          "expected": "2 3 5 7 11 13 17 19",
+          "actual": "2 3 5 7 11 13 17 19",
+          "timedOut": false,
+          "executionMs": 619
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q2-TC2",
+          "passed": true,
+          "input": "24 28",
+          "expected": "No prime found in [24, 28]",
+          "actual": "No prime found in [24, 28]",
+          "timedOut": false,
+          "executionMs": 577
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q3-TC1",
+          "passed": true,
+          "input": "6\n3 8 1 4 10 7",
+          "expected": "10 8 4",
+          "actual": "10 8 4",
+          "timedOut": false,
+          "executionMs": 627
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q3-TC2",
+          "passed": true,
+          "input": "4\n1 3 5 7",
+          "expected": "No even numbers among the 4 elements",
+          "actual": "No even numbers among the 4 elements",
+          "timedOut": false,
+          "executionMs": 571
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q4-TC1",
+          "passed": true,
+          "input": "5\n10 3 7 20 15",
+          "expected": "Second largest = 15, index = 4",
+          "actual": "Second largest = 15, index = 4",
+          "timedOut": false,
+          "executionMs": 548
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q4-TC2",
+          "passed": true,
+          "input": "4\n10 30 20 40",
+          "expected": "Second largest = 30, index = 1",
+          "actual": "Second largest = 30, index = 1",
+          "timedOut": false,
+          "executionMs": 558
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q5-TC1",
+          "passed": false,
+          "input": "3\n70 1.75\n50 1.60\n95 1.70",
+          "expected": "Normal\nUnderweight\nObese",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 568
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q5-TC2",
+          "passed": false,
+          "input": "4\n45 1.65\n65 1.68\n80 1.72\n110 1.75",
+          "expected": "Underweight\nNormal\nOverweight\nObese",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 573
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q5-TC3",
+          "passed": false,
+          "input": "3\n60 1.70\n0 1.65",
+          "expected": "Invalid input",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 547
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q5-TC4",
+          "passed": false,
+          "input": "2\n70 3.2",
+          "expected": "Invalid input",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 561
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q6-TC1",
+          "passed": true,
+          "input": "3\nAlice Bob Carol",
+          "expected": "Alice: 3 vowel(s)\nBob: 1 vowel(s)\nCarol: 2 vowel(s)\nMost vowels: Alice",
+          "actual": "Alice: 3 vowel(s)\nBob: 1 vowel(s)\nCarol: 2 vowel(s)\nMost vowels: Alice",
+          "timedOut": false,
+          "executionMs": 597
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q6-TC2",
+          "passed": true,
+          "input": "4\nAna Eve Iris Uma",
+          "expected": "Ana: 2 vowel(s)\nEve: 2 vowel(s)\nIris: 2 vowel(s)\nUma: 2 vowel(s)\nMost vowels: Ana",
+          "actual": "Ana: 2 vowel(s)\nEve: 2 vowel(s)\nIris: 2 vowel(s)\nUma: 2 vowel(s)\nMost vowels: Ana",
+          "timedOut": false,
+          "executionMs": 574
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q6-TC3",
+          "passed": true,
+          "input": "4\nDan Kim Leo Mia",
+          "expected": "Dan: 1 vowel(s)\nKim: 1 vowel(s)\nLeo: 2 vowel(s)\nMia: 2 vowel(s)\nMost vowels: Leo",
+          "actual": "Dan: 1 vowel(s)\nKim: 1 vowel(s)\nLeo: 2 vowel(s)\nMia: 2 vowel(s)\nMost vowels: Leo",
+          "timedOut": false,
+          "executionMs": 567
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q7-TC1",
+          "passed": false,
+          "input": "3\nP01 Pen 2.5 100\nP02 Bag 15.0 30\nP03 Book 5.0 80\n1",
+          "expected": "P02 Bag 15.00 450.00\nP03 Book 5.00 400.00\nP01 Pen 2.50 250.00",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 579
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q7-TC2",
+          "passed": false,
+          "input": "3\nA01 Mug 4.5 200\nA02 Cup 9.0 100\nA03 Pen 2.0 50\n1",
+          "expected": "A01 Mug 4.50 900.00\nA02 Cup 9.00 900.00\nA03 Pen 2.00 100.00",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 610
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q7-TC3",
+          "passed": false,
+          "input": "3\nX01 Ghost 99.0 0\nX02 Bolt 3.0 50\nX03 Cap 8.0 20\n1",
+          "expected": "X03 Cap 8.00 160.00\nX02 Bolt 3.00 150.00\nX01 Ghost 99.00 0.00",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 582
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q7-TC4",
+          "passed": false,
+          "input": "1\nS01 Solo 7.5 40\n1",
+          "expected": "S01 Solo 7.50 300.00",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 638
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q7-TC5",
+          "passed": false,
+          "input": "4\nP01 Pen 2.5 100\nP02 Bag 15.0 30\nP03 Book 5.0 80\nP04 Clip 1.0 10\n2\n50",
+          "expected": "P02 Bag 30\nP04 Clip 10",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 620
+        },
+        {
+          "isHidden": false,
+          "compilationPassed": true,
+          "stderr": "",
+          "caseId": "Q7-TC6",
+          "passed": false,
+          "input": "2\nP01 Pen 2.5 100\nP02 Bag 15.0 30\n5",
+          "expected": "Invalid option",
+          "actual": "",
+          "timedOut": false,
+          "executionMs": 574
+        }
+      ],
+      "passedCases": 11,
+      "totalCases": 21,
+      "passed": false,
+      "confidence": 0.5238095238095238,
+      "compilationPassed": true
+    },
+    "criteria": [
+      {
+        "title": "Q1.c",
+        "score": 1
+      },
+      {
+        "title": "Q2.c",
+        "score": 1
+      },
+      {
+        "title": "Q3.c",
+        "score": 1
+      },
+      {
+        "title": "Q4.c",
+        "score": 1
+      },
+      {
+        "title": "Q6.c",
+        "score": 2
+      },
+      {
+        "title": "Q5.c",
+        "score": 0
+      },
+      {
+        "title": "Q7.c",
+        "score": 0
+      }
+    ]
+  }
+]

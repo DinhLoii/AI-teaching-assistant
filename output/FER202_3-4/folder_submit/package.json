@@ -1,0 +1,1 @@
+{"name":"fer202-auth-basic","version":"1.0.0","private":true,"type":"module","scripts":{"dev":"vite","start":"vite","build":"vite build"},"dependencies":{"react":"19.2.8","react-dom":"19.2.8"},"devDependencies":{"vite":"6.4.5"}}

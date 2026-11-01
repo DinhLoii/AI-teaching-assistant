@@ -1,0 +1,1 @@
+SELECT b.BookingID,g.FirstName+' '+g.LastName AS GuestName,g.Nationality,b.BookingDate,d.DetailID,r.RoomNumber FROM Booking b JOIN Guest g ON b.GuestID=g.GuestID JOIN BookingDetail d ON b.BookingID=d.BookingID JOIN Room r ON d.RoomID=r.RoomID WHERE b.BookingDate>='20240101' AND b.BookingDate<'20250101' AND g.Nationality IN ('Chinese','Japanese') ORDER BY b.BookingID,d.DetailID;

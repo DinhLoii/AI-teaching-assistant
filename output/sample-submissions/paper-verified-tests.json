@@ -1,0 +1,154 @@
+[
+  {
+    "id": "Q1-TC1",
+    "entryFile": "Q1.c",
+    "input": "3.5 4.2",
+    "expectedOutput": "5.47",
+    "isHidden": false,
+    "comparisonMode": "exact"
+  },
+  {
+    "id": "Q1-TC2",
+    "entryFile": "Q1.c",
+    "input": "5.0 12.0",
+    "expectedOutput": "13.00",
+    "isHidden": false,
+    "comparisonMode": "exact"
+  },
+  {
+    "id": "Q2-TC1",
+    "entryFile": "Q2.c",
+    "input": "1234",
+    "expectedOutput": "10",
+    "isHidden": false,
+    "comparisonMode": "exact"
+  },
+  {
+    "id": "Q2-TC2",
+    "entryFile": "Q2.c",
+    "input": "9999",
+    "expectedOutput": "36",
+    "isHidden": false,
+    "comparisonMode": "exact"
+  },
+  {
+    "id": "Q3-TC1",
+    "entryFile": "Q3.c",
+    "input": "6\n3 8 1 4 10 7",
+    "expectedOutput": "10 8 4",
+    "isHidden": false,
+    "comparisonMode": "exact"
+  },
+  {
+    "id": "Q3-TC2",
+    "entryFile": "Q3.c",
+    "input": "4\n1 3 5 7",
+    "expectedOutput": "No even numbers among the 4 elements",
+    "isHidden": false,
+    "comparisonMode": "exact"
+  },
+  {
+    "id": "Q4-TC1",
+    "entryFile": "Q4.c",
+    "input": "5 9\n1 8 3 6 5",
+    "expectedOutput": "(1, 8)\n(3, 6)",
+    "isHidden": false,
+    "comparisonMode": "exact"
+  },
+  {
+    "id": "Q4-TC2",
+    "entryFile": "Q4.c",
+    "input": "4 100\n1 2 3 4",
+    "expectedOutput": "No pair found",
+    "isHidden": false,
+    "comparisonMode": "exact"
+  },
+  {
+    "id": "Q5-TC1",
+    "entryFile": "Q5.c",
+    "input": "3\n70 1.75\n50 1.60\n95 1.70",
+    "expectedOutput": "Normal\nUnderweight\nObese",
+    "isHidden": false,
+    "comparisonMode": "exact"
+  },
+  {
+    "id": "Q5-TC2",
+    "entryFile": "Q5.c",
+    "input": "4\n45 1.65\n65 1.68\n80 1.72\n110 1.75",
+    "expectedOutput": "Underweight\nNormal\nOverweight\nObese",
+    "isHidden": false,
+    "comparisonMode": "exact"
+  },
+  {
+    "id": "Q5-TC3",
+    "entryFile": "Q5.c",
+    "input": "3\n60 1.70\n0 1.65",
+    "expectedOutput": "Invalid input",
+    "isHidden": false,
+    "comparisonMode": "exact"
+  },
+  {
+    "id": "Q5-TC4",
+    "entryFile": "Q5.c",
+    "input": "2\n70 3.2",
+    "expectedOutput": "Invalid input",
+    "isHidden": false,
+    "comparisonMode": "exact"
+  },
+  {
+    "id": "Q6-TC1",
+    "entryFile": "Q6.c",
+    "input": "5\nAna Bob Eve Ava Tim",
+    "expectedOutput": "Ana\nBob\nEve\nAva\nTotal palindromes: 4",
+    "isHidden": false,
+    "comparisonMode": "exact"
+  },
+  {
+    "id": "Q6-TC2",
+    "entryFile": "Q6.c",
+    "input": "4\nLevel Racecar John Noon",
+    "expectedOutput": "Level\nRacecar\nNoon\nTotal palindromes: 3",
+    "isHidden": false,
+    "comparisonMode": "exact"
+  },
+  {
+    "id": "Q6-TC3",
+    "entryFile": "Q6.c",
+    "input": "3\nAlice\nTom\nJohn",
+    "expectedOutput": "No palindrome found\nTotal palindromes: 0",
+    "isHidden": false,
+    "comparisonMode": "exact"
+  },
+  {
+    "id": "Q7-TC1",
+    "entryFile": "Q7.c",
+    "input": "4\nS01 Alice 80 90 85\nS02 Bob 70 65 75\nS03 Carol 95 88 92\nS04 Dave 60 70 65\n1",
+    "expectedOutput": "1. S03 Carol 275\n2. S01 Alice 255\n3. S02 Bob 210\n4. S04 Dave 195",
+    "isHidden": false,
+    "comparisonMode": "exact"
+  },
+  {
+    "id": "Q7-TC2",
+    "entryFile": "Q7.c",
+    "input": "4\nS01 Alice 80 90 85\nS02 Bob 70 65 75\nS03 Carol 95 88 92\nS04 Dave 60 70 65\n2",
+    "expectedOutput": "S01 Alice 255\nS03 Carol 275",
+    "isHidden": false,
+    "comparisonMode": "exact"
+  },
+  {
+    "id": "Q7-TC3",
+    "entryFile": "Q7.c",
+    "input": "4\nS01 Alice 80 90 85\nS02 Bob 70 65 75\nS03 Carol 95 88 92\nS04 Dave 80 90 85\n2",
+    "expectedOutput": "S01 Alice 255\nS03 Carol 275\nS04 Dave 255",
+    "isHidden": false,
+    "comparisonMode": "exact"
+  },
+  {
+    "id": "Q7-TC4",
+    "entryFile": "Q7.c",
+    "input": "3\nSV001 Alice 80 90 70\nSV002 Bob 60 70 80\nSV003 Charlie 90 85 95\n5",
+    "expectedOutput": "Invalid option",
+    "isHidden": false,
+    "comparisonMode": "exact"
+  }
+]

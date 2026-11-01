@@ -1,0 +1,593 @@
+{
+  "verifiedAt": "2026-11-01T03:20:44.727Z",
+  "reports": [
+    {
+      "label": "submit_1-2_diem",
+      "functionalScore": 1,
+      "visualPointsPending": 1,
+      "passed": 1,
+      "total": 9,
+      "productionBuildPassed": true,
+      "mobileWidth": 390,
+      "noHorizontalOverflow": true,
+      "tests": [
+        {
+          "testId": "TC01",
+          "testName": "Hiển thị sản phẩm",
+          "success": true,
+          "stepsExecuted": 9
+        },
+        {
+          "testId": "TC02",
+          "testName": "Thêm vào giỏ",
+          "success": false,
+          "stepsExecuted": 3,
+          "error": "locator.waitFor: Timeout 1800ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=quantity-P01][value=\"1\"]') to be visible\u001b[22m\n"
+        },
+        {
+          "testId": "TC03",
+          "testName": "Gộp sản phẩm trùng",
+          "success": false,
+          "stepsExecuted": 4,
+          "error": "locator.waitFor: Timeout 1800ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=quantity-P01][value=\"2\"]') to be visible\u001b[22m\n"
+        },
+        {
+          "testId": "TC04",
+          "testName": "Đổi số lượng",
+          "success": false,
+          "stepsExecuted": 3,
+          "error": "page.fill: Timeout 1800ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=quantity-P01]')\u001b[22m\n"
+        },
+        {
+          "testId": "TC05",
+          "testName": "Xóa sản phẩm",
+          "success": false,
+          "stepsExecuted": 4,
+          "error": "page.click: Timeout 1800ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=remove-P01]')\u001b[22m\n"
+        },
+        {
+          "testId": "TC06",
+          "testName": "Tính tổng nhiều sản phẩm",
+          "success": false,
+          "stepsExecuted": 6,
+          "error": "locator.waitFor: Timeout 1800ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=quantity-P01][value=\"2\"]') to be visible\u001b[22m\n"
+        },
+        {
+          "testId": "TC07",
+          "testName": "Xóa toàn bộ giỏ",
+          "success": false,
+          "stepsExecuted": 4,
+          "error": "locator.waitFor: Timeout 1800ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=cart-row-P01]') to be visible\u001b[22m\n"
+        },
+        {
+          "testId": "TC08",
+          "testName": "Giữ giỏ khi tải lại",
+          "success": false,
+          "stepsExecuted": 5,
+          "error": "locator.waitFor: Timeout 1800ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=quantity-P02][value=\"2\"]') to be visible\u001b[22m\n"
+        },
+        {
+          "testId": "TC09",
+          "testName": "Giới hạn tồn kho",
+          "success": false,
+          "stepsExecuted": 8,
+          "error": "locator.waitFor: Timeout 1800ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=quantity-P01][value=\"5\"]') to be visible\u001b[22m\n"
+        }
+      ],
+      "criteria": [
+        {
+          "title": "TC01 - Hiển thị sản phẩm",
+          "passed": true,
+          "score": 1,
+          "needsReview": false,
+          "reason": "1/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+          "evidence": {
+            "browserWorkflows": [
+              {
+                "id": "ev-browser-1793503198963-2bjgeetvu",
+                "source": "PlaywrightPlugin",
+                "type": "browser.workflow.completed",
+                "confidence": 1,
+                "timestamp": "2026-11-01T03:19:58.964Z",
+                "payload": {
+                  "testId": "TC01",
+                  "testName": "Hiển thị sản phẩm",
+                  "success": true,
+                  "stepsExecuted": 9
+                }
+              }
+            ]
+          }
+        },
+        {
+          "title": "TC02 - Thêm vào giỏ",
+          "passed": false,
+          "score": 0,
+          "needsReview": false,
+          "reason": "0/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+          "evidence": {
+            "browserWorkflows": [
+              {
+                "id": "ev-browser-1793503200939-lsknw2w6b",
+                "source": "PlaywrightPlugin",
+                "type": "browser.workflow.completed",
+                "confidence": 1,
+                "timestamp": "2026-11-01T03:20:00.939Z",
+                "payload": {
+                  "testId": "TC02",
+                  "testName": "Thêm vào giỏ",
+                  "success": false,
+                  "stepsExecuted": 3,
+                  "error": "locator.waitFor: Timeout 1800ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=quantity-P01][value=\"1\"]') to be visible\u001b[22m\n"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "title": "TC03 - Gộp sản phẩm trùng",
+          "passed": false,
+          "score": 0,
+          "needsReview": false,
+          "reason": "0/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+          "evidence": {
+            "browserWorkflows": [
+              {
+                "id": "ev-browser-1793503202959-t3zmuo511",
+                "source": "PlaywrightPlugin",
+                "type": "browser.workflow.completed",
+                "confidence": 1,
+                "timestamp": "2026-11-01T03:20:02.959Z",
+                "payload": {
+                  "testId": "TC03",
+                  "testName": "Gộp sản phẩm trùng",
+                  "success": false,
+                  "stepsExecuted": 4,
+                  "error": "locator.waitFor: Timeout 1800ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=quantity-P01][value=\"2\"]') to be visible\u001b[22m\n"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "title": "TC04 - Đổi số lượng",
+          "passed": false,
+          "score": 0,
+          "needsReview": false,
+          "reason": "0/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+          "evidence": {
+            "browserWorkflows": [
+              {
+                "id": "ev-browser-1793503204943-dydvud0pj",
+                "source": "PlaywrightPlugin",
+                "type": "browser.workflow.completed",
+                "confidence": 1,
+                "timestamp": "2026-11-01T03:20:04.943Z",
+                "payload": {
+                  "testId": "TC04",
+                  "testName": "Đổi số lượng",
+                  "success": false,
+                  "stepsExecuted": 3,
+                  "error": "page.fill: Timeout 1800ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=quantity-P01]')\u001b[22m\n"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "title": "TC05 - Xóa sản phẩm",
+          "passed": false,
+          "score": 0,
+          "needsReview": false,
+          "reason": "0/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+          "evidence": {
+            "browserWorkflows": [
+              {
+                "id": "ev-browser-1793503206951-nq2g3re7u",
+                "source": "PlaywrightPlugin",
+                "type": "browser.workflow.completed",
+                "confidence": 1,
+                "timestamp": "2026-11-01T03:20:06.951Z",
+                "payload": {
+                  "testId": "TC05",
+                  "testName": "Xóa sản phẩm",
+                  "success": false,
+                  "stepsExecuted": 4,
+                  "error": "page.click: Timeout 1800ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=remove-P01]')\u001b[22m\n"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "title": "TC06 - Tính tổng nhiều sản phẩm",
+          "passed": false,
+          "score": 0,
+          "needsReview": false,
+          "reason": "0/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+          "evidence": {
+            "browserWorkflows": [
+              {
+                "id": "ev-browser-1793503209049-0xnqekeod",
+                "source": "PlaywrightPlugin",
+                "type": "browser.workflow.completed",
+                "confidence": 1,
+                "timestamp": "2026-11-01T03:20:09.049Z",
+                "payload": {
+                  "testId": "TC06",
+                  "testName": "Tính tổng nhiều sản phẩm",
+                  "success": false,
+                  "stepsExecuted": 6,
+                  "error": "locator.waitFor: Timeout 1800ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=quantity-P01][value=\"2\"]') to be visible\u001b[22m\n"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "title": "TC07 - Xóa toàn bộ giỏ",
+          "passed": false,
+          "score": 0,
+          "needsReview": false,
+          "reason": "0/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+          "evidence": {
+            "browserWorkflows": [
+              {
+                "id": "ev-browser-1793503211074-o4trlw3ph",
+                "source": "PlaywrightPlugin",
+                "type": "browser.workflow.completed",
+                "confidence": 1,
+                "timestamp": "2026-11-01T03:20:11.074Z",
+                "payload": {
+                  "testId": "TC07",
+                  "testName": "Xóa toàn bộ giỏ",
+                  "success": false,
+                  "stepsExecuted": 4,
+                  "error": "locator.waitFor: Timeout 1800ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=cart-row-P01]') to be visible\u001b[22m\n"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "title": "TC08 - Giữ giỏ khi tải lại",
+          "passed": false,
+          "score": 0,
+          "needsReview": false,
+          "reason": "0/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+          "evidence": {
+            "browserWorkflows": [
+              {
+                "id": "ev-browser-1793503213131-tbbrb6r0p",
+                "source": "PlaywrightPlugin",
+                "type": "browser.workflow.completed",
+                "confidence": 1,
+                "timestamp": "2026-11-01T03:20:13.131Z",
+                "payload": {
+                  "testId": "TC08",
+                  "testName": "Giữ giỏ khi tải lại",
+                  "success": false,
+                  "stepsExecuted": 5,
+                  "error": "locator.waitFor: Timeout 1800ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=quantity-P02][value=\"2\"]') to be visible\u001b[22m\n"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "title": "TC09 - Giới hạn tồn kho",
+          "passed": false,
+          "score": 0,
+          "needsReview": false,
+          "reason": "0/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+          "evidence": {
+            "browserWorkflows": [
+              {
+                "id": "ev-browser-1793503215241-010bu4iww",
+                "source": "PlaywrightPlugin",
+                "type": "browser.workflow.completed",
+                "confidence": 1,
+                "timestamp": "2026-11-01T03:20:15.241Z",
+                "payload": {
+                  "testId": "TC09",
+                  "testName": "Giới hạn tồn kho",
+                  "success": false,
+                  "stepsExecuted": 8,
+                  "error": "locator.waitFor: Timeout 1800ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=quantity-P01][value=\"5\"]') to be visible\u001b[22m\n"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "externalAiCalls": 0
+    },
+    {
+      "label": "submit_8-9_diem",
+      "functionalScore": 8,
+      "visualPointsPending": 1,
+      "passed": 8,
+      "total": 9,
+      "productionBuildPassed": true,
+      "mobileWidth": 390,
+      "noHorizontalOverflow": true,
+      "tests": [
+        {
+          "testId": "TC01",
+          "testName": "Hiển thị sản phẩm",
+          "success": true,
+          "stepsExecuted": 9
+        },
+        {
+          "testId": "TC02",
+          "testName": "Thêm vào giỏ",
+          "success": true,
+          "stepsExecuted": 4
+        },
+        {
+          "testId": "TC03",
+          "testName": "Gộp sản phẩm trùng",
+          "success": true,
+          "stepsExecuted": 5
+        },
+        {
+          "testId": "TC04",
+          "testName": "Đổi số lượng",
+          "success": true,
+          "stepsExecuted": 7
+        },
+        {
+          "testId": "TC05",
+          "testName": "Xóa sản phẩm",
+          "success": true,
+          "stepsExecuted": 6
+        },
+        {
+          "testId": "TC06",
+          "testName": "Tính tổng nhiều sản phẩm",
+          "success": true,
+          "stepsExecuted": 9
+        },
+        {
+          "testId": "TC07",
+          "testName": "Xóa toàn bộ giỏ",
+          "success": true,
+          "stepsExecuted": 8
+        },
+        {
+          "testId": "TC08",
+          "testName": "Giữ giỏ khi tải lại",
+          "success": false,
+          "stepsExecuted": 5,
+          "error": "locator.waitFor: Timeout 1800ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=quantity-P02][value=\"2\"]') to be visible\u001b[22m\n"
+        },
+        {
+          "testId": "TC09",
+          "testName": "Giới hạn tồn kho",
+          "success": true,
+          "stepsExecuted": 10
+        }
+      ],
+      "criteria": [
+        {
+          "title": "TC01 - Hiển thị sản phẩm",
+          "passed": true,
+          "score": 1,
+          "needsReview": false,
+          "reason": "1/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+          "evidence": {
+            "browserWorkflows": [
+              {
+                "id": "ev-browser-1793503234881-ltr37ktd4",
+                "source": "PlaywrightPlugin",
+                "type": "browser.workflow.completed",
+                "confidence": 1,
+                "timestamp": "2026-11-01T03:20:34.881Z",
+                "payload": {
+                  "testId": "TC01",
+                  "testName": "Hiển thị sản phẩm",
+                  "success": true,
+                  "stepsExecuted": 9
+                }
+              }
+            ]
+          }
+        },
+        {
+          "title": "TC02 - Thêm vào giỏ",
+          "passed": true,
+          "score": 1,
+          "needsReview": false,
+          "reason": "1/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+          "evidence": {
+            "browserWorkflows": [
+              {
+                "id": "ev-browser-1793503235062-ksfeton2q",
+                "source": "PlaywrightPlugin",
+                "type": "browser.workflow.completed",
+                "confidence": 1,
+                "timestamp": "2026-11-01T03:20:35.062Z",
+                "payload": {
+                  "testId": "TC02",
+                  "testName": "Thêm vào giỏ",
+                  "success": true,
+                  "stepsExecuted": 4
+                }
+              }
+            ]
+          }
+        },
+        {
+          "title": "TC03 - Gộp sản phẩm trùng",
+          "passed": true,
+          "score": 1,
+          "needsReview": false,
+          "reason": "1/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+          "evidence": {
+            "browserWorkflows": [
+              {
+                "id": "ev-browser-1793503235269-4m54s3jry",
+                "source": "PlaywrightPlugin",
+                "type": "browser.workflow.completed",
+                "confidence": 1,
+                "timestamp": "2026-11-01T03:20:35.269Z",
+                "payload": {
+                  "testId": "TC03",
+                  "testName": "Gộp sản phẩm trùng",
+                  "success": true,
+                  "stepsExecuted": 5
+                }
+              }
+            ]
+          }
+        },
+        {
+          "title": "TC04 - Đổi số lượng",
+          "passed": true,
+          "score": 1,
+          "needsReview": false,
+          "reason": "1/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+          "evidence": {
+            "browserWorkflows": [
+              {
+                "id": "ev-browser-1793503235529-d5f2la7am",
+                "source": "PlaywrightPlugin",
+                "type": "browser.workflow.completed",
+                "confidence": 1,
+                "timestamp": "2026-11-01T03:20:35.529Z",
+                "payload": {
+                  "testId": "TC04",
+                  "testName": "Đổi số lượng",
+                  "success": true,
+                  "stepsExecuted": 7
+                }
+              }
+            ]
+          }
+        },
+        {
+          "title": "TC05 - Xóa sản phẩm",
+          "passed": true,
+          "score": 1,
+          "needsReview": false,
+          "reason": "1/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+          "evidence": {
+            "browserWorkflows": [
+              {
+                "id": "ev-browser-1793503235807-6e5gw1rse",
+                "source": "PlaywrightPlugin",
+                "type": "browser.workflow.completed",
+                "confidence": 1,
+                "timestamp": "2026-11-01T03:20:35.807Z",
+                "payload": {
+                  "testId": "TC05",
+                  "testName": "Xóa sản phẩm",
+                  "success": true,
+                  "stepsExecuted": 6
+                }
+              }
+            ]
+          }
+        },
+        {
+          "title": "TC06 - Tính tổng nhiều sản phẩm",
+          "passed": true,
+          "score": 1,
+          "needsReview": false,
+          "reason": "1/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+          "evidence": {
+            "browserWorkflows": [
+              {
+                "id": "ev-browser-1793503236153-d11zyj86r",
+                "source": "PlaywrightPlugin",
+                "type": "browser.workflow.completed",
+                "confidence": 1,
+                "timestamp": "2026-11-01T03:20:36.153Z",
+                "payload": {
+                  "testId": "TC06",
+                  "testName": "Tính tổng nhiều sản phẩm",
+                  "success": true,
+                  "stepsExecuted": 9
+                }
+              }
+            ]
+          }
+        },
+        {
+          "title": "TC07 - Xóa toàn bộ giỏ",
+          "passed": true,
+          "score": 1,
+          "needsReview": false,
+          "reason": "1/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+          "evidence": {
+            "browserWorkflows": [
+              {
+                "id": "ev-browser-1793503236422-tg7bmaer9",
+                "source": "PlaywrightPlugin",
+                "type": "browser.workflow.completed",
+                "confidence": 1,
+                "timestamp": "2026-11-01T03:20:36.422Z",
+                "payload": {
+                  "testId": "TC07",
+                  "testName": "Xóa toàn bộ giỏ",
+                  "success": true,
+                  "stepsExecuted": 8
+                }
+              }
+            ]
+          }
+        },
+        {
+          "title": "TC08 - Giữ giỏ khi tải lại",
+          "passed": false,
+          "score": 0,
+          "needsReview": false,
+          "reason": "0/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+          "evidence": {
+            "browserWorkflows": [
+              {
+                "id": "ev-browser-1793503238495-jkbaicy0f",
+                "source": "PlaywrightPlugin",
+                "type": "browser.workflow.completed",
+                "confidence": 1,
+                "timestamp": "2026-11-01T03:20:38.495Z",
+                "payload": {
+                  "testId": "TC08",
+                  "testName": "Giữ giỏ khi tải lại",
+                  "success": false,
+                  "stepsExecuted": 5,
+                  "error": "locator.waitFor: Timeout 1800ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=quantity-P02][value=\"2\"]') to be visible\u001b[22m\n"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "title": "TC09 - Giới hạn tồn kho",
+          "passed": true,
+          "score": 1,
+          "needsReview": false,
+          "reason": "1/1 kiểm thử giao diện đạt; tính điểm theo tiêu chí đã liên kết.",
+          "evidence": {
+            "browserWorkflows": [
+              {
+                "id": "ev-browser-1793503238925-nlbql9zjz",
+                "source": "PlaywrightPlugin",
+                "type": "browser.workflow.completed",
+                "confidence": 1,
+                "timestamp": "2026-11-01T03:20:38.925Z",
+                "payload": {
+                  "testId": "TC09",
+                  "testName": "Giới hạn tồn kho",
+                  "success": true,
+                  "stepsExecuted": 10
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "externalAiCalls": 0
+    }
+  ]
+}
