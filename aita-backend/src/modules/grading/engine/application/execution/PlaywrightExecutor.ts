@@ -148,6 +148,12 @@ export class PlaywrightExecutor {
             if (!browserTests.length) browserMessage('[Kiểm thử UI] Chưa có kịch bản phù hợp với đề; chỉ thu thập ảnh, chưa xác minh thao tác button/form.');
 
             if (browserTests.length && successfullyLoaded) {
+                // Teacher-configured workflows use the same rubric linkage as generated workflows.
+                for (const test of browserTests) {
+                    if (test.ruleIds?.length && !evidences.some(e => e.type === 'browser.workflow.planned' && e.payload?.testId === test.id)) {
+                        evidences.push({ id: `planned-${test.id}`, type: 'browser.workflow.planned', source: 'AuthRequirementTemplate', confidence: 1, timestamp: new Date().toISOString(), payload: { testId: test.id, ruleIds: test.ruleIds } });
+                    }
+                }
                 const artifactsDir = path.join(projectDirectory, '.grading-browser-artifacts');
                 await fs.promises.mkdir(artifactsDir, { recursive: true });
                 const workflows = await browserPresentationContext.run({ watchBrowser: true }, () => new PlaywrightPlugin(this.artifactStore).executeAsync({

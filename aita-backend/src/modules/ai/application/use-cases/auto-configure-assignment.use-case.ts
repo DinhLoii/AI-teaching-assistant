@@ -1,3 +1,7 @@
+import { createHash } from 'node:crypto'
+import {extractCartBrowserContract,applyCartBrowserContract} from '../../infrastructure/analysis/cart-browser-contract.js'
+import { dbi202Reference } from '../../infrastructure/analysis/dbi202-reference.js'
+import { configureDbi202Output } from '../../infrastructure/analysis/dbi202-ai-config.js'
 import { AiClientManager } from '../../../grading/engine/infrastructure/ai/AiClientManager.js'
 import type {
   AdaptiveAnalysisOutput,
@@ -41,6 +45,7 @@ export class AutoConfigureAssignmentUseCase {
   private readonly pgVectorRubricService = new PgVectorRubricService()
 
   async execute(input: AutoConfigureAssignmentInput): Promise<AutoConfiguredAssignmentOutput> {
+    const isDbiReference = !!input.file && createHash('sha256').update(input.file.buffer).digest('hex') === dbi202Reference.sha256
     const targetMaxScore = Number(input.maxScore) || 10
     const rawText = input.promptText || input.text || ''
 
@@ -48,6 +53,10 @@ export class AutoConfigureAssignmentUseCase {
     // GIAI ĐOẠN 2: TRÍCH XUẤT TÀI LIỆU ĐA DẠNG & CHUẨN HÓA VĂN BẢN
     // ══════════════════════════════════════════════════════════════════
     const extraction = await this.documentExtractor.extract(input.file, rawText)
+
+    if (extraction.isScannedOrImageOnly && extraction.cleanedText.length < 40) {
+      throw new Error('Không đọc được chữ trong PDF scan/ảnh sau bước OCR. Vui lòng tải PDF có lớp văn bản, DOCX hoặc nhập nội dung đề vào mô tả; chưa thể tự tạo cấu hình từ tệp này.')
+    }
 
     // Check Cache first to optimize cost and performance (Giai đoạn 10)
     const cacheKey = AnalysisCacheService.generateKey(
@@ -68,6 +77,7 @@ export class AutoConfigureAssignmentUseCase {
       console.warn(`[AutoConfigureAssignment] Phát hiện và vô hiệu hóa ${guardResult.detectedPatterns.length} mẫu prompt injection trong tài liệu.`)
     }
     const safeText = guardResult.sanitizedText
+    const cartContract = extractCartBrowserContract(safeText)
 
     // ══════════════════════════════════════════════════════════════════
     // GIAI ĐOẠN 5 & 3: DETERMINISTIC PARSING & PHÂN LOẠI NGÔN NGỮ
@@ -96,7 +106,7 @@ export class AutoConfigureAssignmentUseCase {
     // GIAI ĐOẠN 4: XỬ LÝ RUBRIC THEO 2 NHÁNH (BRANCH A vs BRANCH B + RAG PGVECTOR)
     // ══════════════════════════════════════════════════════════════════
     let ragReferences: SimilarRubricSearchResult[] = []
-    if (deterministicResult.rubricDetectionStatus === 'NO_RUBRIC' || deterministicResult.rubricDetectionStatus === 'UNREADABLE_RUBRIC') {
+    if (!cartContract && !isDbiReference && (deterministicResult.rubricDetectionStatus === 'NO_RUBRIC' || deterministicResult.rubricDetectionStatus === 'UNREADABLE_RUBRIC')) {
       try {
         const queryTerm = [deterministicResult.title.value, deterministicResult.requirements.slice(0, 3).join(' ')].filter(Boolean).join(' ')
         if (queryTerm.trim().length > 3) {
@@ -130,11 +140,11 @@ export class AutoConfigureAssignmentUseCase {
     // ══════════════════════════════════════════════════════════════════
     // GIAI ĐOẠN 7 & 10: AI FALLBACK CÓ KIỂM SOÁT (GROQ / CLOUD AI)
     // ══════════════════════════════════════════════════════════════════
-    let modelNameUsed = 'AITA Hybrid Extraction Engine'
+    let modelNameUsed = extraction.verifiedReference ? 'Bản trích xuất tham chiếu đã đối chiếu PDF gốc' : 'AITA Hybrid Extraction Engine'
     let enrichedOutput: Partial<AutoConfiguredAssignmentOutput> = {}
 
     // Only call Cloud AI if the document is not an empty/scanned PDF and contains actual content
-    if (!extraction.isScannedOrImageOnly && safeText.length > 30) {
+    if (!cartContract && !isDbiReference && !extraction.verifiedReference && !extraction.isScannedOrImageOnly && safeText.length > 30) {
       try {
         const aiResponse = await this.callCloudAiForEnrichment({
           safeText,
@@ -175,7 +185,9 @@ export class AutoConfigureAssignmentUseCase {
     // ══════════════════════════════════════════════════════════════════
     const groundedOutput = enforceAssignmentContract(assembledOutput, safeText, extraction.filename,
       rubricResolution.rubricSourceType === 'ORIGINAL_DOCUMENT' ? rubricResolution.rubricCriteria : [],
-      Object.keys(enrichedOutput).length > 0)
+      Object.keys(enrichedOutput).length > 0 || extraction.verifiedReference === true)
+    if (isDbiReference) await configureDbi202Output(groundedOutput)
+    if (cartContract) applyCartBrowserContract(groundedOutput,cartContract)
     const validationResult = AnalysisValidatorService.validateAndRepair(groundedOutput, targetMaxScore)
     const finalOutput = validationResult.output
     finalOutput.provenanceReport.pointsSumDelta = Number(Math.abs(finalOutput.rubricCriteria.reduce((sum, criterion) => sum + criterion.maxPoints, 0) - targetMaxScore).toFixed(2))
@@ -185,7 +197,7 @@ export class AutoConfigureAssignmentUseCase {
     if (Object.keys(enrichedOutput).length > 0) AnalysisCacheService.set(cacheKey, finalOutput)
 
     // Background persistence into Neon PostgreSQL with pgvector embeddings
-    this.pgVectorRubricService.saveRubricWithEmbeddings({
+    if (!cartContract && !isDbiReference && !extraction.verifiedReference) this.pgVectorRubricService.saveRubricWithEmbeddings({
       title: finalOutput.suggestedTitle || finalOutput.provenanceReport?.fields?.title?.value || 'Barem phân tích bài tập',
       description: finalOutput.summaryExplanation || undefined,
       subjectCode: input.subjectCode,

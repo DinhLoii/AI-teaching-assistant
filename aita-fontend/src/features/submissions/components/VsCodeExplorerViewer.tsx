@@ -144,7 +144,7 @@ export function VsCodeExplorerViewer({
   }, [initialFiles, sourceCode, filename])
 
   const initialSelected = React.useMemo(() => {
-    return files.find(f => f.name === activeFileName) ||
+    return files.find(f => f.path === activeFileName) || files.find(f => f.name === activeFileName) ||
       files.find(f => (f.errorAnnotations?.length || 0) > 0) ||
       files[0]
   }, [files, activeFileName])

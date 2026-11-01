@@ -7,6 +7,7 @@ import { submissionsApi } from '@/lib/api/modules/submissions'
 import { reportFacts, evidenceMatches, assessmentMethod } from '../report-facts'
 import { SubmissionHistory } from './SubmissionHistory'
 import { VsCodeExplorerViewer } from './VsCodeExplorerViewer'
+import {TestCaseReport} from './TestCaseReport'
 
 export interface EvaluationReportViewerProps {
   submission: any
@@ -73,7 +74,7 @@ export function EvaluationReportViewer({ submission, onResubmit, onGetHint, isLe
         {viewerFiles.length ? <VsCodeExplorerViewer key={submissionId} initialFiles={viewerFiles} archiveName={filename} height="h-[520px]" /> : <p role={source.error ? 'alert' : 'status'} className="py-12 text-center text-sm text-slate-500">{source.id !== submissionId ? 'Đang đọc ZIP đã lưu...' : source.error || 'ZIP không có tệp mã nguồn hỗ trợ xem.'}{source.error && <button onClick={retrySource} className="ml-2 text-orange-600 underline">Thử lại</button>}</p>}
         {source.id === submissionId && source.hash && <p className="break-all text-[10px] text-slate-500">ZIP SHA-256: {source.hash} · {files.length} tệp hiển thị · {source.skipped || 0} mục bị bỏ qua (thư viện, tệp nhị phân hoặc giới hạn đọc).</p>}
       </section>
-      <section className={panel}><h3 className="font-bold">Chất lượng mã nguồn theo barem</h3><p className="text-xs text-slate-500">Không có điểm Code Quality riêng nếu giảng viên không cấu hình tiêu chí đó. Nhận xét bên dưới lấy từ từng tiêu chí đã chấm.</p>
+      <section className={panel}><h3 className="font-bold">Đánh giá theo tiêu chí rubric</h3><p className="text-xs text-slate-500">Rubric quy định tiêu chí và trọng số. Điểm chức năng dựa vào testcase; chất lượng mã nguồn chỉ có điểm khi được cấu hình trong rubric.</p>
         {!facts.evaluations.length && <p className="text-sm text-slate-500">Chưa có đánh giá theo tiêu chí.</p>}
         {facts.evaluations.map((rule: any, index: number) => <div key={rule.ruleId || index} className="border-t border-slate-100 dark:border-slate-800 pt-3 text-xs space-y-1"><strong>{rule.title || rule.ruleId} · {rule.earnedScore ?? '—'} / {rule.weight ?? '—'}</strong><p className="whitespace-pre-wrap">{rule.details || rule.reason || 'Chưa có nhận xét.'}</p></div>)}
       </section>
@@ -93,11 +94,7 @@ export function EvaluationReportViewer({ submission, onResubmit, onGetHint, isLe
       })}
       {staff && onUpdateRuleScore && Object.keys(edits).length > 0 && <Button onClick={save}>Lưu điểm theo barem</Button>}
     </div>}
-    {tab === 'testcases' && <section className={panel}><h3 className="font-bold">Kết quả kiểm thử theo barem</h3><p className="text-xs text-slate-500">Chỉ hiển thị kết quả được ghi trong bằng chứng thực thi của tiêu chí. Có tệp unit test hoặc nhận xét AI không có nghĩa testcase đã chạy thành công.</p>
-      <p>{facts.testExecuted ? `${facts.testPassed}/${facts.testExecuted} kiểm thử đạt` : facts.report.consoleVerification?.error || 'Chưa có bằng chứng thực thi testcase.'}</p>
-      {facts.report.consoleVerification?.scoringImpact === 'none' && <p className="text-xs text-slate-500">Bộ test kiểm chứng việc chạy chương trình; không cộng thêm điểm ngoài barem giảng viên đã duyệt.</p>}
-      {facts.tests.map(test => <div key={test.key} className="rounded-xl bg-slate-50 dark:bg-slate-800 p-4 text-xs space-y-2"><div className="flex flex-wrap justify-between gap-2"><strong>{test.ruleId} · {test.kind} · {String(test.name)}</strong><span>{test.passed === true ? 'Đạt' : test.passed === false ? 'Không đạt' : 'Chưa có kết quả'}</span></div>{['input', 'expected', 'actual', 'error'].map(key => test[key] != null && <div key={key}><span className="text-slate-500">{key}:</span><pre className="whitespace-pre-wrap break-words">{String(test[key])}</pre></div>)}</div>)}
-    </section>}
+    {tab === 'testcases' && <TestCaseReport tests={facts.tests} files={files} rules={facts.evaluations} staff={!!staff} sourceError={source.error}/>}
     {tab === 'review' && <section className={panel}><h3 className="font-bold">Code Review theo bài nộp và barem</h3>
       <p className="text-xs text-slate-500">Đối chiếu nhận xét với đoạn mã và tiêu chí ở mục Chi tiết đánh giá. Các đoạn trích chưa khớp ZIP cần được giảng viên xem lại.</p>
       {facts.evaluations.map((rule: any, i: number) => <div key={rule.ruleId || i} className="text-sm border-t border-slate-100 dark:border-slate-800 pt-3"><strong>{rule.title || rule.ruleId} · {rule.earnedScore ?? '—'} / {rule.weight ?? '—'}</strong><p className="mt-1 whitespace-pre-wrap">{rule.details || rule.reason || 'Chưa có nhận xét.'}</p></div>)}

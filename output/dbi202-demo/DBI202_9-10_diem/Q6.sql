@@ -1,0 +1,1 @@
+WITH x AS (SELECT g.GuestID,g.Nationality,COUNT(b.BookingID) AS Bookings FROM Guest g LEFT JOIN Booking b ON b.GuestID=g.GuestID GROUP BY g.GuestID,g.Nationality) SELECT Nationality,COUNT(*) AS NumberOfGuests,MIN(Bookings) AS MinBookingsPerGuest,MAX(Bookings) AS MaxBookingsPerGuest FROM x GROUP BY Nationality ORDER BY Nationality;

@@ -1,0 +1,1882 @@
+[
+  {
+    "submissionId": "Bai_lam_1-2_diem",
+    "score": 1,
+    "passed": 2,
+    "total": 19,
+    "questionScores": [
+      {
+        "question": "Q1.c",
+        "score": 1
+      },
+      {
+        "question": "Q2.c",
+        "score": 0
+      },
+      {
+        "question": "Q3.c",
+        "score": 0
+      },
+      {
+        "question": "Q4.c",
+        "score": 0
+      },
+      {
+        "question": "Q5.c",
+        "score": 0
+      },
+      {
+        "question": "Q6.c",
+        "score": 0
+      },
+      {
+        "question": "Q7.c",
+        "score": 0
+      }
+    ],
+    "logs": [
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Chấm từng câu] Q1.c: 2 testcase."
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[Runner console] Đang kiểm tra cấu hình và nhận diện trình biên dịch từ bài nộp."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "runtime": "c",
+        "message": "[Runtime console] Nhận diện: c; yêu cầu đề: C; image: gcc:13."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Đang kiểm tra kết nối Engine trên máy chạy worker."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Engine đã phản hồi; đang chuẩn bị image thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker image] Đã tìm thấy gcc:13 trên worker; sử dụng image cục bộ."
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "message": "[Docker] Image sẵn sàng: gcc:13; ID: sha256:b59036579f0622d1b3aa5286aaf2fcef9b9c6f88f31c6762236fc2f136f7f650."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Kế hoạch kiểm thử] 2 testcase; 1 chương trình ứng viên; đối chiếu output theo chế độ của từng testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Chương trình] material_0/Q1.c; thư mục tương đối: material_0; build: gcc -o solution 'Q1.c' -O2 -lm; chạy: ./solution."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q1-TC1] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q1-TC1] Đã tạo f66ed7c4075f17ddb65b1aa1765d18aaf1a6904bd14a0d1759e1a24f5d5b28bf; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q1-TC1] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q1-TC1] Đã xóa container f66ed7c4075f17ddb65b1aa1765d18aaf1a6904bd14a0d1759e1a24f5d5b28bf của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q1-TC1] PASS; biên dịch: thành công; 943 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q1-TC2] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q1-TC2] Đã tạo cd050c439ad64eedf24ef9eed19dadad79723fc8c232b6444c2c342f393f0a14; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q1-TC2] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q1-TC2] Đã xóa container cd050c439ad64eedf24ef9eed19dadad79723fc8c232b6444c2c342f393f0a14 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q1-TC2] PASS; biên dịch: thành công; 562 ms."
+      },
+      {
+        "stage": 2,
+        "status": "completed",
+        "message": "[Tổng kết testcase] Chương trình được chọn: material_0/Q1.c; 2/2 test đã chạy đạt yêu cầu; 0 test chưa chạy. Kết quả được lưu cùng báo cáo."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Kết quả từng câu] Q1.c: 2/2 testcase đạt; tỷ lệ 100.00%. Biên dịch: thành công."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Chấm từng câu] Q2.c: 2 testcase."
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[Runner console] Đang kiểm tra cấu hình và nhận diện trình biên dịch từ bài nộp."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "runtime": "c",
+        "message": "[Runtime console] Nhận diện: c; yêu cầu đề: C; image: gcc:13."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Đang kiểm tra kết nối Engine trên máy chạy worker."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Engine đã phản hồi; đang chuẩn bị image thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker image] Đã tìm thấy gcc:13 trên worker; sử dụng image cục bộ."
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "message": "[Docker] Image sẵn sàng: gcc:13; ID: sha256:b59036579f0622d1b3aa5286aaf2fcef9b9c6f88f31c6762236fc2f136f7f650."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Kế hoạch kiểm thử] 2 testcase; 1 chương trình ứng viên; đối chiếu output theo chế độ của từng testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Chương trình] material_1/Q2.c; thư mục tương đối: material_1; build: gcc -o solution 'Q2.c' -O2 -lm; chạy: ./solution."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q2-TC1] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q2-TC1] Đã tạo 4d61aa0574fc7bd1457ca89b55dd9ce57f84083dc12f367bb3e25b103ed00be6; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q2-TC1] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q2-TC1] Đã xóa container 4d61aa0574fc7bd1457ca89b55dd9ce57f84083dc12f367bb3e25b103ed00be6 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Test Q2-TC1] FAIL; biên dịch: thành công; 552 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q2-TC2] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q2-TC2] Đã tạo 8e9dd5b355bec05455c2d682dcc89a29b32ff38d5d6639f1c5d7bdf864db1f1d; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q2-TC2] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q2-TC2] Đã xóa container 8e9dd5b355bec05455c2d682dcc89a29b32ff38d5d6639f1c5d7bdf864db1f1d của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Test Q2-TC2] FAIL; biên dịch: thành công; 517 ms."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Tổng kết testcase] Chương trình được chọn: material_1/Q2.c; 0/2 test đã chạy đạt yêu cầu; 0 test chưa chạy. Kết quả được lưu cùng báo cáo."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Kết quả từng câu] Q2.c: 0/2 testcase đạt; tỷ lệ 0.00%. Biên dịch: thành công."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Chấm từng câu] Q3.c: 2 testcase."
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[Runner console] Đang kiểm tra cấu hình và nhận diện trình biên dịch từ bài nộp."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "runtime": "c",
+        "message": "[Runtime console] Nhận diện: c; yêu cầu đề: C; image: gcc:13."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Đang kiểm tra kết nối Engine trên máy chạy worker."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Engine đã phản hồi; đang chuẩn bị image thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker image] Đã tìm thấy gcc:13 trên worker; sử dụng image cục bộ."
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "message": "[Docker] Image sẵn sàng: gcc:13; ID: sha256:b59036579f0622d1b3aa5286aaf2fcef9b9c6f88f31c6762236fc2f136f7f650."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Kế hoạch kiểm thử] 2 testcase; 1 chương trình ứng viên; đối chiếu output theo chế độ của từng testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Chương trình] material_2/Q3.c; thư mục tương đối: material_2; build: gcc -o solution 'Q3.c' -O2 -lm; chạy: ./solution."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q3-TC1] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q3-TC1] Đã tạo 0e85597f4fc41783b5ddf29e92949ae3fc405f97aa85588d1d763cdca22e8005; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q3-TC1] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q3-TC1] Đã xóa container 0e85597f4fc41783b5ddf29e92949ae3fc405f97aa85588d1d763cdca22e8005 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Test Q3-TC1] FAIL; biên dịch: thành công; 520 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q3-TC2] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q3-TC2] Đã tạo 2a34b1c63839d63db64dee283bd43e3182b17456343ab532310985ff35ba3eac; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q3-TC2] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q3-TC2] Đã xóa container 2a34b1c63839d63db64dee283bd43e3182b17456343ab532310985ff35ba3eac của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Test Q3-TC2] FAIL; biên dịch: thành công; 518 ms."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Tổng kết testcase] Chương trình được chọn: material_2/Q3.c; 0/2 test đã chạy đạt yêu cầu; 0 test chưa chạy. Kết quả được lưu cùng báo cáo."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Kết quả từng câu] Q3.c: 0/2 testcase đạt; tỷ lệ 0.00%. Biên dịch: thành công."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Chấm từng câu] Q4.c: 2 testcase."
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[Runner console] Đang kiểm tra cấu hình và nhận diện trình biên dịch từ bài nộp."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "runtime": "c",
+        "message": "[Runtime console] Nhận diện: c; yêu cầu đề: C; image: gcc:13."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Đang kiểm tra kết nối Engine trên máy chạy worker."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Engine đã phản hồi; đang chuẩn bị image thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker image] Đã tìm thấy gcc:13 trên worker; sử dụng image cục bộ."
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "message": "[Docker] Image sẵn sàng: gcc:13; ID: sha256:b59036579f0622d1b3aa5286aaf2fcef9b9c6f88f31c6762236fc2f136f7f650."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Kế hoạch kiểm thử] 2 testcase; 1 chương trình ứng viên; đối chiếu output theo chế độ của từng testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Chương trình] material_3/Q4.c; thư mục tương đối: material_3; build: gcc -o solution 'Q4.c' -O2 -lm; chạy: ./solution."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q4-TC1] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q4-TC1] Đã tạo 0ee39c2dc3ce08f413158fe5ff56ecfc7e98c0479f83076751099b9a030b3c87; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q4-TC1] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q4-TC1] Đã xóa container 0ee39c2dc3ce08f413158fe5ff56ecfc7e98c0479f83076751099b9a030b3c87 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Test Q4-TC1] FAIL; biên dịch: thành công; 485 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q4-TC2] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q4-TC2] Đã tạo f318e10c23a28592da94772d8fadd81273138be5fde6e073daba994a2ba66f1b; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q4-TC2] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q4-TC2] Đã xóa container f318e10c23a28592da94772d8fadd81273138be5fde6e073daba994a2ba66f1b của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Test Q4-TC2] FAIL; biên dịch: thành công; 550 ms."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Tổng kết testcase] Chương trình được chọn: material_3/Q4.c; 0/2 test đã chạy đạt yêu cầu; 0 test chưa chạy. Kết quả được lưu cùng báo cáo."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Kết quả từng câu] Q4.c: 0/2 testcase đạt; tỷ lệ 0.00%. Biên dịch: thành công."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Chấm từng câu] Q5.c: 4 testcase."
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[Runner console] Đang kiểm tra cấu hình và nhận diện trình biên dịch từ bài nộp."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "runtime": "c",
+        "message": "[Runtime console] Nhận diện: c; yêu cầu đề: C; image: gcc:13."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Đang kiểm tra kết nối Engine trên máy chạy worker."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Engine đã phản hồi; đang chuẩn bị image thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker image] Đã tìm thấy gcc:13 trên worker; sử dụng image cục bộ."
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "message": "[Docker] Image sẵn sàng: gcc:13; ID: sha256:b59036579f0622d1b3aa5286aaf2fcef9b9c6f88f31c6762236fc2f136f7f650."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Kế hoạch kiểm thử] 4 testcase; 1 chương trình ứng viên; đối chiếu output theo chế độ của từng testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Chương trình] material_4/Q5.c; thư mục tương đối: material_4; build: gcc -o solution 'Q5.c' -O2 -lm; chạy: ./solution."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q5-TC1] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q5-TC1] Đã tạo 75e29c26e2ee322898025fdd941dd44b3c842da48cab4a61f1b9ca4bcde9f8b9; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q5-TC1] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q5-TC1] Đã xóa container 75e29c26e2ee322898025fdd941dd44b3c842da48cab4a61f1b9ca4bcde9f8b9 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Test Q5-TC1] FAIL; biên dịch: thành công; 543 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q5-TC2] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q5-TC2] Đã tạo 75f59501168bb66632593ff694171804cda53a5c25df0e8331c1b2a0134d90c2; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q5-TC2] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q5-TC2] Đã xóa container 75f59501168bb66632593ff694171804cda53a5c25df0e8331c1b2a0134d90c2 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Test Q5-TC2] FAIL; biên dịch: thành công; 534 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q5-TC3] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q5-TC3] Đã tạo 388095d5183917b8502f8839dd9ed998428ecc84c2c70b3507fc14bc6687c49c; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q5-TC3] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q5-TC3] Đã xóa container 388095d5183917b8502f8839dd9ed998428ecc84c2c70b3507fc14bc6687c49c của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Test Q5-TC3] FAIL; biên dịch: thành công; 517 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q5-TC4] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q5-TC4] Đã tạo 3b0cc2cda0abbeeae41562c15773a9b7235c8e070d22b3ea0fe40a9a481e2991; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q5-TC4] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q5-TC4] Đã xóa container 3b0cc2cda0abbeeae41562c15773a9b7235c8e070d22b3ea0fe40a9a481e2991 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Test Q5-TC4] FAIL; biên dịch: thành công; 512 ms."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Tổng kết testcase] Chương trình được chọn: material_4/Q5.c; 0/4 test đã chạy đạt yêu cầu; 0 test chưa chạy. Kết quả được lưu cùng báo cáo."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Kết quả từng câu] Q5.c: 0/4 testcase đạt; tỷ lệ 0.00%. Biên dịch: thành công."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Chấm từng câu] Q6.c: 3 testcase."
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[Runner console] Đang kiểm tra cấu hình và nhận diện trình biên dịch từ bài nộp."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "runtime": "c",
+        "message": "[Runtime console] Nhận diện: c; yêu cầu đề: C; image: gcc:13."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Đang kiểm tra kết nối Engine trên máy chạy worker."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Engine đã phản hồi; đang chuẩn bị image thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker image] Đã tìm thấy gcc:13 trên worker; sử dụng image cục bộ."
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "message": "[Docker] Image sẵn sàng: gcc:13; ID: sha256:b59036579f0622d1b3aa5286aaf2fcef9b9c6f88f31c6762236fc2f136f7f650."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Kế hoạch kiểm thử] 3 testcase; 1 chương trình ứng viên; đối chiếu output theo chế độ của từng testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Chương trình] material_5/Q6.c; thư mục tương đối: material_5; build: gcc -o solution 'Q6.c' -O2 -lm; chạy: ./solution."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q6-TC1] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q6-TC1] Đã tạo 8e8651407ad5ea350983be9f949048bf1393619eea0a7ab855c79fb31b683867; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q6-TC1] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q6-TC1] Đã xóa container 8e8651407ad5ea350983be9f949048bf1393619eea0a7ab855c79fb31b683867 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Test Q6-TC1] FAIL; biên dịch: thành công; 572 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q6-TC2] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q6-TC2] Đã tạo 784dc201ecda36ad9dddde80bd69275ccd9770fb889d52052b1f04431678b233; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q6-TC2] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q6-TC2] Đã xóa container 784dc201ecda36ad9dddde80bd69275ccd9770fb889d52052b1f04431678b233 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Test Q6-TC2] FAIL; biên dịch: thành công; 560 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q6-TC3] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q6-TC3] Đã tạo b50552be081180a752b326b052ee54bec9172645b6417715f3199fb18a262f7b; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q6-TC3] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q6-TC3] Đã xóa container b50552be081180a752b326b052ee54bec9172645b6417715f3199fb18a262f7b của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Test Q6-TC3] FAIL; biên dịch: thành công; 573 ms."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Tổng kết testcase] Chương trình được chọn: material_5/Q6.c; 0/3 test đã chạy đạt yêu cầu; 0 test chưa chạy. Kết quả được lưu cùng báo cáo."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Kết quả từng câu] Q6.c: 0/3 testcase đạt; tỷ lệ 0.00%. Biên dịch: thành công."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Chấm từng câu] Q7.c: 4 testcase."
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[Runner console] Đang kiểm tra cấu hình và nhận diện trình biên dịch từ bài nộp."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "runtime": "c",
+        "message": "[Runtime console] Nhận diện: c; yêu cầu đề: C; image: gcc:13."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Đang kiểm tra kết nối Engine trên máy chạy worker."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Engine đã phản hồi; đang chuẩn bị image thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker image] Đã tìm thấy gcc:13 trên worker; sử dụng image cục bộ."
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "message": "[Docker] Image sẵn sàng: gcc:13; ID: sha256:b59036579f0622d1b3aa5286aaf2fcef9b9c6f88f31c6762236fc2f136f7f650."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Kế hoạch kiểm thử] 4 testcase; 1 chương trình ứng viên; đối chiếu output theo chế độ của từng testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Chương trình] material_6/Q7.c; thư mục tương đối: material_6; build: gcc -o solution 'Q7.c' -O2 -lm; chạy: ./solution."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q7-TC1] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q7-TC1] Đã tạo b19f87cc2fe4842afa80cd1483084fb230aa43a2cfd05c9a6ce59e06bece68f4; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q7-TC1] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q7-TC1] Đã xóa container b19f87cc2fe4842afa80cd1483084fb230aa43a2cfd05c9a6ce59e06bece68f4 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Test Q7-TC1] FAIL; biên dịch: thành công; 592 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q7-TC2] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q7-TC2] Đã tạo b98c3d2bd957af674ca7d68d93a2c2e655128709bdec2946e07946fac984a27f; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q7-TC2] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q7-TC2] Đã xóa container b98c3d2bd957af674ca7d68d93a2c2e655128709bdec2946e07946fac984a27f của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Test Q7-TC2] FAIL; biên dịch: thành công; 564 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q7-TC3] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q7-TC3] Đã tạo 4b9a0fac4f84a9799d222f97afe8a0ef4f6d2af30d5f83f0280e58e4b5ad4f88; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q7-TC3] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q7-TC3] Đã xóa container 4b9a0fac4f84a9799d222f97afe8a0ef4f6d2af30d5f83f0280e58e4b5ad4f88 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Test Q7-TC3] FAIL; biên dịch: thành công; 560 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q7-TC4] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q7-TC4] Đã tạo 287ac1dfad89bf231cdb3f32f7cfc440b327ae184ad7c9499be901650a3e4ca0; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q7-TC4] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q7-TC4] Đã xóa container 287ac1dfad89bf231cdb3f32f7cfc440b327ae184ad7c9499be901650a3e4ca0 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Test Q7-TC4] FAIL; biên dịch: thành công; 626 ms."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Tổng kết testcase] Chương trình được chọn: material_6/Q7.c; 0/4 test đã chạy đạt yêu cầu; 0 test chưa chạy. Kết quả được lưu cùng báo cáo."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Kết quả từng câu] Q7.c: 0/4 testcase đạt; tỷ lệ 0.00%. Biên dịch: thành công."
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q1.c: 1/1. Điểm chức năng Q1.c: 2/2 test đạt; 1/1 điểm. Bằng chứng từ lượt thực thi bài nộp này."
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q2.c: 0/1. Điểm chức năng Q2.c: 0/2 test đạt; 0/1 điểm. Bằng chứng từ lượt thực thi bài nộp này."
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q3.c: 0/1. Điểm chức năng Q3.c: 0/2 test đạt; 0/1 điểm. Bằng chứng từ lượt thực thi bài nộp này."
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q4.c: 0/1. Điểm chức năng Q4.c: 0/2 test đạt; 0/1 điểm. Bằng chứng từ lượt thực thi bài nộp này."
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q5.c: 0/2. Điểm chức năng Q5.c: 0/4 test đạt; 0/2 điểm. Bằng chứng từ lượt thực thi bài nộp này."
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q6.c: 0/2. Điểm chức năng Q6.c: 0/3 test đạt; 0/2 điểm. Bằng chứng từ lượt thực thi bài nộp này."
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q7.c: 0/2. Điểm chức năng Q7.c: 0/4 test đạt; 0/2 điểm. Bằng chứng từ lượt thực thi bài nộp này."
+      }
+    ]
+  },
+  {
+    "submissionId": "Bai_lam_9-10_diem",
+    "score": 9.5,
+    "passed": 18,
+    "total": 19,
+    "questionScores": [
+      {
+        "question": "Q1.c",
+        "score": 1
+      },
+      {
+        "question": "Q2.c",
+        "score": 1
+      },
+      {
+        "question": "Q3.c",
+        "score": 1
+      },
+      {
+        "question": "Q4.c",
+        "score": 1
+      },
+      {
+        "question": "Q6.c",
+        "score": 2
+      },
+      {
+        "question": "Q7.c",
+        "score": 2
+      },
+      {
+        "question": "Q5.c",
+        "score": 1.5
+      }
+    ],
+    "logs": [
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Chấm từng câu] Q1.c: 2 testcase."
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[Runner console] Đang kiểm tra cấu hình và nhận diện trình biên dịch từ bài nộp."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "runtime": "c",
+        "message": "[Runtime console] Nhận diện: c; yêu cầu đề: C; image: gcc:13."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Đang kiểm tra kết nối Engine trên máy chạy worker."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Engine đã phản hồi; đang chuẩn bị image thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker image] Đã tìm thấy gcc:13 trên worker; sử dụng image cục bộ."
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "message": "[Docker] Image sẵn sàng: gcc:13; ID: sha256:b59036579f0622d1b3aa5286aaf2fcef9b9c6f88f31c6762236fc2f136f7f650."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Kế hoạch kiểm thử] 2 testcase; 1 chương trình ứng viên; đối chiếu output theo chế độ của từng testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Chương trình] material_0/Q1.c; thư mục tương đối: material_0; build: gcc -o solution 'Q1.c' -O2 -lm; chạy: ./solution."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q1-TC1] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q1-TC1] Đã tạo 199b87837b0968d4f8e3bc0bf76b599fd24483a6888e20fd2216fe3a26f83d55; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q1-TC1] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q1-TC1] Đã xóa container 199b87837b0968d4f8e3bc0bf76b599fd24483a6888e20fd2216fe3a26f83d55 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q1-TC1] PASS; biên dịch: thành công; 551 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q1-TC2] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q1-TC2] Đã tạo 882549ae449996a3f000380e5ff05c4b4261f0b75e0de770e8157ac1a8dfcda3; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q1-TC2] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q1-TC2] Đã xóa container 882549ae449996a3f000380e5ff05c4b4261f0b75e0de770e8157ac1a8dfcda3 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q1-TC2] PASS; biên dịch: thành công; 590 ms."
+      },
+      {
+        "stage": 2,
+        "status": "completed",
+        "message": "[Tổng kết testcase] Chương trình được chọn: material_0/Q1.c; 2/2 test đã chạy đạt yêu cầu; 0 test chưa chạy. Kết quả được lưu cùng báo cáo."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Kết quả từng câu] Q1.c: 2/2 testcase đạt; tỷ lệ 100.00%. Biên dịch: thành công."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Chấm từng câu] Q2.c: 2 testcase."
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[Runner console] Đang kiểm tra cấu hình và nhận diện trình biên dịch từ bài nộp."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "runtime": "c",
+        "message": "[Runtime console] Nhận diện: c; yêu cầu đề: C; image: gcc:13."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Đang kiểm tra kết nối Engine trên máy chạy worker."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Engine đã phản hồi; đang chuẩn bị image thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker image] Đã tìm thấy gcc:13 trên worker; sử dụng image cục bộ."
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "message": "[Docker] Image sẵn sàng: gcc:13; ID: sha256:b59036579f0622d1b3aa5286aaf2fcef9b9c6f88f31c6762236fc2f136f7f650."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Kế hoạch kiểm thử] 2 testcase; 1 chương trình ứng viên; đối chiếu output theo chế độ của từng testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Chương trình] material_1/Q2.c; thư mục tương đối: material_1; build: gcc -o solution 'Q2.c' -O2 -lm; chạy: ./solution."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q2-TC1] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q2-TC1] Đã tạo e267a45b7a64a0bb7663d2943240d8a9dc15a92469b015c160ae3f40fb10e0ea; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q2-TC1] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q2-TC1] Đã xóa container e267a45b7a64a0bb7663d2943240d8a9dc15a92469b015c160ae3f40fb10e0ea của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q2-TC1] PASS; biên dịch: thành công; 575 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q2-TC2] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q2-TC2] Đã tạo c1a78d55403ac9b7b170f6c0fd75782893d905d9f3c188771afb535eb7a3c70d; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q2-TC2] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q2-TC2] Đã xóa container c1a78d55403ac9b7b170f6c0fd75782893d905d9f3c188771afb535eb7a3c70d của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q2-TC2] PASS; biên dịch: thành công; 566 ms."
+      },
+      {
+        "stage": 2,
+        "status": "completed",
+        "message": "[Tổng kết testcase] Chương trình được chọn: material_1/Q2.c; 2/2 test đã chạy đạt yêu cầu; 0 test chưa chạy. Kết quả được lưu cùng báo cáo."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Kết quả từng câu] Q2.c: 2/2 testcase đạt; tỷ lệ 100.00%. Biên dịch: thành công."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Chấm từng câu] Q3.c: 2 testcase."
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[Runner console] Đang kiểm tra cấu hình và nhận diện trình biên dịch từ bài nộp."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "runtime": "c",
+        "message": "[Runtime console] Nhận diện: c; yêu cầu đề: C; image: gcc:13."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Đang kiểm tra kết nối Engine trên máy chạy worker."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Engine đã phản hồi; đang chuẩn bị image thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker image] Đã tìm thấy gcc:13 trên worker; sử dụng image cục bộ."
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "message": "[Docker] Image sẵn sàng: gcc:13; ID: sha256:b59036579f0622d1b3aa5286aaf2fcef9b9c6f88f31c6762236fc2f136f7f650."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Kế hoạch kiểm thử] 2 testcase; 1 chương trình ứng viên; đối chiếu output theo chế độ của từng testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Chương trình] material_2/Q3.c; thư mục tương đối: material_2; build: gcc -o solution 'Q3.c' -O2 -lm; chạy: ./solution."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q3-TC1] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q3-TC1] Đã tạo ff389b0b4a994a635c672f75feea2407f59732a238d3f38735483a83b37d2665; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q3-TC1] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q3-TC1] Đã xóa container ff389b0b4a994a635c672f75feea2407f59732a238d3f38735483a83b37d2665 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q3-TC1] PASS; biên dịch: thành công; 563 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q3-TC2] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q3-TC2] Đã tạo 75c206c7229117f9b71b539031ebe1d75b57c25a56be2e9150d8031b38cf6395; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q3-TC2] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q3-TC2] Đã xóa container 75c206c7229117f9b71b539031ebe1d75b57c25a56be2e9150d8031b38cf6395 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q3-TC2] PASS; biên dịch: thành công; 577 ms."
+      },
+      {
+        "stage": 2,
+        "status": "completed",
+        "message": "[Tổng kết testcase] Chương trình được chọn: material_2/Q3.c; 2/2 test đã chạy đạt yêu cầu; 0 test chưa chạy. Kết quả được lưu cùng báo cáo."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Kết quả từng câu] Q3.c: 2/2 testcase đạt; tỷ lệ 100.00%. Biên dịch: thành công."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Chấm từng câu] Q4.c: 2 testcase."
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[Runner console] Đang kiểm tra cấu hình và nhận diện trình biên dịch từ bài nộp."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "runtime": "c",
+        "message": "[Runtime console] Nhận diện: c; yêu cầu đề: C; image: gcc:13."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Đang kiểm tra kết nối Engine trên máy chạy worker."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Engine đã phản hồi; đang chuẩn bị image thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker image] Đã tìm thấy gcc:13 trên worker; sử dụng image cục bộ."
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "message": "[Docker] Image sẵn sàng: gcc:13; ID: sha256:b59036579f0622d1b3aa5286aaf2fcef9b9c6f88f31c6762236fc2f136f7f650."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Kế hoạch kiểm thử] 2 testcase; 1 chương trình ứng viên; đối chiếu output theo chế độ của từng testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Chương trình] material_3/Q4.c; thư mục tương đối: material_3; build: gcc -o solution 'Q4.c' -O2 -lm; chạy: ./solution."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q4-TC1] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q4-TC1] Đã tạo 77a8ff2fc11932fa7d7002104e35c97e3bc8f9f576b42fa39c7efb54ff68b442; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q4-TC1] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q4-TC1] Đã xóa container 77a8ff2fc11932fa7d7002104e35c97e3bc8f9f576b42fa39c7efb54ff68b442 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q4-TC1] PASS; biên dịch: thành công; 579 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q4-TC2] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q4-TC2] Đã tạo ed97544b74f96d3953fea86b9aa758d96e8b9f377d134f543e17ce83368b9d69; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q4-TC2] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q4-TC2] Đã xóa container ed97544b74f96d3953fea86b9aa758d96e8b9f377d134f543e17ce83368b9d69 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q4-TC2] PASS; biên dịch: thành công; 625 ms."
+      },
+      {
+        "stage": 2,
+        "status": "completed",
+        "message": "[Tổng kết testcase] Chương trình được chọn: material_3/Q4.c; 2/2 test đã chạy đạt yêu cầu; 0 test chưa chạy. Kết quả được lưu cùng báo cáo."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Kết quả từng câu] Q4.c: 2/2 testcase đạt; tỷ lệ 100.00%. Biên dịch: thành công."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Chấm từng câu] Q5.c: 4 testcase."
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[Runner console] Đang kiểm tra cấu hình và nhận diện trình biên dịch từ bài nộp."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "runtime": "c",
+        "message": "[Runtime console] Nhận diện: c; yêu cầu đề: C; image: gcc:13."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Đang kiểm tra kết nối Engine trên máy chạy worker."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Engine đã phản hồi; đang chuẩn bị image thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker image] Đã tìm thấy gcc:13 trên worker; sử dụng image cục bộ."
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "message": "[Docker] Image sẵn sàng: gcc:13; ID: sha256:b59036579f0622d1b3aa5286aaf2fcef9b9c6f88f31c6762236fc2f136f7f650."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Kế hoạch kiểm thử] 4 testcase; 1 chương trình ứng viên; đối chiếu output theo chế độ của từng testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Chương trình] material_4/Q5.c; thư mục tương đối: material_4; build: gcc -o solution 'Q5.c' -O2 -lm; chạy: ./solution."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q5-TC1] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q5-TC1] Đã tạo 8b9655f2795f3c73c98f7fd2fbbdde6c718db774f9f15173b58007aa3cbbe020; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q5-TC1] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q5-TC1] Đã xóa container 8b9655f2795f3c73c98f7fd2fbbdde6c718db774f9f15173b58007aa3cbbe020 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Test Q5-TC1] FAIL; biên dịch: thành công; 672 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q5-TC2] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q5-TC2] Đã tạo 4aa044dd02b25a2a2eebb56dfe8397daced9b13582f1ce19f63ce2b434f6ecbc; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q5-TC2] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q5-TC2] Đã xóa container 4aa044dd02b25a2a2eebb56dfe8397daced9b13582f1ce19f63ce2b434f6ecbc của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q5-TC2] PASS; biên dịch: thành công; 619 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q5-TC3] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q5-TC3] Đã tạo e12a3b74836585b687421074ff353ee244f0c7081542a7f74824d60624ded8f8; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q5-TC3] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q5-TC3] Đã xóa container e12a3b74836585b687421074ff353ee244f0c7081542a7f74824d60624ded8f8 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q5-TC3] PASS; biên dịch: thành công; 602 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q5-TC4] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q5-TC4] Đã tạo 319211d1480efc16c3b61453a10cfcc0573a4448e769b8501a1a2ff6c18e0d04; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q5-TC4] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q5-TC4] Đã xóa container 319211d1480efc16c3b61453a10cfcc0573a4448e769b8501a1a2ff6c18e0d04 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q5-TC4] PASS; biên dịch: thành công; 617 ms."
+      },
+      {
+        "stage": 2,
+        "status": "warning",
+        "message": "[Tổng kết testcase] Chương trình được chọn: material_4/Q5.c; 3/4 test đã chạy đạt yêu cầu; 0 test chưa chạy. Kết quả được lưu cùng báo cáo."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Kết quả từng câu] Q5.c: 3/4 testcase đạt; tỷ lệ 75.00%. Biên dịch: thành công."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Chấm từng câu] Q6.c: 3 testcase."
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[Runner console] Đang kiểm tra cấu hình và nhận diện trình biên dịch từ bài nộp."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "runtime": "c",
+        "message": "[Runtime console] Nhận diện: c; yêu cầu đề: C; image: gcc:13."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Đang kiểm tra kết nối Engine trên máy chạy worker."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Engine đã phản hồi; đang chuẩn bị image thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker image] Đã tìm thấy gcc:13 trên worker; sử dụng image cục bộ."
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "message": "[Docker] Image sẵn sàng: gcc:13; ID: sha256:b59036579f0622d1b3aa5286aaf2fcef9b9c6f88f31c6762236fc2f136f7f650."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Kế hoạch kiểm thử] 3 testcase; 1 chương trình ứng viên; đối chiếu output theo chế độ của từng testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Chương trình] material_5/Q6.c; thư mục tương đối: material_5; build: gcc -o solution 'Q6.c' -O2 -lm; chạy: ./solution."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q6-TC1] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q6-TC1] Đã tạo ca4803a24495d3b08e85835cf827cc0f7a0817b347b82ead69f0d9b2589e03eb; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q6-TC1] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q6-TC1] Đã xóa container ca4803a24495d3b08e85835cf827cc0f7a0817b347b82ead69f0d9b2589e03eb của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q6-TC1] PASS; biên dịch: thành công; 598 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q6-TC2] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q6-TC2] Đã tạo c237e4a7f460513cc5cb8b76ccd16fbceaafcdcb678691327823ca7dd4acefc1; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q6-TC2] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q6-TC2] Đã xóa container c237e4a7f460513cc5cb8b76ccd16fbceaafcdcb678691327823ca7dd4acefc1 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q6-TC2] PASS; biên dịch: thành công; 598 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q6-TC3] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q6-TC3] Đã tạo 1b8312139537bfafc4f81ef2fb18ec8228dc8c4f9b240fc0a7e474730e92c00c; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q6-TC3] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q6-TC3] Đã xóa container 1b8312139537bfafc4f81ef2fb18ec8228dc8c4f9b240fc0a7e474730e92c00c của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q6-TC3] PASS; biên dịch: thành công; 658 ms."
+      },
+      {
+        "stage": 2,
+        "status": "completed",
+        "message": "[Tổng kết testcase] Chương trình được chọn: material_5/Q6.c; 3/3 test đã chạy đạt yêu cầu; 0 test chưa chạy. Kết quả được lưu cùng báo cáo."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Kết quả từng câu] Q6.c: 3/3 testcase đạt; tỷ lệ 100.00%. Biên dịch: thành công."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Chấm từng câu] Q7.c: 4 testcase."
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[Runner console] Đang kiểm tra cấu hình và nhận diện trình biên dịch từ bài nộp."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "runtime": "c",
+        "message": "[Runtime console] Nhận diện: c; yêu cầu đề: C; image: gcc:13."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Đang kiểm tra kết nối Engine trên máy chạy worker."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker] Engine đã phản hồi; đang chuẩn bị image thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Docker image] Đã tìm thấy gcc:13 trên worker; sử dụng image cục bộ."
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "message": "[Docker] Image sẵn sàng: gcc:13; ID: sha256:b59036579f0622d1b3aa5286aaf2fcef9b9c6f88f31c6762236fc2f136f7f650."
+      },
+      {
+        "stage": 2,
+        "status": "started",
+        "message": "[Kế hoạch kiểm thử] 4 testcase; 1 chương trình ứng viên; đối chiếu output theo chế độ của từng testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Chương trình] material_6/Q7.c; thư mục tương đối: material_6; build: gcc -o solution 'Q7.c' -O2 -lm; chạy: ./solution."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q7-TC1] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q7-TC1] Đã tạo 66934ad227ca681fbf9de5a8396ca29edcda5487397616a9e43a01df72a46024; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q7-TC1] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q7-TC1] Đã xóa container 66934ad227ca681fbf9de5a8396ca29edcda5487397616a9e43a01df72a46024 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q7-TC1] PASS; biên dịch: thành công; 626 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q7-TC2] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q7-TC2] Đã tạo 67c10348fc05227b1951258e6f9d1850fd9b09895fcdcc7c31ba5d8df06da74a; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q7-TC2] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q7-TC2] Đã xóa container 67c10348fc05227b1951258e6f9d1850fd9b09895fcdcc7c31ba5d8df06da74a của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q7-TC2] PASS; biên dịch: thành công; 783 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q7-TC3] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q7-TC3] Đã tạo 526ffe78aa64a626e3292fd97cde083af97211df9e731aaf98f868060312769c; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q7-TC3] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q7-TC3] Đã xóa container 526ffe78aa64a626e3292fd97cde083af97211df9e731aaf98f868060312769c của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q7-TC3] PASS; biên dịch: thành công; 716 ms."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q7-TC4] Công khai; giới hạn chạy 5000 ms; so khớp exact; đang chuẩn bị thực thi."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Container Q7-TC4] Đã tạo 2ef15ba386733eaca8ae1ed603e02bf5d472de008884467a0f6b1cb13f887ce2; image gcc:13; RAM 256 MiB; CPU 1 core; tối đa 64 PID; mạng: none; root chỉ đọc: có; nguồn chỉ đọc: có; user 65534:65534."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Thực thi Q7-TC4] Container đã khởi động; biên dịch rồi chạy chương trình với stdin đã cấu hình."
+      },
+      {
+        "stage": 1,
+        "status": "info",
+        "message": "[Dọn dẹp Q7-TC4] Đã xóa container 2ef15ba386733eaca8ae1ed603e02bf5d472de008884467a0f6b1cb13f887ce2 của testcase."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Test Q7-TC4] PASS; biên dịch: thành công; 806 ms."
+      },
+      {
+        "stage": 2,
+        "status": "completed",
+        "message": "[Tổng kết testcase] Chương trình được chọn: material_6/Q7.c; 4/4 test đã chạy đạt yêu cầu; 0 test chưa chạy. Kết quả được lưu cùng báo cáo."
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[Kết quả từng câu] Q7.c: 4/4 testcase đạt; tỷ lệ 100.00%. Biên dịch: thành công."
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q1.c: 1/1. Điểm chức năng Q1.c: 2/2 test đạt; 1/1 điểm. Bằng chứng từ lượt thực thi bài nộp này."
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q2.c: 1/1. Điểm chức năng Q2.c: 2/2 test đạt; 1/1 điểm. Bằng chứng từ lượt thực thi bài nộp này."
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q3.c: 1/1. Điểm chức năng Q3.c: 2/2 test đạt; 1/1 điểm. Bằng chứng từ lượt thực thi bài nộp này."
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q4.c: 1/1. Điểm chức năng Q4.c: 2/2 test đạt; 1/1 điểm. Bằng chứng từ lượt thực thi bài nộp này."
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q5.c: 1.5/2. Điểm chức năng Q5.c: 3/4 test đạt; 1.5/2 điểm. Bằng chứng từ lượt thực thi bài nộp này."
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q6.c: 2/2. Điểm chức năng Q6.c: 3/3 test đạt; 2/2 điểm. Bằng chứng từ lượt thực thi bài nộp này."
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q7.c: 2/2. Điểm chức năng Q7.c: 4/4 test đạt; 2/2 điểm. Bằng chứng từ lượt thực thi bài nộp này."
+      }
+    ]
+  }
+]

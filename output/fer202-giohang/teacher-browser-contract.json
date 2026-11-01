@@ -1,0 +1,523 @@
+{
+  "metadata": {
+    "title": "FER202 - Giỏ hàng",
+    "description": "React shopping cart; browser UI tests, not stdin/stdout.",
+    "projectType": "frontend",
+    "subjectCode": "FER202"
+  },
+  "testSuites": {
+    "browser": [
+      {
+        "id": "TC01",
+        "name": "Hiển thị sản phẩm",
+        "startUrl": "/?case=TC01",
+        "steps": [
+          {
+            "action": "click",
+            "target": "[data-testid=clear-cart]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=product-P01]:has-text(\"Bàn phím\")"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=product-P02]:has-text(\"Chuột\")"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=product-P03]:has-text(\"Tai nghe\")"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=price-P01]:text-is(\"100000\")"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=price-P02]:text-is(\"50000\")"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=price-P03]:text-is(\"200000\")"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=cart-empty]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=cart-total]:text-is(\"0\")"
+          }
+        ]
+      },
+      {
+        "id": "TC02",
+        "name": "Thêm vào giỏ",
+        "startUrl": "/?case=TC02",
+        "steps": [
+          {
+            "action": "click",
+            "target": "[data-testid=clear-cart]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P01]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=quantity-P01][value=\"1\"]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=cart-total]:text-is(\"100000\")"
+          }
+        ]
+      },
+      {
+        "id": "TC03",
+        "name": "Gộp sản phẩm trùng",
+        "startUrl": "/?case=TC03",
+        "steps": [
+          {
+            "action": "click",
+            "target": "[data-testid=clear-cart]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P01]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P01]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=quantity-P01][value=\"2\"]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=cart-total]:text-is(\"200000\")"
+          }
+        ]
+      },
+      {
+        "id": "TC04",
+        "name": "Đổi số lượng",
+        "startUrl": "/?case=TC04",
+        "steps": [
+          {
+            "action": "click",
+            "target": "[data-testid=clear-cart]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P01]"
+          },
+          {
+            "action": "fill",
+            "target": "[data-testid=quantity-P01]",
+            "value": "3"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=cart-total]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=quantity-P01][value=\"3\"]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=line-total-P01]:text-is(\"300000\")"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=cart-total]:text-is(\"300000\")"
+          }
+        ]
+      },
+      {
+        "id": "TC05",
+        "name": "Xóa sản phẩm",
+        "startUrl": "/?case=TC05",
+        "steps": [
+          {
+            "action": "click",
+            "target": "[data-testid=clear-cart]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P01]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P02]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=remove-P01]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=quantity-P02][value=\"1\"]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=cart-total]:text-is(\"50000\")"
+          }
+        ]
+      },
+      {
+        "id": "TC06",
+        "name": "Tính tổng nhiều sản phẩm",
+        "startUrl": "/?case=TC06",
+        "steps": [
+          {
+            "action": "click",
+            "target": "[data-testid=clear-cart]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P01]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P01]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P02]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P03]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=quantity-P01][value=\"2\"]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=quantity-P02][value=\"1\"]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=quantity-P03][value=\"1\"]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=cart-total]:text-is(\"450000\")"
+          }
+        ]
+      },
+      {
+        "id": "TC07",
+        "name": "Xóa toàn bộ giỏ",
+        "startUrl": "/?case=TC07",
+        "steps": [
+          {
+            "action": "click",
+            "target": "[data-testid=clear-cart]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P01]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P02]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=cart-row-P01]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=cart-row-P02]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=clear-cart]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=cart-empty]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=cart-total]:text-is(\"0\")"
+          }
+        ]
+      },
+      {
+        "id": "TC08",
+        "name": "Giữ giỏ khi tải lại",
+        "startUrl": "/?case=TC08",
+        "steps": [
+          {
+            "action": "click",
+            "target": "[data-testid=clear-cart]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P02]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P02]"
+          },
+          {
+            "action": "reload"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=quantity-P02][value=\"2\"]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=cart-total]:text-is(\"100000\")"
+          }
+        ]
+      },
+      {
+        "id": "TC09",
+        "name": "Giới hạn tồn kho",
+        "startUrl": "/?case=TC09",
+        "steps": [
+          {
+            "action": "click",
+            "target": "[data-testid=clear-cart]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P01]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P01]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P01]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P01]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P01]"
+          },
+          {
+            "action": "click",
+            "target": "[data-testid=add-P01]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=quantity-P01][value=\"5\"]"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=cart-total]:text-is(\"500000\")"
+          },
+          {
+            "action": "assertVisible",
+            "target": "[data-testid=cart-error]:text-is(\"Không đủ hàng trong kho.\")"
+          }
+        ]
+      }
+    ]
+  },
+  "rubric": {
+    "id": "fer202-cart",
+    "totalWeight": 10,
+    "passThreshold": 0.5,
+    "rules": [
+      {
+        "id": "CRIT-1",
+        "title": "Hiển thị sản phẩm",
+        "description": "Mở ứng dụng mới. Có đủ P01, P02, P03, tên và giá đúng; giỏ trống, tổng tiền 0.",
+        "category": "UI",
+        "weight": 1,
+        "scoringStrategy": "AIVision",
+        "requiredEvidence": [
+          {
+            "evidenceType": "browser.workflow.completed",
+            "minimumConfidence": 1,
+            "browserProbe": {
+              "testIds": [
+                "TC01"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "CRIT-2",
+        "title": "Thêm vào giỏ",
+        "description": "Thêm P01 một lần. Giỏ có P01, số lượng 1; thành tiền và tổng tiền 100000.",
+        "category": "UI",
+        "weight": 1,
+        "scoringStrategy": "AIVision",
+        "requiredEvidence": [
+          {
+            "evidenceType": "browser.workflow.completed",
+            "minimumConfidence": 1,
+            "browserProbe": {
+              "testIds": [
+                "TC02"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "CRIT-3",
+        "title": "Gộp sản phẩm trùng",
+        "description": "Thêm P01 hai lần. Chỉ một dòng P01, số lượng 2; tổng tiền 200000.",
+        "category": "UI",
+        "weight": 1,
+        "scoringStrategy": "AIVision",
+        "requiredEvidence": [
+          {
+            "evidenceType": "browser.workflow.completed",
+            "minimumConfidence": 1,
+            "browserProbe": {
+              "testIds": [
+                "TC03"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "CRIT-4",
+        "title": "Đổi số lượng",
+        "description": "Thêm P01; đổi số lượng thành 3. Số lượng 3; thành tiền và tổng tiền 300000.",
+        "category": "UI",
+        "weight": 1,
+        "scoringStrategy": "AIVision",
+        "requiredEvidence": [
+          {
+            "evidenceType": "browser.workflow.completed",
+            "minimumConfidence": 1,
+            "browserProbe": {
+              "testIds": [
+                "TC04"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "CRIT-5",
+        "title": "Xóa sản phẩm",
+        "description": "Thêm P01 và P02; xóa P01. Chỉ còn P02 số lượng 1; tổng tiền 50000.",
+        "category": "UI",
+        "weight": 1,
+        "scoringStrategy": "AIVision",
+        "requiredEvidence": [
+          {
+            "evidenceType": "browser.workflow.completed",
+            "minimumConfidence": 1,
+            "browserProbe": {
+              "testIds": [
+                "TC05"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "CRIT-6",
+        "title": "Tính tổng nhiều sản phẩm",
+        "description": "Thêm P01 hai lần, P02 một lần, P03 một lần. Có 3 dòng; tổng tiền 450000; không cộng nhầm đơn giá và số lượng.",
+        "category": "UI",
+        "weight": 1,
+        "scoringStrategy": "AIVision",
+        "requiredEvidence": [
+          {
+            "evidenceType": "browser.workflow.completed",
+            "minimumConfidence": 1,
+            "browserProbe": {
+              "testIds": [
+                "TC06"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "CRIT-7",
+        "title": "Xóa toàn bộ giỏ",
+        "description": "Thêm P01 và P02; bấm Xóa toàn bộ. Không còn dòng sản phẩm; hiện Giỏ hàng trống; tổng tiền 0.",
+        "category": "UI",
+        "weight": 1,
+        "scoringStrategy": "AIVision",
+        "requiredEvidence": [
+          {
+            "evidenceType": "browser.workflow.completed",
+            "minimumConfidence": 1,
+            "browserProbe": {
+              "testIds": [
+                "TC07"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "CRIT-8",
+        "title": "Giữ giỏ khi tải lại",
+        "description": "Thêm P02 hai lần, rồi tải lại trang trong cùng tab. Giữ P02 số lượng 2 và tổng tiền 100000. Lưu bằng localStorage.",
+        "category": "UI",
+        "weight": 1,
+        "scoringStrategy": "AIVision",
+        "requiredEvidence": [
+          {
+            "evidenceType": "browser.workflow.completed",
+            "minimumConfidence": 1,
+            "browserProbe": {
+              "testIds": [
+                "TC08"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "CRIT-9",
+        "title": "Giới hạn tồn kho",
+        "description": "Bấm thêm P01 sáu lần. Giữ số lượng 5, tổng tiền 500000; hiện thông báo Không đủ hàng trong kho.",
+        "category": "UI",
+        "weight": 1,
+        "scoringStrategy": "AIVision",
+        "requiredEvidence": [
+          {
+            "evidenceType": "browser.workflow.completed",
+            "minimumConfidence": 1,
+            "browserProbe": {
+              "testIds": [
+                "TC09"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "CRIT-10",
+        "title": "Giao diện và chất lượng React",
+        "description": "Component có trách nhiệm rõ ràng, label cho số lượng, nút có tên dễ hiểu, focus bàn phím, bố cục dùng được ở 390px; nội dung và số tiền đọc được.",
+        "category": "UI",
+        "weight": 1,
+        "scoringStrategy": "AIVision",
+        "requiredEvidence": [
+          {
+            "evidenceType": "browser.screenshot.captured",
+            "minimumConfidence": 1
+          }
+        ]
+      }
+    ]
+  }
+}

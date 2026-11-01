@@ -1,3 +1,4 @@
+import { starterSourceFiles } from '../starter-archive.js'
 import type { IUseCase } from '../../../../shared/application/base-use-case.js'
 import type { IExamRepository } from '../../domain/repositories/exam-repository.interface.js'
 import { ExamResponseDto } from '../dtos/exam.dto.js'
@@ -124,7 +125,8 @@ export class GetExamUseCase implements IUseCase<string, ExamResponseDto> {
     const config = examConfiguration(exam as any)
     const staff = ['ADMIN', 'LECTURER'].includes(String(viewerRole || '').toUpperCase())
     const storedTests = (exam as any).TestCase
-    ;(dto as any).testCases = examTestCasesView(storedTests?.length ? storedTests : config.testCases || [], staff)
+    ;(dto as any).testCases = examTestCasesView(storedTests?.length ? storedTests.map((test: any, index: number) => ({ ...config.testCases?.[index], ...test })) : config.testCases || [], staff)
+    ;(dto as any).starterFiles = starterSourceFiles(exam)
     ;(dto as any).runtimeLanguage = config.submissionFormat?.requiredLanguage || config.runtimeConfig?.language || null
     return dto
   }

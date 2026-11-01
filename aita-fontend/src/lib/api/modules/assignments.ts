@@ -4,6 +4,7 @@ import type { AssignmentRow } from '../contracts'
 export const ASSIGNMENT_LIST_PATH = '/assignments?view=summary'
 
 export const assignmentsApi = {
+  getStarterArchive: (id: string) => request<Blob>(`/assignments/${encodeURIComponent(id)}/starter/download`, { cache: 'no-store' }, 'blob'),
   getDocumentFile: (attachmentId: string) => request<Blob>(`/assignments/attachments/${encodeURIComponent(attachmentId)}/download`, { cache: 'no-store' }, 'blob'),
   getAssignments: (params?: Record<string, string>, fresh = false) => {
     const q = new URLSearchParams({ view: 'summary', ...params }).toString()

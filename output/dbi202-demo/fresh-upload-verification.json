@@ -1,0 +1,522 @@
+[
+  {
+    "submissionId": "DBI202_1-2_diem-1793468177029",
+    "score": 2,
+    "passed": 2,
+    "total": 10,
+    "model": "gemini-3.5-flash-lite",
+    "feedback": "Dưới đây là nhận xét ngắn gọn về kết quả thực thi SQL Server:\n\nSinh viên đã hoàn thành đúng 2 câu cơ bản về lọc dữ liệu (Q2) và cập nhật dữ liệu tránh nhân chéo (Q10), đạt 2.0/10.0 điểm. Tuy nhiên, sinh viên chưa làm hoặc chưa hoàn thành các câu hỏi còn lại, đặc biệt là các yêu cầu nâng cao về thiết kế bảng (Q1), truy vấn kết hợp nhiều bảng, thống kê, Stored Procedure (Q8) và Trigger (Q9). Cần ôn tập và rèn luyện thêm kỹ năng viết câu lệnh DDL, JOIN phức tạp và lập trình cơ sở dữ liệu.",
+    "logs": [
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q1.sql",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q1-SQL1] FAIL; 0/1 điểm. Stored procedure trả về kết quả sai. Kỳ vọng: [[\"1\"]], nhận được: [[\"0\"]].",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q1.sql — Tạo bảng và thiết lập khóa chính, khóa ngoại: 0/1. Passed 0/1 SQL test cases (Setup: 28886ms). ✗ Question 1: Stored procedure trả về kết quả sai. Kỳ vọng: [[\"1\"]], nhận được: [[\"0\"]].",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q2.sql",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q2-SQL1] PASS; 1/1 điểm. ✓ Kết quả khớp hoàn toàn (5 dòng, 5 cột).",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q2.sql — Truy vấn lọc Service theo UnitPrice: 1/1. Passed 1/1 SQL test cases (Setup: 28886ms). ✓ Question 2: ✓ Kết quả khớp hoàn toàn (5 dòng, 5 cột).",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q3.sql",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q3-SQL1] FAIL; 0/1 điểm. Sai số cột: Kỳ vọng 6 cột (bookingid, guestname, nationality, bookingdate, detailid, roomnumber), nhận được 1 cột (incomplete).",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q3.sql — Truy vấn thông tin Booking kết hợp 4 bảng cho khách Trung Quốc hoặc Nhật Bản trong năm 2024: 0/1. Passed 0/1 SQL test cases (Setup: 28886ms). ✗ Question 3: Sai số cột: Kỳ vọng 6 cột (bookingid, guestname, nationality, bookingdate, detailid, roomnumber), nhận được 1 cột (incomplete).",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q4.sql",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q4-SQL1] FAIL; 0/1 điểm. Sai số cột: Kỳ vọng 8 cột (guestid, firstname, lastname, bookingid, bookingdate, servicename, category, servicedate), nhận được 1 cột (incomplete).",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q4.sql — Truy vấn LEFT JOIN toàn diện cho khách Nhật Bản: 0/1. Passed 0/1 SQL test cases (Setup: 28886ms). ✗ Question 4: Sai số cột: Kỳ vọng 8 cột (guestid, firstname, lastname, bookingid, bookingdate, servicename, category, servicedate), nhận được 1 cột (incomplete).",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q5.sql",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q5-SQL1] FAIL; 0/1 điểm. Sai số cột: Kỳ vọng 5 cột (roomtypeid, typename, totalbookings, totalrevenue, averagepricepernight), nhận được 1 cột (incomplete).",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q5.sql — Báo cáo loại phòng tháng 1 năm 2024: 0/1. Passed 0/1 SQL test cases (Setup: 28886ms). ✗ Question 5: Sai số cột: Kỳ vọng 5 cột (roomtypeid, typename, totalbookings, totalrevenue, averagepricepernight), nhận được 1 cột (incomplete).",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q6.sql",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q6-SQL1] FAIL; 0/1 điểm. Sai số cột: Kỳ vọng 4 cột (nationality, numberofguests, minbookingsperguest, maxbookingsperguest), nhận được 1 cột (incomplete).",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q6.sql — Thống kê số lượng booking theo quốc tịch: 0/1. Passed 0/1 SQL test cases (Setup: 28886ms). ✗ Question 6: Sai số cột: Kỳ vọng 4 cột (nationality, numberofguests, minbookingsperguest, maxbookingsperguest), nhận được 1 cột (incomplete).",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q7.sql",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q7-SQL1] FAIL; 0/1 điểm. Sai số cột: Kỳ vọng 4 cột (nationality, guestid, guestname, totalrevenue), nhận được 1 cột (incomplete).",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q7.sql — Tìm khách có tổng doanh thu cao nhất theo từng quốc tịch trong năm 2024: 0/1. Passed 0/1 SQL test cases (Setup: 28886ms). ✗ Question 7: Sai số cột: Kỳ vọng 4 cột (nationality, guestid, guestname, totalrevenue), nhận được 1 cột (incomplete).",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q8.sql",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q8-SQL1] FAIL; 0/1 điểm. Lỗi khi thực thi verification query: SQL Server Execution Error:\nMsg 2812, Level 16, State 62, Server 37dd67c285d6, Line 1\nCould not find stored procedure 'addService'.\nMsg 2812, Level 16, State 62, Server 37dd67c285d6, Line 1\nCould not find stored procedure 'addService'.\nMsg 2812, Level 16, State 62, Server 37dd67c285d6, Line 1\nCould ",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q8.sql — Tạo Stored Procedure addService thêm dịch vụ vào booking: 0/1. Passed 0/1 SQL test cases (Setup: 28886ms). ✗ Question 8: Lỗi khi thực thi verification query: SQL Server Execution Error:\nMsg 2812, Level 16, State 62, Server 37dd67c285d6, Line 1\nCould not find stored procedure 'addService'.\nMsg 2812, Level 16, State 62, Server 37dd67c285d6, Line 1\nCould not find stored procedure 'addService'.\nMsg 2812, Level 16, State 62, Server 37dd67c285d6, Line 1\nCould ",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q9.sql",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q9-SQL1] FAIL; 0/1 điểm. Lỗi khi thực thi verification query: SQL Server Execution Error:\nMsg 547, Level 16, State 1, Server 37dd67c285d6, Line 1\nThe INSERT statement conflicted with the FOREIGN KEY constraint \"FK_Detail_Booking\". The conflict occurred in database \"TestDBI202\", table \"dbo.Booking\", column 'BookingID'.\nThe statement has been terminated.\nPassed\n",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q9.sql — Tạo Trigger trg_PreventRoomOverbooking kiểm tra trùng phòng: 0/1. Passed 0/1 SQL test cases (Setup: 28886ms). ✗ Question 9: Lỗi khi thực thi verification query: SQL Server Execution Error:\nMsg 547, Level 16, State 1, Server 37dd67c285d6, Line 1\nThe INSERT statement conflicted with the FOREIGN KEY constraint \"FK_Detail_Booking\". The conflict occurred in database \"TestDBI202\", table \"dbo.Booking\", column 'BookingID'.\nThe statement has been terminated.\nPassed\n",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q10.sql",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q10-SQL1] PASS; 1/1 điểm. ✓ DML thực thi thành công (11 dòng bị ảnh hưởng).",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q10.sql — Cập nhật TotalAmount cho bảng Booking tránh nhân chéo: 1/1. Passed 1/1 SQL test cases (Setup: 28886ms). ✓ Question 10: ✓ DML thực thi thành công (11 dòng bị ảnh hưởng).",
+        "submissionId": "DBI202_1-2_diem-1793468177029"
+      }
+    ]
+  },
+  {
+    "submissionId": "DBI202_9-10_diem-1793468235043",
+    "score": 10,
+    "passed": 10,
+    "total": 10,
+    "model": "gemini-3.5-flash-lite",
+    "feedback": "Bài làm đạt kết quả tuyệt vời (10/10 điểm). Sinh viên đã hoàn thành xuất sắc tất cả các yêu cầu từ cơ bản (tạo bảng, khóa chính/ngoại, truy vấn lọc, kết hợp bảng) đến nâng cao (truy vấn gom nhóm, viết Stored Procedure, Trigger kiểm tra nghiệp vụ và xử lý tối ưu cập nhật dữ liệu tránh nhân chéo). Các câu lệnh SQL Server được viết chính xác và logic. Chúc mừng bạn!",
+    "logs": [
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q1.sql",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q1-SQL1] PASS; 1/1 điểm. ✓ Stored procedure trả về kết quả đúng.",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q1.sql — Tạo bảng và thiết lập khóa chính, khóa ngoại: 1/1. Passed 1/1 SQL test cases (Setup: 25225ms). ✓ Question 1: ✓ Stored procedure trả về kết quả đúng.",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q2.sql",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q2-SQL1] PASS; 1/1 điểm. ✓ Kết quả khớp hoàn toàn (5 dòng, 5 cột).",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q2.sql — Truy vấn lọc Service theo UnitPrice: 1/1. Passed 1/1 SQL test cases (Setup: 25225ms). ✓ Question 2: ✓ Kết quả khớp hoàn toàn (5 dòng, 5 cột).",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q3.sql",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q3-SQL1] PASS; 1/1 điểm. ✓ Kết quả khớp hoàn toàn (24 dòng, 6 cột).",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q3.sql — Truy vấn thông tin Booking kết hợp 4 bảng cho khách Trung Quốc hoặc Nhật Bản trong năm 2024: 1/1. Passed 1/1 SQL test cases (Setup: 25225ms). ✓ Question 3: ✓ Kết quả khớp hoàn toàn (24 dòng, 6 cột).",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q4.sql",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q4-SQL1] PASS; 1/1 điểm. ✓ Kết quả khớp hoàn toàn (19 dòng, 8 cột).",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q4.sql — Truy vấn LEFT JOIN toàn diện cho khách Nhật Bản: 1/1. Passed 1/1 SQL test cases (Setup: 25225ms). ✓ Question 4: ✓ Kết quả khớp hoàn toàn (19 dòng, 8 cột).",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q5.sql",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q5-SQL1] PASS; 1/1 điểm. ✓ Kết quả khớp hoàn toàn (5 dòng, 5 cột).",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q5.sql — Báo cáo loại phòng tháng 1 năm 2024: 1/1. Passed 1/1 SQL test cases (Setup: 25225ms). ✓ Question 5: ✓ Kết quả khớp hoàn toàn (5 dòng, 5 cột).",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q6.sql",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q6-SQL1] PASS; 1/1 điểm. ✓ Kết quả khớp hoàn toàn (21 dòng, 4 cột).",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q6.sql — Thống kê số lượng booking theo quốc tịch: 1/1. Passed 1/1 SQL test cases (Setup: 25225ms). ✓ Question 6: ✓ Kết quả khớp hoàn toàn (21 dòng, 4 cột).",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q7.sql",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q7-SQL1] PASS; 1/1 điểm. ✓ Kết quả khớp hoàn toàn (29 dòng, 4 cột).",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q7.sql — Tìm khách có tổng doanh thu cao nhất theo từng quốc tịch trong năm 2024: 1/1. Passed 1/1 SQL test cases (Setup: 25225ms). ✓ Question 7: ✓ Kết quả khớp hoàn toàn (29 dòng, 4 cột).",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q8.sql",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q8-SQL1] PASS; 1/1 điểm. ✓ Stored procedure trả về kết quả đúng.",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q8.sql — Tạo Stored Procedure addService thêm dịch vụ vào booking: 1/1. Passed 1/1 SQL test cases (Setup: 25225ms). ✓ Question 8: ✓ Stored procedure trả về kết quả đúng.",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q9.sql",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q9-SQL1] PASS; 1/1 điểm. ✓ Stored procedure trả về kết quả đúng.",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q9.sql — Tạo Trigger trg_PreventRoomOverbooking kiểm tra trùng phòng: 1/1. Passed 1/1 SQL test cases (Setup: 25225ms). ✓ Question 9: ✓ Stored procedure trả về kết quả đúng.",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 1,
+        "status": "started",
+        "message": "[SQL Server] Chuẩn bị container và dữ liệu khởi tạo cho bài nộp này.",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 1,
+        "status": "completed",
+        "runtime": "SQL Server 2022",
+        "message": "[SQL Server] Database đã sẵn sàng; file bài làm: Q10.sql",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 2,
+        "status": "info",
+        "message": "[SQL testcase Q10-SQL1] PASS; 1/1 điểm. ✓ DML thực thi thành công (11 dòng bị ảnh hưởng).",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      },
+      {
+        "stage": 3,
+        "status": "info",
+        "message": "[Điểm tiêu chí] Q10.sql — Cập nhật TotalAmount cho bảng Booking tránh nhân chéo: 1/1. Passed 1/1 SQL test cases (Setup: 25225ms). ✓ Question 10: ✓ DML thực thi thành công (11 dòng bị ảnh hưởng).",
+        "submissionId": "DBI202_9-10_diem-1793468235043"
+      }
+    ]
+  }
+]

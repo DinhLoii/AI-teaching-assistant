@@ -32,6 +32,8 @@ export interface HTTPProbeSpec {
 }
 
 export interface StdInOutTestCase {
+  entryFile?: string;
+  questionId?: string;
   id: string;
   /** Exact string piped to stdin (use \n for newlines) */
   input: string;
@@ -44,6 +46,7 @@ export interface StdInOutTestCase {
 }
 
 export interface StdInOutProbeSpec {
+  entryFile?: string;
   description: string;
   requiredLanguage?: string;
   /** Override build command (auto-detected if not specified) */
@@ -103,6 +106,8 @@ export interface SqlTestCase {
  * Full specification for the SqlExecutionProbe engine.
  */
 export interface SqlExecutionProbeSpec {
+  studentFile?: string;
+  setupReference?: string;
   description: string;
   /** SQL script to set up the database (CREATE DATABASE, tables, INSERT test data). */
   setupScript: string;

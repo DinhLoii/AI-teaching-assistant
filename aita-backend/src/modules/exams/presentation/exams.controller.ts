@@ -1,3 +1,4 @@
+import { buildStarterArchive } from '../application/starter-archive.js'
 import { publicUploadsRoot } from '../../../shared/infrastructure/runtime-storage.js'
 import { MESSAGES } from '../../../shared/constants/messages.js'
 import type { Request, Response } from 'express'
@@ -66,6 +67,22 @@ export class ExamsController extends BaseController {
     const cacheKey = `exam_detail_${id}_${req.user?.id || 'anon'}_${req.user?.role || ''}_${summary ? 'summary' : 'full'}`
     const result = await memoryCache.wrap(cacheKey, 30, () => this.getExamUseCase.execute(id, req.user?.id, req.user?.role, summary))
     this.ok(res, result, MESSAGES.SUCCESS)
+  }
+
+  async downloadStarter(req: Request, res: Response): Promise<void> {
+    const exam = await this.examRepo.findById(req.params.id as string)
+    if (!canAccessExamDocument(exam, req.user)) {
+      res.status(403).json({ success: false, message: 'Bạn không có quyền tải bộ khung bài làm của đề này.' }); return
+    }
+    let archive: Buffer
+    try { archive = buildStarterArchive(exam) }
+    catch (error) {
+      res.status(422).json({ success: false, message: error instanceof Error ? error.message : 'Chưa có bộ khung bài làm.' }); return
+    }
+    res.setHeader('Cache-Control', 'private, no-store')
+    res.setHeader('X-Content-Type-Options', 'nosniff')
+    res.attachment('bai_lam.zip')
+    res.type('application/zip').send(archive)
   }
 
   async downloadAttachment(req: Request, res: Response): Promise<void> {

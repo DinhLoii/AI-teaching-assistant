@@ -119,6 +119,7 @@ export class CreateExamUseCase implements IUseCase<{ dto: CreateExamRequestDto; 
       runtimeConfig: data.runtimeConfig,
       sqlConfig: data.sqlConfig,
       testCases: data.testCases,
+      testSuites: data.testSuites,
       rubricCriteria: data.rubricCriteria,
       aiConfig: data.aiConfig,
       allowResubmission: data.allowResubmission ?? true,
@@ -207,11 +208,13 @@ export class CreateExamUseCase implements IUseCase<{ dto: CreateExamRequestDto; 
             Description: rc.description || rc.name || '',
             MaxPoints: rc.maxPoints !== undefined && !isNaN(Number(rc.maxPoints)) ? Number(rc.maxPoints) : 2,
             Weight: rc.weight !== undefined && !isNaN(Number(rc.weight)) ? Number(rc.weight) : 1,
-            ValidationType: isTest ? 'TestCase' : isStatic ? 'Static' : 'AI',
+            ValidationType: rc.browserProbe ? 'VISION' : isTest ? 'TestCase' : isStatic ? 'Static' : 'AI',
             ValidationConfig: JSON.stringify({
               passCondition: rc.passCondition || '',
               failCondition: rc.failCondition || '',
               method: rc.method,
+              sqlProbe: rc.sqlProbe,
+              browserProbe: rc.browserProbe,
             }),
             SortOrder: 1,
           }

@@ -1,0 +1,3020 @@
+[
+  {
+    "label": "DBI202_1-2_diem",
+    "score": 2,
+    "results": [
+      {
+        "passed": false,
+        "confidence": 0,
+        "totalCases": 1,
+        "passedCases": 0,
+        "totalPoints": 1,
+        "earnedPoints": 0,
+        "caseResults": [
+          {
+            "caseId": "Q1-SQL1",
+            "title": "Question 1",
+            "passed": false,
+            "actualColumns": [
+              "Passed"
+            ],
+            "actualRows": [
+              [
+                "0"
+              ]
+            ],
+            "expectedColumns": [],
+            "expectedRows": [
+              [
+                "1"
+              ]
+            ],
+            "diffSummary": "Stored procedure trả về kết quả sai. Kỳ vọng: [[\"1\"]], nhận được: [[\"0\"]].",
+            "executionMs": 514,
+            "points": 1,
+            "earnedPoints": 0
+          }
+        ],
+        "setupMs": 24910
+      },
+      {
+        "passed": true,
+        "confidence": 1,
+        "totalCases": 1,
+        "passedCases": 1,
+        "totalPoints": 1,
+        "earnedPoints": 1,
+        "caseResults": [
+          {
+            "caseId": "Q2-SQL1",
+            "title": "Question 2",
+            "passed": true,
+            "actualColumns": [
+              "ServiceID",
+              "ServiceName",
+              "Category",
+              "UnitPrice",
+              "Unit"
+            ],
+            "actualRows": [
+              [
+                "1",
+                "Breakfast Buffet",
+                "Food & Beverage",
+                "15.00",
+                "per person per day"
+              ],
+              [
+                "2",
+                "Breakfast Room Service",
+                "Food & Beverage",
+                "10.00",
+                "per order"
+              ],
+              [
+                "3",
+                "Airport Transfer",
+                "Transport",
+                "25.00",
+                "per trip"
+              ],
+              [
+                "6",
+                "Mini Bar Refill",
+                "Food & Beverage",
+                "20.00",
+                "per refill"
+              ],
+              [
+                "10",
+                "Business Center",
+                "Business",
+                "10.00",
+                "per hour"
+              ]
+            ],
+            "expectedColumns": [
+              "ServiceID",
+              "ServiceName",
+              "Category",
+              "UnitPrice",
+              "Unit"
+            ],
+            "expectedRows": [
+              [
+                "1",
+                "Breakfast Buffet",
+                "Food & Beverage",
+                "15.00",
+                "per person per day"
+              ],
+              [
+                "2",
+                "Breakfast Room Service",
+                "Food & Beverage",
+                "10.00",
+                "per order"
+              ],
+              [
+                "3",
+                "Airport Transfer",
+                "Transport",
+                "25.00",
+                "per trip"
+              ],
+              [
+                "6",
+                "Mini Bar Refill",
+                "Food & Beverage",
+                "20.00",
+                "per refill"
+              ],
+              [
+                "10",
+                "Business Center",
+                "Business",
+                "10.00",
+                "per hour"
+              ]
+            ],
+            "diffSummary": "✓ Kết quả khớp hoàn toàn (5 dòng, 5 cột).",
+            "executionMs": 452,
+            "points": 1,
+            "earnedPoints": 1
+          }
+        ],
+        "setupMs": 24910
+      },
+      {
+        "passed": false,
+        "confidence": 0,
+        "totalCases": 1,
+        "passedCases": 0,
+        "totalPoints": 1,
+        "earnedPoints": 0,
+        "caseResults": [
+          {
+            "caseId": "Q3-SQL1",
+            "title": "Question 3",
+            "passed": false,
+            "actualColumns": [
+              "Incomplete"
+            ],
+            "actualRows": [
+              [
+                "0"
+              ]
+            ],
+            "expectedColumns": [
+              "BookingID",
+              "GuestName",
+              "Nationality",
+              "BookingDate",
+              "DetailID",
+              "RoomNumber"
+            ],
+            "expectedRows": [
+              [
+                "9",
+                "Chen Wei",
+                "Chinese",
+                "2024-09-16 00:00:00.000",
+                "18",
+                "604"
+              ],
+              [
+                "10",
+                "Chen Wei",
+                "Chinese",
+                "2024-03-24 00:00:00.000",
+                "19",
+                "605"
+              ],
+              [
+                "10",
+                "Chen Wei",
+                "Chinese",
+                "2024-03-24 00:00:00.000",
+                "20",
+                "606"
+              ],
+              [
+                "11",
+                "Chen Wei",
+                "Chinese",
+                "2024-10-26 00:00:00.000",
+                "21",
+                "701"
+              ],
+              [
+                "11",
+                "Chen Wei",
+                "Chinese",
+                "2024-10-26 00:00:00.000",
+                "22",
+                "702"
+              ],
+              [
+                "11",
+                "Chen Wei",
+                "Chinese",
+                "2024-10-26 00:00:00.000",
+                "23",
+                "703"
+              ],
+              [
+                "12",
+                "Chen Wei",
+                "Chinese",
+                "2024-05-28 00:00:00.000",
+                "24",
+                "704"
+              ],
+              [
+                "17",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-05-21 00:00:00.000",
+                "33",
+                "201"
+              ],
+              [
+                "17",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-05-21 00:00:00.000",
+                "34",
+                "202"
+              ],
+              [
+                "17",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-05-21 00:00:00.000",
+                "35",
+                "301"
+              ],
+              [
+                "19",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-07-31 00:00:00.000",
+                "37",
+                "401"
+              ],
+              [
+                "19",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-07-31 00:00:00.000",
+                "38",
+                "402"
+              ],
+              [
+                "20",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-03-02 00:00:00.000",
+                "39",
+                "403"
+              ],
+              [
+                "20",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-03-02 00:00:00.000",
+                "40",
+                "404"
+              ],
+              [
+                "20",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-03-02 00:00:00.000",
+                "41",
+                "501"
+              ],
+              [
+                "33",
+                "Linda Le",
+                "Chinese",
+                "2024-10-17 00:00:00.000",
+                "66",
+                "302"
+              ],
+              [
+                "34",
+                "Linda Le",
+                "Chinese",
+                "2024-05-19 00:00:00.000",
+                "67",
+                "401"
+              ],
+              [
+                "34",
+                "Linda Le",
+                "Chinese",
+                "2024-05-19 00:00:00.000",
+                "68",
+                "402"
+              ],
+              [
+                "39",
+                "Yuki Suzuki",
+                "Japanese",
+                "2024-05-04 00:00:00.000",
+                "78",
+                "604"
+              ],
+              [
+                "40",
+                "Yuki Suzuki",
+                "Japanese",
+                "2024-12-06 00:00:00.000",
+                "79",
+                "605"
+              ],
+              [
+                "40",
+                "Yuki Suzuki",
+                "Japanese",
+                "2024-12-06 00:00:00.000",
+                "80",
+                "606"
+              ],
+              [
+                "41",
+                "Yuki Suzuki",
+                "Japanese",
+                "2024-07-08 00:00:00.000",
+                "81",
+                "701"
+              ],
+              [
+                "41",
+                "Yuki Suzuki",
+                "Japanese",
+                "2024-07-08 00:00:00.000",
+                "82",
+                "702"
+              ],
+              [
+                "41",
+                "Yuki Suzuki",
+                "Japanese",
+                "2024-07-08 00:00:00.000",
+                "83",
+                "703"
+              ]
+            ],
+            "diffSummary": "Sai số cột: Kỳ vọng 6 cột (bookingid, guestname, nationality, bookingdate, detailid, roomnumber), nhận được 1 cột (incomplete).",
+            "executionMs": 464,
+            "points": 1,
+            "earnedPoints": 0
+          }
+        ],
+        "setupMs": 24910
+      },
+      {
+        "passed": false,
+        "confidence": 0,
+        "totalCases": 1,
+        "passedCases": 0,
+        "totalPoints": 1,
+        "earnedPoints": 0,
+        "caseResults": [
+          {
+            "caseId": "Q4-SQL1",
+            "title": "Question 4",
+            "passed": false,
+            "actualColumns": [
+              "Incomplete"
+            ],
+            "actualRows": [
+              [
+                "0"
+              ]
+            ],
+            "expectedColumns": [
+              "GuestID",
+              "FirstName",
+              "LastName",
+              "BookingID",
+              "BookingDate",
+              "ServiceName",
+              "Category",
+              "ServiceDate"
+            ],
+            "expectedRows": [
+              [
+                "31",
+                "Kenji",
+                "Yamamoto",
+                "85",
+                "2025-06-02 00:00:00.000",
+                "NULL",
+                "NULL",
+                "NULL"
+              ],
+              [
+                "11",
+                "Yuki",
+                "Suzuki",
+                "40",
+                "2024-12-06 00:00:00.000",
+                "NULL",
+                "NULL",
+                "NULL"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "20",
+                "2024-03-02 00:00:00.000",
+                "NULL",
+                "NULL",
+                "NULL"
+              ],
+              [
+                "51",
+                "Aisha",
+                "Osaki",
+                "NULL",
+                "NULL",
+                "NULL",
+                "NULL",
+                "NULL"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "19",
+                "2024-07-31 00:00:00.000",
+                "Breakfast Room Service",
+                "Food & Beverage",
+                "2024-08-05"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "17",
+                "2024-05-21 00:00:00.000",
+                "Breakfast Room Service",
+                "Food & Beverage",
+                "2024-05-24"
+              ],
+              [
+                "11",
+                "Yuki",
+                "Suzuki",
+                "39",
+                "2024-05-04 00:00:00.000",
+                "Breakfast Room Service",
+                "Food & Beverage",
+                "2024-05-15"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "18",
+                "2023-12-29 00:00:00.000",
+                "Breakfast Room Service",
+                "Food & Beverage",
+                "2024-01-02"
+              ],
+              [
+                "32",
+                "Sakura",
+                "Nakamura",
+                "86",
+                "2025-01-04 00:00:00.000",
+                "Gym Access",
+                "Recreation",
+                "2025-01-06"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "19",
+                "2024-07-31 00:00:00.000",
+                "Gym Access",
+                "Recreation",
+                "2024-08-05"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "17",
+                "2024-05-21 00:00:00.000",
+                "Gym Access",
+                "Recreation",
+                "2024-05-24"
+              ],
+              [
+                "11",
+                "Yuki",
+                "Suzuki",
+                "39",
+                "2024-05-04 00:00:00.000",
+                "Gym Access",
+                "Recreation",
+                "2024-05-15"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "18",
+                "2023-12-29 00:00:00.000",
+                "Gym Access",
+                "Recreation",
+                "2024-01-02"
+              ],
+              [
+                "11",
+                "Yuki",
+                "Suzuki",
+                "41",
+                "2024-07-08 00:00:00.000",
+                "Laundry Service",
+                "Housekeeping",
+                "2024-07-21"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "19",
+                "2024-07-31 00:00:00.000",
+                "Spa & Massage",
+                "Wellness",
+                "2024-08-05"
+              ],
+              [
+                "11",
+                "Yuki",
+                "Suzuki",
+                "39",
+                "2024-05-04 00:00:00.000",
+                "Spa & Massage",
+                "Wellness",
+                "2024-05-15"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "18",
+                "2023-12-29 00:00:00.000",
+                "Spa & Massage",
+                "Wellness",
+                "2024-01-02"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "19",
+                "2024-07-31 00:00:00.000",
+                "Swimming Pool",
+                "Recreation",
+                "2024-08-05"
+              ],
+              [
+                "11",
+                "Yuki",
+                "Suzuki",
+                "39",
+                "2024-05-04 00:00:00.000",
+                "Swimming Pool",
+                "Recreation",
+                "2024-05-15"
+              ]
+            ],
+            "diffSummary": "Sai số cột: Kỳ vọng 8 cột (guestid, firstname, lastname, bookingid, bookingdate, servicename, category, servicedate), nhận được 1 cột (incomplete).",
+            "executionMs": 415,
+            "points": 1,
+            "earnedPoints": 0
+          }
+        ],
+        "setupMs": 24910
+      },
+      {
+        "passed": false,
+        "confidence": 0,
+        "totalCases": 1,
+        "passedCases": 0,
+        "totalPoints": 1,
+        "earnedPoints": 0,
+        "caseResults": [
+          {
+            "caseId": "Q5-SQL1",
+            "title": "Question 5",
+            "passed": false,
+            "actualColumns": [
+              "Incomplete"
+            ],
+            "actualRows": [
+              [
+                "0"
+              ]
+            ],
+            "expectedColumns": [
+              "RoomTypeID",
+              "TypeName",
+              "TotalBookings",
+              "TotalRevenue",
+              "AveragePricePerNight"
+            ],
+            "expectedRows": [
+              [
+                "2",
+                "Deluxe",
+                "2",
+                "4410.00",
+                "163.33"
+              ],
+              [
+                "4",
+                "Family",
+                "1",
+                "2520.00",
+                "210.00"
+              ],
+              [
+                "1",
+                "Standard",
+                "3",
+                "1808.00",
+                "86.10"
+              ],
+              [
+                "5",
+                "Penthouse",
+                "1",
+                "1200.00",
+                "600.00"
+              ],
+              [
+                "3",
+                "Suite",
+                "0",
+                ".00",
+                ".00"
+              ]
+            ],
+            "diffSummary": "Sai số cột: Kỳ vọng 5 cột (roomtypeid, typename, totalbookings, totalrevenue, averagepricepernight), nhận được 1 cột (incomplete).",
+            "executionMs": 421,
+            "points": 1,
+            "earnedPoints": 0
+          }
+        ],
+        "setupMs": 24910
+      },
+      {
+        "passed": false,
+        "confidence": 0,
+        "totalCases": 1,
+        "passedCases": 0,
+        "totalPoints": 1,
+        "earnedPoints": 0,
+        "caseResults": [
+          {
+            "caseId": "Q6-SQL1",
+            "title": "Question 6",
+            "passed": false,
+            "actualColumns": [
+              "Incomplete"
+            ],
+            "actualRows": [
+              [
+                "0"
+              ]
+            ],
+            "expectedColumns": [
+              "Nationality",
+              "NumberOfGuests",
+              "MinBookingsPerGuest",
+              "MaxBookingsPerGuest"
+            ],
+            "expectedRows": [
+              [
+                "American",
+                "4",
+                "1",
+                "4"
+              ],
+              [
+                "Australian",
+                "2",
+                "1",
+                "1"
+              ],
+              [
+                "British",
+                "5",
+                "1",
+                "4"
+              ],
+              [
+                "Chinese",
+                "4",
+                "1",
+                "4"
+              ],
+              [
+                "Egyptian",
+                "2",
+                "3",
+                "3"
+              ],
+              [
+                "French",
+                "2",
+                "3",
+                "3"
+              ],
+              [
+                "German",
+                "2",
+                "1",
+                "1"
+              ],
+              [
+                "Ghanaian",
+                "1",
+                "0",
+                "0"
+              ],
+              [
+                "Hungarian",
+                "1",
+                "2",
+                "2"
+              ],
+              [
+                "Indian",
+                "3",
+                "0",
+                "2"
+              ],
+              [
+                "Italian",
+                "2",
+                "1",
+                "1"
+              ],
+              [
+                "Japanese",
+                "5",
+                "0",
+                "4"
+              ],
+              [
+                "Jordanian",
+                "2",
+                "1",
+                "2"
+              ],
+              [
+                "Korean",
+                "2",
+                "0",
+                "0"
+              ],
+              [
+                "Lebanese",
+                "1",
+                "2",
+                "2"
+              ],
+              [
+                "Norwegian",
+                "1",
+                "2",
+                "2"
+              ],
+              [
+                "Omani",
+                "1",
+                "1",
+                "1"
+              ],
+              [
+                "Russian",
+                "2",
+                "1",
+                "1"
+              ],
+              [
+                "Spanish",
+                "3",
+                "3",
+                "4"
+              ],
+              [
+                "Swedish",
+                "1",
+                "2",
+                "2"
+              ],
+              [
+                "Vietnamese",
+                "5",
+                "2",
+                "4"
+              ]
+            ],
+            "diffSummary": "Sai số cột: Kỳ vọng 4 cột (nationality, numberofguests, minbookingsperguest, maxbookingsperguest), nhận được 1 cột (incomplete).",
+            "executionMs": 384,
+            "points": 1,
+            "earnedPoints": 0
+          }
+        ],
+        "setupMs": 24910
+      },
+      {
+        "passed": false,
+        "confidence": 0,
+        "totalCases": 1,
+        "passedCases": 0,
+        "totalPoints": 1,
+        "earnedPoints": 0,
+        "caseResults": [
+          {
+            "caseId": "Q7-SQL1",
+            "title": "Question 7",
+            "passed": false,
+            "actualColumns": [
+              "Incomplete"
+            ],
+            "actualRows": [
+              [
+                "0"
+              ]
+            ],
+            "expectedColumns": [
+              "Nationality",
+              "GuestID",
+              "GuestName",
+              "TotalRevenue"
+            ],
+            "expectedRows": [
+              [
+                "American",
+                "2",
+                "Bob Smith",
+                "6650.00"
+              ],
+              [
+                "Australian",
+                "35",
+                "Luke Anderson",
+                ".00"
+              ],
+              [
+                "Australian",
+                "43",
+                "Alex Taylor",
+                ".00"
+              ],
+              [
+                "British",
+                "7",
+                "James Wilson",
+                "10040.00"
+              ],
+              [
+                "Chinese",
+                "3",
+                "Chen Wei",
+                "6289.00"
+              ],
+              [
+                "Egyptian",
+                "16",
+                "Fatima Hassan",
+                "9968.00"
+              ],
+              [
+                "French",
+                "17",
+                "Pierre Dupont",
+                "7190.00"
+              ],
+              [
+                "German",
+                "41",
+                "Thomas Mueller",
+                ".00"
+              ],
+              [
+                "German",
+                "42",
+                "Claire Wagner",
+                ".00"
+              ],
+              [
+                "Ghanaian",
+                "50",
+                "Aisha Osei",
+                ".00"
+              ],
+              [
+                "Hungarian",
+                "22",
+                "Anna Kovacs",
+                ".00"
+              ],
+              [
+                "Indian",
+                "23",
+                "Ravi Sharma",
+                ".00"
+              ],
+              [
+                "Indian",
+                "24",
+                "Priya Patel",
+                ".00"
+              ],
+              [
+                "Indian",
+                "49",
+                "Raj Singh",
+                ".00"
+              ],
+              [
+                "Italian",
+                "29",
+                "Marco Rossi",
+                ".00"
+              ],
+              [
+                "Italian",
+                "30",
+                "Giulia Ferrari",
+                ".00"
+              ],
+              [
+                "Japanese",
+                "11",
+                "Yuki Suzuki",
+                "8448.00"
+              ],
+              [
+                "Jordanian",
+                "27",
+                "Omar Ibrahim",
+                ".00"
+              ],
+              [
+                "Jordanian",
+                "34",
+                "Amira Khalil",
+                ".00"
+              ],
+              [
+                "Korean",
+                "47",
+                "Lee Park",
+                ".00"
+              ],
+              [
+                "Korean",
+                "48",
+                "Kim Choi",
+                ".00"
+              ],
+              [
+                "Lebanese",
+                "28",
+                "Layla Mansour",
+                ".00"
+              ],
+              [
+                "Norwegian",
+                "26",
+                "Astrid Hansen",
+                ".00"
+              ],
+              [
+                "Omani",
+                "33",
+                "Hassan Al-Farsi",
+                ".00"
+              ],
+              [
+                "Russian",
+                "37",
+                "Ivan Petrov",
+                ".00"
+              ],
+              [
+                "Russian",
+                "38",
+                "Natasha Ivanova",
+                ".00"
+              ],
+              [
+                "Spanish",
+                "4",
+                "Maria Garcia",
+                "17428.00"
+              ],
+              [
+                "Swedish",
+                "25",
+                "Lars Eriksson",
+                ".00"
+              ],
+              [
+                "Vietnamese",
+                "8",
+                "Sophie Pham",
+                "4899.00"
+              ]
+            ],
+            "diffSummary": "Sai số cột: Kỳ vọng 4 cột (nationality, guestid, guestname, totalrevenue), nhận được 1 cột (incomplete).",
+            "executionMs": 370,
+            "points": 1,
+            "earnedPoints": 0
+          }
+        ],
+        "setupMs": 24910
+      },
+      {
+        "passed": false,
+        "confidence": 0,
+        "totalCases": 1,
+        "passedCases": 0,
+        "totalPoints": 1,
+        "earnedPoints": 0,
+        "caseResults": [
+          {
+            "caseId": "Q8-SQL1",
+            "title": "Question 8",
+            "passed": false,
+            "actualColumns": [],
+            "actualRows": [],
+            "expectedColumns": [],
+            "expectedRows": [
+              [
+                "1"
+              ]
+            ],
+            "diffSummary": "Lỗi khi thực thi verification query: SQL Server Execution Error:\nMsg 2812, Level 16, State 62, Server 3c06a8075ae0, Line 1\nCould not find stored procedure 'addService'.\nMsg 2812, Level 16, State 62, Server 3c06a8075ae0, Line 1\nCould not find stored procedure 'addService'.\nMsg 2812, Level 16, State 62, Server 3c06a8075ae0, Line 1\nCould ",
+            "executionMs": 362,
+            "points": 1,
+            "earnedPoints": 0,
+            "errorMessage": "SQL Server Execution Error:\nMsg 2812, Level 16, State 62, Server 3c06a8075ae0, Line 1\nCould not find stored procedure 'addService'.\nMsg 2812, Level 16, State 62, Server 3c06a8075ae0, Line 1\nCould not find stored procedure 'addService'.\nMsg 2812, Level 16, State 62, Server 3c06a8075ae0, Line 1\nCould not find stored procedure 'addService'.\nMsg 2812, Level 16, State 62, Server 3c06a8075ae0, Line 1\nCould not find stored procedure 'addService'.\nPassed\n------\n0\n"
+          }
+        ],
+        "setupMs": 24910
+      },
+      {
+        "passed": false,
+        "confidence": 0,
+        "totalCases": 1,
+        "passedCases": 0,
+        "totalPoints": 1,
+        "earnedPoints": 0,
+        "caseResults": [
+          {
+            "caseId": "Q9-SQL1",
+            "title": "Question 9",
+            "passed": false,
+            "actualColumns": [],
+            "actualRows": [],
+            "expectedColumns": [],
+            "expectedRows": [
+              [
+                "1"
+              ]
+            ],
+            "diffSummary": "Lỗi khi thực thi verification query: SQL Server Execution Error:\nMsg 547, Level 16, State 1, Server 3c06a8075ae0, Line 1\nThe INSERT statement conflicted with the FOREIGN KEY constraint \"FK_Detail_Booking\". The conflict occurred in database \"TestDBI202\", table \"dbo.Booking\", column 'BookingID'.\nThe statement has been terminated.\nPassed\n",
+            "executionMs": 369,
+            "points": 1,
+            "earnedPoints": 0,
+            "errorMessage": "SQL Server Execution Error:\nMsg 547, Level 16, State 1, Server 3c06a8075ae0, Line 1\nThe INSERT statement conflicted with the FOREIGN KEY constraint \"FK_Detail_Booking\". The conflict occurred in database \"TestDBI202\", table \"dbo.Booking\", column 'BookingID'.\nThe statement has been terminated.\nPassed\n------\n0\n"
+          }
+        ],
+        "setupMs": 24910
+      },
+      {
+        "passed": true,
+        "confidence": 1,
+        "totalCases": 1,
+        "passedCases": 1,
+        "totalPoints": 1,
+        "earnedPoints": 1,
+        "caseResults": [
+          {
+            "caseId": "Q10-SQL1",
+            "title": "Question 10",
+            "passed": true,
+            "actualColumns": [],
+            "actualRows": [
+              [
+                "1"
+              ]
+            ],
+            "expectedColumns": [],
+            "expectedRows": [
+              [
+                "1"
+              ]
+            ],
+            "diffSummary": "✓ DML thực thi thành công (11 dòng bị ảnh hưởng).",
+            "executionMs": 388,
+            "points": 1,
+            "earnedPoints": 1
+          }
+        ],
+        "setupMs": 24910
+      }
+    ]
+  },
+  {
+    "label": "DBI202_9-10_diem",
+    "score": 10,
+    "results": [
+      {
+        "passed": true,
+        "confidence": 1,
+        "totalCases": 1,
+        "passedCases": 1,
+        "totalPoints": 1,
+        "earnedPoints": 1,
+        "caseResults": [
+          {
+            "caseId": "Q1-SQL1",
+            "title": "Question 1",
+            "passed": true,
+            "actualColumns": [
+              "Passed"
+            ],
+            "actualRows": [
+              [
+                "1"
+              ]
+            ],
+            "expectedColumns": [],
+            "expectedRows": [
+              [
+                "1"
+              ]
+            ],
+            "diffSummary": "✓ Stored procedure trả về kết quả đúng.",
+            "executionMs": 451,
+            "points": 1,
+            "earnedPoints": 1
+          }
+        ],
+        "setupMs": 22076
+      },
+      {
+        "passed": true,
+        "confidence": 1,
+        "totalCases": 1,
+        "passedCases": 1,
+        "totalPoints": 1,
+        "earnedPoints": 1,
+        "caseResults": [
+          {
+            "caseId": "Q2-SQL1",
+            "title": "Question 2",
+            "passed": true,
+            "actualColumns": [
+              "ServiceID",
+              "ServiceName",
+              "Category",
+              "UnitPrice",
+              "Unit"
+            ],
+            "actualRows": [
+              [
+                "1",
+                "Breakfast Buffet",
+                "Food & Beverage",
+                "15.00",
+                "per person per day"
+              ],
+              [
+                "2",
+                "Breakfast Room Service",
+                "Food & Beverage",
+                "10.00",
+                "per order"
+              ],
+              [
+                "3",
+                "Airport Transfer",
+                "Transport",
+                "25.00",
+                "per trip"
+              ],
+              [
+                "6",
+                "Mini Bar Refill",
+                "Food & Beverage",
+                "20.00",
+                "per refill"
+              ],
+              [
+                "10",
+                "Business Center",
+                "Business",
+                "10.00",
+                "per hour"
+              ]
+            ],
+            "expectedColumns": [
+              "ServiceID",
+              "ServiceName",
+              "Category",
+              "UnitPrice",
+              "Unit"
+            ],
+            "expectedRows": [
+              [
+                "1",
+                "Breakfast Buffet",
+                "Food & Beverage",
+                "15.00",
+                "per person per day"
+              ],
+              [
+                "2",
+                "Breakfast Room Service",
+                "Food & Beverage",
+                "10.00",
+                "per order"
+              ],
+              [
+                "3",
+                "Airport Transfer",
+                "Transport",
+                "25.00",
+                "per trip"
+              ],
+              [
+                "6",
+                "Mini Bar Refill",
+                "Food & Beverage",
+                "20.00",
+                "per refill"
+              ],
+              [
+                "10",
+                "Business Center",
+                "Business",
+                "10.00",
+                "per hour"
+              ]
+            ],
+            "diffSummary": "✓ Kết quả khớp hoàn toàn (5 dòng, 5 cột).",
+            "executionMs": 413,
+            "points": 1,
+            "earnedPoints": 1
+          }
+        ],
+        "setupMs": 22076
+      },
+      {
+        "passed": true,
+        "confidence": 1,
+        "totalCases": 1,
+        "passedCases": 1,
+        "totalPoints": 1,
+        "earnedPoints": 1,
+        "caseResults": [
+          {
+            "caseId": "Q3-SQL1",
+            "title": "Question 3",
+            "passed": true,
+            "actualColumns": [
+              "BookingID",
+              "GuestName",
+              "Nationality",
+              "BookingDate",
+              "DetailID",
+              "RoomNumber"
+            ],
+            "actualRows": [
+              [
+                "9",
+                "Chen Wei",
+                "Chinese",
+                "2024-09-16 00:00:00.000",
+                "18",
+                "604"
+              ],
+              [
+                "10",
+                "Chen Wei",
+                "Chinese",
+                "2024-03-24 00:00:00.000",
+                "19",
+                "605"
+              ],
+              [
+                "10",
+                "Chen Wei",
+                "Chinese",
+                "2024-03-24 00:00:00.000",
+                "20",
+                "606"
+              ],
+              [
+                "11",
+                "Chen Wei",
+                "Chinese",
+                "2024-10-26 00:00:00.000",
+                "21",
+                "701"
+              ],
+              [
+                "11",
+                "Chen Wei",
+                "Chinese",
+                "2024-10-26 00:00:00.000",
+                "22",
+                "702"
+              ],
+              [
+                "11",
+                "Chen Wei",
+                "Chinese",
+                "2024-10-26 00:00:00.000",
+                "23",
+                "703"
+              ],
+              [
+                "12",
+                "Chen Wei",
+                "Chinese",
+                "2024-05-28 00:00:00.000",
+                "24",
+                "704"
+              ],
+              [
+                "17",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-05-21 00:00:00.000",
+                "33",
+                "201"
+              ],
+              [
+                "17",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-05-21 00:00:00.000",
+                "34",
+                "202"
+              ],
+              [
+                "17",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-05-21 00:00:00.000",
+                "35",
+                "301"
+              ],
+              [
+                "19",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-07-31 00:00:00.000",
+                "37",
+                "401"
+              ],
+              [
+                "19",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-07-31 00:00:00.000",
+                "38",
+                "402"
+              ],
+              [
+                "20",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-03-02 00:00:00.000",
+                "39",
+                "403"
+              ],
+              [
+                "20",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-03-02 00:00:00.000",
+                "40",
+                "404"
+              ],
+              [
+                "20",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-03-02 00:00:00.000",
+                "41",
+                "501"
+              ],
+              [
+                "33",
+                "Linda Le",
+                "Chinese",
+                "2024-10-17 00:00:00.000",
+                "66",
+                "302"
+              ],
+              [
+                "34",
+                "Linda Le",
+                "Chinese",
+                "2024-05-19 00:00:00.000",
+                "67",
+                "401"
+              ],
+              [
+                "34",
+                "Linda Le",
+                "Chinese",
+                "2024-05-19 00:00:00.000",
+                "68",
+                "402"
+              ],
+              [
+                "39",
+                "Yuki Suzuki",
+                "Japanese",
+                "2024-05-04 00:00:00.000",
+                "78",
+                "604"
+              ],
+              [
+                "40",
+                "Yuki Suzuki",
+                "Japanese",
+                "2024-12-06 00:00:00.000",
+                "79",
+                "605"
+              ],
+              [
+                "40",
+                "Yuki Suzuki",
+                "Japanese",
+                "2024-12-06 00:00:00.000",
+                "80",
+                "606"
+              ],
+              [
+                "41",
+                "Yuki Suzuki",
+                "Japanese",
+                "2024-07-08 00:00:00.000",
+                "81",
+                "701"
+              ],
+              [
+                "41",
+                "Yuki Suzuki",
+                "Japanese",
+                "2024-07-08 00:00:00.000",
+                "82",
+                "702"
+              ],
+              [
+                "41",
+                "Yuki Suzuki",
+                "Japanese",
+                "2024-07-08 00:00:00.000",
+                "83",
+                "703"
+              ]
+            ],
+            "expectedColumns": [
+              "BookingID",
+              "GuestName",
+              "Nationality",
+              "BookingDate",
+              "DetailID",
+              "RoomNumber"
+            ],
+            "expectedRows": [
+              [
+                "9",
+                "Chen Wei",
+                "Chinese",
+                "2024-09-16 00:00:00.000",
+                "18",
+                "604"
+              ],
+              [
+                "10",
+                "Chen Wei",
+                "Chinese",
+                "2024-03-24 00:00:00.000",
+                "19",
+                "605"
+              ],
+              [
+                "10",
+                "Chen Wei",
+                "Chinese",
+                "2024-03-24 00:00:00.000",
+                "20",
+                "606"
+              ],
+              [
+                "11",
+                "Chen Wei",
+                "Chinese",
+                "2024-10-26 00:00:00.000",
+                "21",
+                "701"
+              ],
+              [
+                "11",
+                "Chen Wei",
+                "Chinese",
+                "2024-10-26 00:00:00.000",
+                "22",
+                "702"
+              ],
+              [
+                "11",
+                "Chen Wei",
+                "Chinese",
+                "2024-10-26 00:00:00.000",
+                "23",
+                "703"
+              ],
+              [
+                "12",
+                "Chen Wei",
+                "Chinese",
+                "2024-05-28 00:00:00.000",
+                "24",
+                "704"
+              ],
+              [
+                "17",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-05-21 00:00:00.000",
+                "33",
+                "201"
+              ],
+              [
+                "17",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-05-21 00:00:00.000",
+                "34",
+                "202"
+              ],
+              [
+                "17",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-05-21 00:00:00.000",
+                "35",
+                "301"
+              ],
+              [
+                "19",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-07-31 00:00:00.000",
+                "37",
+                "401"
+              ],
+              [
+                "19",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-07-31 00:00:00.000",
+                "38",
+                "402"
+              ],
+              [
+                "20",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-03-02 00:00:00.000",
+                "39",
+                "403"
+              ],
+              [
+                "20",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-03-02 00:00:00.000",
+                "40",
+                "404"
+              ],
+              [
+                "20",
+                "Hiroshi Tanaka",
+                "Japanese",
+                "2024-03-02 00:00:00.000",
+                "41",
+                "501"
+              ],
+              [
+                "33",
+                "Linda Le",
+                "Chinese",
+                "2024-10-17 00:00:00.000",
+                "66",
+                "302"
+              ],
+              [
+                "34",
+                "Linda Le",
+                "Chinese",
+                "2024-05-19 00:00:00.000",
+                "67",
+                "401"
+              ],
+              [
+                "34",
+                "Linda Le",
+                "Chinese",
+                "2024-05-19 00:00:00.000",
+                "68",
+                "402"
+              ],
+              [
+                "39",
+                "Yuki Suzuki",
+                "Japanese",
+                "2024-05-04 00:00:00.000",
+                "78",
+                "604"
+              ],
+              [
+                "40",
+                "Yuki Suzuki",
+                "Japanese",
+                "2024-12-06 00:00:00.000",
+                "79",
+                "605"
+              ],
+              [
+                "40",
+                "Yuki Suzuki",
+                "Japanese",
+                "2024-12-06 00:00:00.000",
+                "80",
+                "606"
+              ],
+              [
+                "41",
+                "Yuki Suzuki",
+                "Japanese",
+                "2024-07-08 00:00:00.000",
+                "81",
+                "701"
+              ],
+              [
+                "41",
+                "Yuki Suzuki",
+                "Japanese",
+                "2024-07-08 00:00:00.000",
+                "82",
+                "702"
+              ],
+              [
+                "41",
+                "Yuki Suzuki",
+                "Japanese",
+                "2024-07-08 00:00:00.000",
+                "83",
+                "703"
+              ]
+            ],
+            "diffSummary": "✓ Kết quả khớp hoàn toàn (24 dòng, 6 cột).",
+            "executionMs": 421,
+            "points": 1,
+            "earnedPoints": 1
+          }
+        ],
+        "setupMs": 22076
+      },
+      {
+        "passed": true,
+        "confidence": 1,
+        "totalCases": 1,
+        "passedCases": 1,
+        "totalPoints": 1,
+        "earnedPoints": 1,
+        "caseResults": [
+          {
+            "caseId": "Q4-SQL1",
+            "title": "Question 4",
+            "passed": true,
+            "actualColumns": [
+              "GuestID",
+              "FirstName",
+              "LastName",
+              "BookingID",
+              "BookingDate",
+              "ServiceName",
+              "Category",
+              "ServiceDate"
+            ],
+            "actualRows": [
+              [
+                "31",
+                "Kenji",
+                "Yamamoto",
+                "85",
+                "2025-06-02 00:00:00.000",
+                "NULL",
+                "NULL",
+                "NULL"
+              ],
+              [
+                "11",
+                "Yuki",
+                "Suzuki",
+                "40",
+                "2024-12-06 00:00:00.000",
+                "NULL",
+                "NULL",
+                "NULL"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "20",
+                "2024-03-02 00:00:00.000",
+                "NULL",
+                "NULL",
+                "NULL"
+              ],
+              [
+                "51",
+                "Aisha",
+                "Osaki",
+                "NULL",
+                "NULL",
+                "NULL",
+                "NULL",
+                "NULL"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "19",
+                "2024-07-31 00:00:00.000",
+                "Breakfast Room Service",
+                "Food & Beverage",
+                "2024-08-05"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "17",
+                "2024-05-21 00:00:00.000",
+                "Breakfast Room Service",
+                "Food & Beverage",
+                "2024-05-24"
+              ],
+              [
+                "11",
+                "Yuki",
+                "Suzuki",
+                "39",
+                "2024-05-04 00:00:00.000",
+                "Breakfast Room Service",
+                "Food & Beverage",
+                "2024-05-15"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "18",
+                "2023-12-29 00:00:00.000",
+                "Breakfast Room Service",
+                "Food & Beverage",
+                "2024-01-02"
+              ],
+              [
+                "32",
+                "Sakura",
+                "Nakamura",
+                "86",
+                "2025-01-04 00:00:00.000",
+                "Gym Access",
+                "Recreation",
+                "2025-01-06"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "19",
+                "2024-07-31 00:00:00.000",
+                "Gym Access",
+                "Recreation",
+                "2024-08-05"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "17",
+                "2024-05-21 00:00:00.000",
+                "Gym Access",
+                "Recreation",
+                "2024-05-24"
+              ],
+              [
+                "11",
+                "Yuki",
+                "Suzuki",
+                "39",
+                "2024-05-04 00:00:00.000",
+                "Gym Access",
+                "Recreation",
+                "2024-05-15"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "18",
+                "2023-12-29 00:00:00.000",
+                "Gym Access",
+                "Recreation",
+                "2024-01-02"
+              ],
+              [
+                "11",
+                "Yuki",
+                "Suzuki",
+                "41",
+                "2024-07-08 00:00:00.000",
+                "Laundry Service",
+                "Housekeeping",
+                "2024-07-21"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "19",
+                "2024-07-31 00:00:00.000",
+                "Spa & Massage",
+                "Wellness",
+                "2024-08-05"
+              ],
+              [
+                "11",
+                "Yuki",
+                "Suzuki",
+                "39",
+                "2024-05-04 00:00:00.000",
+                "Spa & Massage",
+                "Wellness",
+                "2024-05-15"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "18",
+                "2023-12-29 00:00:00.000",
+                "Spa & Massage",
+                "Wellness",
+                "2024-01-02"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "19",
+                "2024-07-31 00:00:00.000",
+                "Swimming Pool",
+                "Recreation",
+                "2024-08-05"
+              ],
+              [
+                "11",
+                "Yuki",
+                "Suzuki",
+                "39",
+                "2024-05-04 00:00:00.000",
+                "Swimming Pool",
+                "Recreation",
+                "2024-05-15"
+              ]
+            ],
+            "expectedColumns": [
+              "GuestID",
+              "FirstName",
+              "LastName",
+              "BookingID",
+              "BookingDate",
+              "ServiceName",
+              "Category",
+              "ServiceDate"
+            ],
+            "expectedRows": [
+              [
+                "31",
+                "Kenji",
+                "Yamamoto",
+                "85",
+                "2025-06-02 00:00:00.000",
+                "NULL",
+                "NULL",
+                "NULL"
+              ],
+              [
+                "11",
+                "Yuki",
+                "Suzuki",
+                "40",
+                "2024-12-06 00:00:00.000",
+                "NULL",
+                "NULL",
+                "NULL"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "20",
+                "2024-03-02 00:00:00.000",
+                "NULL",
+                "NULL",
+                "NULL"
+              ],
+              [
+                "51",
+                "Aisha",
+                "Osaki",
+                "NULL",
+                "NULL",
+                "NULL",
+                "NULL",
+                "NULL"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "19",
+                "2024-07-31 00:00:00.000",
+                "Breakfast Room Service",
+                "Food & Beverage",
+                "2024-08-05"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "17",
+                "2024-05-21 00:00:00.000",
+                "Breakfast Room Service",
+                "Food & Beverage",
+                "2024-05-24"
+              ],
+              [
+                "11",
+                "Yuki",
+                "Suzuki",
+                "39",
+                "2024-05-04 00:00:00.000",
+                "Breakfast Room Service",
+                "Food & Beverage",
+                "2024-05-15"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "18",
+                "2023-12-29 00:00:00.000",
+                "Breakfast Room Service",
+                "Food & Beverage",
+                "2024-01-02"
+              ],
+              [
+                "32",
+                "Sakura",
+                "Nakamura",
+                "86",
+                "2025-01-04 00:00:00.000",
+                "Gym Access",
+                "Recreation",
+                "2025-01-06"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "19",
+                "2024-07-31 00:00:00.000",
+                "Gym Access",
+                "Recreation",
+                "2024-08-05"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "17",
+                "2024-05-21 00:00:00.000",
+                "Gym Access",
+                "Recreation",
+                "2024-05-24"
+              ],
+              [
+                "11",
+                "Yuki",
+                "Suzuki",
+                "39",
+                "2024-05-04 00:00:00.000",
+                "Gym Access",
+                "Recreation",
+                "2024-05-15"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "18",
+                "2023-12-29 00:00:00.000",
+                "Gym Access",
+                "Recreation",
+                "2024-01-02"
+              ],
+              [
+                "11",
+                "Yuki",
+                "Suzuki",
+                "41",
+                "2024-07-08 00:00:00.000",
+                "Laundry Service",
+                "Housekeeping",
+                "2024-07-21"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "19",
+                "2024-07-31 00:00:00.000",
+                "Spa & Massage",
+                "Wellness",
+                "2024-08-05"
+              ],
+              [
+                "11",
+                "Yuki",
+                "Suzuki",
+                "39",
+                "2024-05-04 00:00:00.000",
+                "Spa & Massage",
+                "Wellness",
+                "2024-05-15"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "18",
+                "2023-12-29 00:00:00.000",
+                "Spa & Massage",
+                "Wellness",
+                "2024-01-02"
+              ],
+              [
+                "5",
+                "Hiroshi",
+                "Tanaka",
+                "19",
+                "2024-07-31 00:00:00.000",
+                "Swimming Pool",
+                "Recreation",
+                "2024-08-05"
+              ],
+              [
+                "11",
+                "Yuki",
+                "Suzuki",
+                "39",
+                "2024-05-04 00:00:00.000",
+                "Swimming Pool",
+                "Recreation",
+                "2024-05-15"
+              ]
+            ],
+            "diffSummary": "✓ Kết quả khớp hoàn toàn (19 dòng, 8 cột).",
+            "executionMs": 393,
+            "points": 1,
+            "earnedPoints": 1
+          }
+        ],
+        "setupMs": 22076
+      },
+      {
+        "passed": true,
+        "confidence": 1,
+        "totalCases": 1,
+        "passedCases": 1,
+        "totalPoints": 1,
+        "earnedPoints": 1,
+        "caseResults": [
+          {
+            "caseId": "Q5-SQL1",
+            "title": "Question 5",
+            "passed": true,
+            "actualColumns": [
+              "RoomTypeID",
+              "TypeName",
+              "TotalBookings",
+              "TotalRevenue",
+              "AveragePricePerNight"
+            ],
+            "actualRows": [
+              [
+                "2",
+                "Deluxe",
+                "2",
+                "4410.00",
+                "163.33"
+              ],
+              [
+                "4",
+                "Family",
+                "1",
+                "2520.00",
+                "210.00"
+              ],
+              [
+                "1",
+                "Standard",
+                "3",
+                "1808.00",
+                "86.10"
+              ],
+              [
+                "5",
+                "Penthouse",
+                "1",
+                "1200.00",
+                "600.00"
+              ],
+              [
+                "3",
+                "Suite",
+                "0",
+                ".00",
+                ".00"
+              ]
+            ],
+            "expectedColumns": [
+              "RoomTypeID",
+              "TypeName",
+              "TotalBookings",
+              "TotalRevenue",
+              "AveragePricePerNight"
+            ],
+            "expectedRows": [
+              [
+                "2",
+                "Deluxe",
+                "2",
+                "4410.00",
+                "163.33"
+              ],
+              [
+                "4",
+                "Family",
+                "1",
+                "2520.00",
+                "210.00"
+              ],
+              [
+                "1",
+                "Standard",
+                "3",
+                "1808.00",
+                "86.10"
+              ],
+              [
+                "5",
+                "Penthouse",
+                "1",
+                "1200.00",
+                "600.00"
+              ],
+              [
+                "3",
+                "Suite",
+                "0",
+                ".00",
+                ".00"
+              ]
+            ],
+            "diffSummary": "✓ Kết quả khớp hoàn toàn (5 dòng, 5 cột).",
+            "executionMs": 390,
+            "points": 1,
+            "earnedPoints": 1
+          }
+        ],
+        "setupMs": 22076
+      },
+      {
+        "passed": true,
+        "confidence": 1,
+        "totalCases": 1,
+        "passedCases": 1,
+        "totalPoints": 1,
+        "earnedPoints": 1,
+        "caseResults": [
+          {
+            "caseId": "Q6-SQL1",
+            "title": "Question 6",
+            "passed": true,
+            "actualColumns": [
+              "Nationality",
+              "NumberOfGuests",
+              "MinBookingsPerGuest",
+              "MaxBookingsPerGuest"
+            ],
+            "actualRows": [
+              [
+                "American",
+                "4",
+                "1",
+                "4"
+              ],
+              [
+                "Australian",
+                "2",
+                "1",
+                "1"
+              ],
+              [
+                "British",
+                "5",
+                "1",
+                "4"
+              ],
+              [
+                "Chinese",
+                "4",
+                "1",
+                "4"
+              ],
+              [
+                "Egyptian",
+                "2",
+                "3",
+                "3"
+              ],
+              [
+                "French",
+                "2",
+                "3",
+                "3"
+              ],
+              [
+                "German",
+                "2",
+                "1",
+                "1"
+              ],
+              [
+                "Ghanaian",
+                "1",
+                "0",
+                "0"
+              ],
+              [
+                "Hungarian",
+                "1",
+                "2",
+                "2"
+              ],
+              [
+                "Indian",
+                "3",
+                "0",
+                "2"
+              ],
+              [
+                "Italian",
+                "2",
+                "1",
+                "1"
+              ],
+              [
+                "Japanese",
+                "5",
+                "0",
+                "4"
+              ],
+              [
+                "Jordanian",
+                "2",
+                "1",
+                "2"
+              ],
+              [
+                "Korean",
+                "2",
+                "0",
+                "0"
+              ],
+              [
+                "Lebanese",
+                "1",
+                "2",
+                "2"
+              ],
+              [
+                "Norwegian",
+                "1",
+                "2",
+                "2"
+              ],
+              [
+                "Omani",
+                "1",
+                "1",
+                "1"
+              ],
+              [
+                "Russian",
+                "2",
+                "1",
+                "1"
+              ],
+              [
+                "Spanish",
+                "3",
+                "3",
+                "4"
+              ],
+              [
+                "Swedish",
+                "1",
+                "2",
+                "2"
+              ],
+              [
+                "Vietnamese",
+                "5",
+                "2",
+                "4"
+              ]
+            ],
+            "expectedColumns": [
+              "Nationality",
+              "NumberOfGuests",
+              "MinBookingsPerGuest",
+              "MaxBookingsPerGuest"
+            ],
+            "expectedRows": [
+              [
+                "American",
+                "4",
+                "1",
+                "4"
+              ],
+              [
+                "Australian",
+                "2",
+                "1",
+                "1"
+              ],
+              [
+                "British",
+                "5",
+                "1",
+                "4"
+              ],
+              [
+                "Chinese",
+                "4",
+                "1",
+                "4"
+              ],
+              [
+                "Egyptian",
+                "2",
+                "3",
+                "3"
+              ],
+              [
+                "French",
+                "2",
+                "3",
+                "3"
+              ],
+              [
+                "German",
+                "2",
+                "1",
+                "1"
+              ],
+              [
+                "Ghanaian",
+                "1",
+                "0",
+                "0"
+              ],
+              [
+                "Hungarian",
+                "1",
+                "2",
+                "2"
+              ],
+              [
+                "Indian",
+                "3",
+                "0",
+                "2"
+              ],
+              [
+                "Italian",
+                "2",
+                "1",
+                "1"
+              ],
+              [
+                "Japanese",
+                "5",
+                "0",
+                "4"
+              ],
+              [
+                "Jordanian",
+                "2",
+                "1",
+                "2"
+              ],
+              [
+                "Korean",
+                "2",
+                "0",
+                "0"
+              ],
+              [
+                "Lebanese",
+                "1",
+                "2",
+                "2"
+              ],
+              [
+                "Norwegian",
+                "1",
+                "2",
+                "2"
+              ],
+              [
+                "Omani",
+                "1",
+                "1",
+                "1"
+              ],
+              [
+                "Russian",
+                "2",
+                "1",
+                "1"
+              ],
+              [
+                "Spanish",
+                "3",
+                "3",
+                "4"
+              ],
+              [
+                "Swedish",
+                "1",
+                "2",
+                "2"
+              ],
+              [
+                "Vietnamese",
+                "5",
+                "2",
+                "4"
+              ]
+            ],
+            "diffSummary": "✓ Kết quả khớp hoàn toàn (21 dòng, 4 cột).",
+            "executionMs": 372,
+            "points": 1,
+            "earnedPoints": 1
+          }
+        ],
+        "setupMs": 22076
+      },
+      {
+        "passed": true,
+        "confidence": 1,
+        "totalCases": 1,
+        "passedCases": 1,
+        "totalPoints": 1,
+        "earnedPoints": 1,
+        "caseResults": [
+          {
+            "caseId": "Q7-SQL1",
+            "title": "Question 7",
+            "passed": true,
+            "actualColumns": [
+              "Nationality",
+              "GuestID",
+              "GuestName",
+              "TotalRevenue"
+            ],
+            "actualRows": [
+              [
+                "American",
+                "2",
+                "Bob Smith",
+                "6650.00"
+              ],
+              [
+                "Australian",
+                "35",
+                "Luke Anderson",
+                ".00"
+              ],
+              [
+                "Australian",
+                "43",
+                "Alex Taylor",
+                ".00"
+              ],
+              [
+                "British",
+                "7",
+                "James Wilson",
+                "10040.00"
+              ],
+              [
+                "Chinese",
+                "3",
+                "Chen Wei",
+                "6289.00"
+              ],
+              [
+                "Egyptian",
+                "16",
+                "Fatima Hassan",
+                "9968.00"
+              ],
+              [
+                "French",
+                "17",
+                "Pierre Dupont",
+                "7190.00"
+              ],
+              [
+                "German",
+                "41",
+                "Thomas Mueller",
+                ".00"
+              ],
+              [
+                "German",
+                "42",
+                "Claire Wagner",
+                ".00"
+              ],
+              [
+                "Ghanaian",
+                "50",
+                "Aisha Osei",
+                ".00"
+              ],
+              [
+                "Hungarian",
+                "22",
+                "Anna Kovacs",
+                ".00"
+              ],
+              [
+                "Indian",
+                "23",
+                "Ravi Sharma",
+                ".00"
+              ],
+              [
+                "Indian",
+                "24",
+                "Priya Patel",
+                ".00"
+              ],
+              [
+                "Indian",
+                "49",
+                "Raj Singh",
+                ".00"
+              ],
+              [
+                "Italian",
+                "29",
+                "Marco Rossi",
+                ".00"
+              ],
+              [
+                "Italian",
+                "30",
+                "Giulia Ferrari",
+                ".00"
+              ],
+              [
+                "Japanese",
+                "11",
+                "Yuki Suzuki",
+                "8448.00"
+              ],
+              [
+                "Jordanian",
+                "27",
+                "Omar Ibrahim",
+                ".00"
+              ],
+              [
+                "Jordanian",
+                "34",
+                "Amira Khalil",
+                ".00"
+              ],
+              [
+                "Korean",
+                "47",
+                "Lee Park",
+                ".00"
+              ],
+              [
+                "Korean",
+                "48",
+                "Kim Choi",
+                ".00"
+              ],
+              [
+                "Lebanese",
+                "28",
+                "Layla Mansour",
+                ".00"
+              ],
+              [
+                "Norwegian",
+                "26",
+                "Astrid Hansen",
+                ".00"
+              ],
+              [
+                "Omani",
+                "33",
+                "Hassan Al-Farsi",
+                ".00"
+              ],
+              [
+                "Russian",
+                "37",
+                "Ivan Petrov",
+                ".00"
+              ],
+              [
+                "Russian",
+                "38",
+                "Natasha Ivanova",
+                ".00"
+              ],
+              [
+                "Spanish",
+                "4",
+                "Maria Garcia",
+                "17428.00"
+              ],
+              [
+                "Swedish",
+                "25",
+                "Lars Eriksson",
+                ".00"
+              ],
+              [
+                "Vietnamese",
+                "8",
+                "Sophie Pham",
+                "4899.00"
+              ]
+            ],
+            "expectedColumns": [
+              "Nationality",
+              "GuestID",
+              "GuestName",
+              "TotalRevenue"
+            ],
+            "expectedRows": [
+              [
+                "American",
+                "2",
+                "Bob Smith",
+                "6650.00"
+              ],
+              [
+                "Australian",
+                "35",
+                "Luke Anderson",
+                ".00"
+              ],
+              [
+                "Australian",
+                "43",
+                "Alex Taylor",
+                ".00"
+              ],
+              [
+                "British",
+                "7",
+                "James Wilson",
+                "10040.00"
+              ],
+              [
+                "Chinese",
+                "3",
+                "Chen Wei",
+                "6289.00"
+              ],
+              [
+                "Egyptian",
+                "16",
+                "Fatima Hassan",
+                "9968.00"
+              ],
+              [
+                "French",
+                "17",
+                "Pierre Dupont",
+                "7190.00"
+              ],
+              [
+                "German",
+                "41",
+                "Thomas Mueller",
+                ".00"
+              ],
+              [
+                "German",
+                "42",
+                "Claire Wagner",
+                ".00"
+              ],
+              [
+                "Ghanaian",
+                "50",
+                "Aisha Osei",
+                ".00"
+              ],
+              [
+                "Hungarian",
+                "22",
+                "Anna Kovacs",
+                ".00"
+              ],
+              [
+                "Indian",
+                "23",
+                "Ravi Sharma",
+                ".00"
+              ],
+              [
+                "Indian",
+                "24",
+                "Priya Patel",
+                ".00"
+              ],
+              [
+                "Indian",
+                "49",
+                "Raj Singh",
+                ".00"
+              ],
+              [
+                "Italian",
+                "29",
+                "Marco Rossi",
+                ".00"
+              ],
+              [
+                "Italian",
+                "30",
+                "Giulia Ferrari",
+                ".00"
+              ],
+              [
+                "Japanese",
+                "11",
+                "Yuki Suzuki",
+                "8448.00"
+              ],
+              [
+                "Jordanian",
+                "27",
+                "Omar Ibrahim",
+                ".00"
+              ],
+              [
+                "Jordanian",
+                "34",
+                "Amira Khalil",
+                ".00"
+              ],
+              [
+                "Korean",
+                "47",
+                "Lee Park",
+                ".00"
+              ],
+              [
+                "Korean",
+                "48",
+                "Kim Choi",
+                ".00"
+              ],
+              [
+                "Lebanese",
+                "28",
+                "Layla Mansour",
+                ".00"
+              ],
+              [
+                "Norwegian",
+                "26",
+                "Astrid Hansen",
+                ".00"
+              ],
+              [
+                "Omani",
+                "33",
+                "Hassan Al-Farsi",
+                ".00"
+              ],
+              [
+                "Russian",
+                "37",
+                "Ivan Petrov",
+                ".00"
+              ],
+              [
+                "Russian",
+                "38",
+                "Natasha Ivanova",
+                ".00"
+              ],
+              [
+                "Spanish",
+                "4",
+                "Maria Garcia",
+                "17428.00"
+              ],
+              [
+                "Swedish",
+                "25",
+                "Lars Eriksson",
+                ".00"
+              ],
+              [
+                "Vietnamese",
+                "8",
+                "Sophie Pham",
+                "4899.00"
+              ]
+            ],
+            "diffSummary": "✓ Kết quả khớp hoàn toàn (29 dòng, 4 cột).",
+            "executionMs": 370,
+            "points": 1,
+            "earnedPoints": 1
+          }
+        ],
+        "setupMs": 22076
+      },
+      {
+        "passed": true,
+        "confidence": 1,
+        "totalCases": 1,
+        "passedCases": 1,
+        "totalPoints": 1,
+        "earnedPoints": 1,
+        "caseResults": [
+          {
+            "caseId": "Q8-SQL1",
+            "title": "Question 8",
+            "passed": true,
+            "actualColumns": [
+              "Passed"
+            ],
+            "actualRows": [
+              [
+                "1"
+              ]
+            ],
+            "expectedColumns": [],
+            "expectedRows": [
+              [
+                "1"
+              ]
+            ],
+            "diffSummary": "✓ Stored procedure trả về kết quả đúng.",
+            "executionMs": 387,
+            "points": 1,
+            "earnedPoints": 1
+          }
+        ],
+        "setupMs": 22076
+      },
+      {
+        "passed": true,
+        "confidence": 1,
+        "totalCases": 1,
+        "passedCases": 1,
+        "totalPoints": 1,
+        "earnedPoints": 1,
+        "caseResults": [
+          {
+            "caseId": "Q9-SQL1",
+            "title": "Question 9",
+            "passed": true,
+            "actualColumns": [
+              "Passed"
+            ],
+            "actualRows": [
+              [
+                "1"
+              ]
+            ],
+            "expectedColumns": [],
+            "expectedRows": [
+              [
+                "1"
+              ]
+            ],
+            "diffSummary": "✓ Stored procedure trả về kết quả đúng.",
+            "executionMs": 390,
+            "points": 1,
+            "earnedPoints": 1
+          }
+        ],
+        "setupMs": 22076
+      },
+      {
+        "passed": true,
+        "confidence": 1,
+        "totalCases": 1,
+        "passedCases": 1,
+        "totalPoints": 1,
+        "earnedPoints": 1,
+        "caseResults": [
+          {
+            "caseId": "Q10-SQL1",
+            "title": "Question 10",
+            "passed": true,
+            "actualColumns": [],
+            "actualRows": [
+              [
+                "1"
+              ]
+            ],
+            "expectedColumns": [],
+            "expectedRows": [
+              [
+                "1"
+              ]
+            ],
+            "diffSummary": "✓ DML thực thi thành công (11 dòng bị ảnh hưởng).",
+            "executionMs": 384,
+            "points": 1,
+            "earnedPoints": 1
+          }
+        ],
+        "setupMs": 22076
+      }
+    ]
+  }
+]

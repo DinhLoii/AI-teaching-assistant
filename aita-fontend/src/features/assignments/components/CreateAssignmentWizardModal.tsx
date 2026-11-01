@@ -23,6 +23,8 @@ export interface CreateAssignmentWizardModalProps {
 }
 
 export interface TestCaseItem {
+  questionId?: string
+  entryFile?: string
   id: string
   input: string
   expectedOutput: string
@@ -32,6 +34,8 @@ export interface TestCaseItem {
 }
 
 export interface RubricCriterionItem {
+  browserProbe?: any
+  sqlProbe?: any
   id: string
   name: string
   description: string
@@ -286,6 +290,8 @@ export function CreateAssignmentWizardModal({
   const [testCases, setTestCases] = React.useState<TestCaseItem[]>([])
   const [selectedPresetKey, setSelectedPresetKey] = React.useState<string>('')
   const [rubricCriteria, setRubricCriteria] = React.useState<RubricCriterionItem[]>([])
+  const sqlChecks = rubricCriteria.flatMap(rule => (rule.sqlProbe?.testCases || []).map((test: any) => ({...test, question: rule.name})))
+  const browserChecks: any[] = analysis?.testSuites?.browser || []
 
   React.useEffect(() => { setAnalysisAcknowledged(false) }, [rubricCriteria, testCases, description, requiredLanguage, maxScore, classId])
   React.useEffect(() => {
@@ -488,11 +494,12 @@ export function CreateAssignmentWizardModal({
           setDirectoryStructure(data.submissionFormat.directoryStructure || '')
         }
         setTestCases([]); setRubricCriteria([])
-        setStep2Tab(data.testCases?.length ? 'testcases' : 'rubric')
+        setStep2Tab(data.testCases?.length || data.testSuites?.browser?.length ? 'testcases' : 'rubric')
 
         if (data.testCases && Array.isArray(data.testCases)) {
           setTestCases(data.testCases.map((tc: any, idx: number) => ({
             id: tc.id || `tc-ai-${Date.now()}-${idx}`,
+            questionId: tc.questionId, entryFile: tc.entryFile,
             input: tc.input || tc.stdin || '',
             expectedOutput: tc.expectedOutput || tc.stdout || '',
             points: Number(tc.points ?? tc.weight ?? 0),
@@ -511,7 +518,7 @@ export function CreateAssignmentWizardModal({
             passCondition: rc.passCondition || 'Đáp ứng đúng yêu cầu',
             failCondition: rc.failCondition || 'Chưa đạt yêu cầu',
             aiGuidance: rc.aiGuidance || 'Đối chiếu tiêu chí với bài nộp và nêu bằng chứng.',
-            evidence: rc.evidence, source: rc.source, reviewNeeded: rc.reviewNeeded,
+            sqlProbe: rc.sqlProbe, browserProbe: rc.browserProbe, evidence: rc.evidence, source: rc.source, reviewNeeded: rc.reviewNeeded,
           }))
           const target = Number(data.maxScore) || maxScore
           const sum = extractedCriteria.reduce((total: number, criterion: RubricCriterionItem) => total + criterion.maxPoints, 0)
@@ -602,12 +609,14 @@ export function CreateAssignmentWizardModal({
           },
         },
         testCases: testCases.map(tc => ({
+          id: tc.id, questionId: tc.questionId, entryFile: tc.entryFile,
           input: tc.input,
           expectedOutput: tc.expectedOutput,
           points: Number(tc.points),
           isHidden: Boolean(tc.isHidden),
           comparisonMode: tc.comparisonMode,
         })),
+        testSuites: analysis?.testSuites,
         rubricCriteria: rubricCriteria.map(rc => ({
           name: rc.name,
           description: rc.description,
@@ -616,8 +625,9 @@ export function CreateAssignmentWizardModal({
           passCondition: rc.passCondition,
           failCondition: rc.failCondition,
           aiGuidance: rc.aiGuidance,
-          evidence: rc.evidence, source: rc.source,
+          sqlProbe: rc.sqlProbe, browserProbe: rc.browserProbe, evidence: rc.evidence, source: rc.source,
         })),
+        sqlConfig: analysis?.sqlConfig,
         aiConfig: {
           analysisReview: analysis ? { ...analysis.analysisReview, acknowledged: analysisAcknowledged } : undefined,
           acceptanceTests: analysis?.acceptanceTests,
@@ -766,7 +776,8 @@ export function CreateAssignmentWizardModal({
                       <FileText className="w-6 h-6 text-orange-600 shrink-0" />
                       <div>
                         <p className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-md">{examFile.name}</p>
-                        <p className="text-[11px] text-slate-400">{examFile.size} • Đã sẵn sàng phân tích</p>
+                        <p className="text-[11px] text-slate-400">{examFile.size} • {isAiAnalyzing ? 'Đang đọc nội dung (PDF scan cần OCR)...' : analysisError ? 'Chưa đọc được nội dung' : analysis ? 'Đã phân tích — cần kiểm tra lại' : 'Đã chọn tệp'}</p>
+                        {analysis?.provenanceReport?.scanNotice && <p className="text-xs text-amber-700">{analysis.provenanceReport.scanNotice}</p>}
                       </div>
                     </div>
                     <button
@@ -979,7 +990,7 @@ export function CreateAssignmentWizardModal({
                   }`}
                 >
                   <Terminal className="w-3.5 h-3.5" />
-                  <span>1. Bộ kiểm thử tự động ({testCases.length} tests)</span>
+                  <span>1. Bộ kiểm thử tự động ({testCases.length + sqlChecks.length + browserChecks.length} tests)</span>
                 </button>
 
                 <button
@@ -1015,7 +1026,13 @@ export function CreateAssignmentWizardModal({
             )}
 
             {/* NỘI DUNG TAB 1: TEST CASES */}
-            {step2Tab === 'testcases' && (
+            {step2Tab === 'testcases' && sqlChecks.length > 0 && <section className="space-y-3">
+              <h4 className="font-semibold">Kiểm thử SQL Server trong Docker ({sqlChecks.length})</h4>
+              <p className="text-xs text-slate-500">Mỗi bài nộp dùng database riêng từ dữ liệu gốc. So sánh kết quả truy vấn và kiểm tra thay đổi dữ liệu của procedure, trigger, UPDATE; không dùng stdin/stdout.</p>
+              {sqlChecks.map((test: any) => <div key={test.id} className="rounded-xl border border-slate-200 p-3 text-sm"><strong>{test.id} · {test.question}</strong><p className="text-xs text-slate-500 mt-1">Chạy đúng file trả lời của câu; điểm dựa trên kết quả SQL thực tế.</p></div>)}
+            </section>}
+            {step2Tab === 'testcases' && browserChecks.length > 0 && <section className="space-y-3"><h4 className="font-semibold">Kiểm thử trình duyệt từ đề ({browserChecks.length})</h4><p className="text-xs text-slate-500">Các kịch bản sẽ chạy trên ứng dụng React của bài nộp; điểm tính theo tiêu chí đã liên kết. Đây là cấu hình, chưa phải kết quả chạy.</p>{browserChecks.map(test => <details key={test.id} className="rounded-xl border border-slate-200 p-3 text-sm"><summary className="cursor-pointer font-semibold">{test.id} · {test.name} · {test.steps.length} thao tác</summary><p className="mt-2 whitespace-pre-wrap text-xs text-slate-500">{test.evidence}</p></details>)}</section>}
+            {step2Tab === 'testcases' && !sqlChecks.length && !browserChecks.length && (
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
@@ -1056,7 +1073,7 @@ export function CreateAssignmentWizardModal({
                             #{idx + 1}
                           </span>
                           <span className="text-xs font-bold text-slate-900 dark:text-white">
-                            {tc.isHidden ? 'Test Case Ẩn (Chống Hardcode)' : 'Test Case Công khai'}
+                            {tc.questionId && `${tc.questionId} · ${tc.entryFile || ''} · `}{tc.isHidden ? 'Test Case Ẩn (Chống Hardcode)' : 'Test mẫu công khai'}
                           </span>
                         </div>
 
@@ -1197,7 +1214,7 @@ export function CreateAssignmentWizardModal({
                             }}
                             className="text-[11px] px-2 py-1 rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-medium"
                           >
-                            <option value="ai_assessment">AI Đánh giá code</option>
+                            <option value="ai_assessment">{rc.sqlProbe ? 'SQL Server (Docker)' : rc.browserProbe?.testIds?.length ? 'Kiểm thử trình duyệt' : rc.browserProbe ? 'Đánh giá giao diện thực tế' : 'AI Đánh giá code'}</option>
                             <option value="test_runner">Test tự động</option>
                             <option value="hybrid">Động cơ lai (50/50)</option>
                           </select>

@@ -1,4 +1,5 @@
 'use client'
+import { ConfiguredTestCases } from '../components/ConfiguredTestCases'
 
 import * as React from 'react'
 import { useParams, useRouter } from 'next/navigation'
@@ -140,6 +141,7 @@ export default function StudentAssignmentDetailPage() {
   const [isDownloadingSubmitted, setIsDownloadingSubmitted] = React.useState(false)
   const [downloadingAttachment, setDownloadingAttachment] = React.useState<string | null>(null)
   const [documentDownloadError, setDocumentDownloadError] = React.useState('')
+  const [downloadingStarter, setDownloadingStarter] = React.useState(false)
   const pollingRef = React.useRef<NodeJS.Timeout | null>(null)
   const gradingPollingId = React.useRef('')
 
@@ -200,6 +202,9 @@ export default function StudentAssignmentDetailPage() {
         description: assignmentDocumentContent(summary, grading),
         content: assignmentDocumentContent(summary, grading),
         documentAnalysis: summary?.documentAnalysis || null,
+        starterFiles: summary?.starterFiles || [],
+        testCases: (summary?.testCases || []).filter((test: any) => test.isHidden === false),
+        runtimeLanguage: summary?.runtimeLanguage,
         subjectCode: extractText(grading?.metadata?.subject, extractText(summary?.subjectCode, extractText(summary?.subjectName?.split(' - ')[0], ''))),
         type: extractText(grading?.metadata?.assignmentType, extractText(grading?.metadata?.category, extractText(summary?.type, 'Workshop'))),
         due: summary?.due || summary?.dueDate || summary?.dueAt || grading?.metadata?.dueDate || grading?.stats?.dueDate,
@@ -606,6 +611,18 @@ export default function StudentAssignmentDetailPage() {
     } catch (error) { setDocumentDownloadError(error instanceof Error ? error.message : 'Không tải được tệp gốc. Vui lòng thử lại.') }
     finally { setDownloadingAttachment(null) }
   }
+  const handleDownloadStarter = async () => {
+    if (downloadingStarter) return
+    setDownloadingStarter(true); setDocumentDownloadError('')
+    try {
+      const blob = await assignmentsApi.getStarterArchive(assignmentId)
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a'); link.href = url; link.download = 'bai_lam.zip'
+      document.body.appendChild(link); link.click(); link.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch (error) { setDocumentDownloadError(error instanceof Error ? error.message : 'Không tải được file bài làm. Vui lòng thử lại.') }
+    finally { setDownloadingStarter(false) }
+  }
   const handleDownloadBrief = () => { void handleDownloadDocument(assignment?.attachments?.[0]) }
 
   if (!assignment) {
@@ -791,6 +808,13 @@ export default function StudentAssignmentDetailPage() {
                     <span>{downloadingAttachment ? 'Đang tải đề...' : !assignment.attachments?.length ? 'Chưa có tệp đề gốc' : (isVi ? 'Tải đề bài gốc' : 'Download original')}</span>
                   </button>
 
+                  {assignment.starterFiles?.length > 0 && (
+                    <button type="button" onClick={() => void handleDownloadStarter()} disabled={downloadingStarter}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl transition-all disabled:opacity-60">
+                      {downloadingStarter ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
+                      <span>{downloadingStarter ? 'Đang tải file bài làm...' : 'Tải file bài làm (.zip)'}</span>
+                    </button>
+                  )}
                   {deadlineStatus !== 'EXPIRED' && (
                     <button
                       type="button"
@@ -1070,6 +1094,9 @@ export default function StudentAssignmentDetailPage() {
               {documentDownloadError && <p role="alert" className="rounded-xl bg-red-50 dark:bg-red-950/30 p-3 text-xs text-red-700 dark:text-red-300">{documentDownloadError}</p>}
               <AssignmentDocument content={detailedContent} analysis={assignment.documentAnalysis} attachments={assignment.attachments || []} onDownload={file => void handleDownloadDocument(file)} downloadingId={downloadingAttachment} />
 
+              {assignment.testCases?.length > 0 && <ConfiguredTestCases tests={assignment.testCases} language={assignment.runtimeLanguage} executionSelected={true} />}
+
+              {assignment.starterFiles?.length > 0 && <p className="text-xs text-slate-500">{assignment.runtimeLanguage === 'SQL' ? 'Giải nén ZIP; chạy DBscript.sql để tạo dữ liệu trong SQL Server và viết câu trả lời vào từng Q*.sql. Giữ nguyên tên file, nén thư mục material_0 chứa các file trả lời thành một ZIP rồi nộp. DBscript.sql là dữ liệu gốc, không phải bài làm.' : 'Tải ZIP bài làm, giải nén và mở từng file trong thư mục material_0, material_1, … để làm bài. Giữ nguyên tên file; sau khi hoàn thành, nén tất cả thư mục material thành một file ZIP rồi nộp lên hệ thống.'}</p>}
               {/* Attachments */}
               {assignment?.sqlSetupScript && (
                 <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">

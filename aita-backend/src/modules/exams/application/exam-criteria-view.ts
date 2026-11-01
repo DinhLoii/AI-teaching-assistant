@@ -9,7 +9,7 @@ export function criterionView(rule: any, criterion?: any) {
     description: criterion?.Description || rule.Description || '',
     maxPoints: Number(criterion?.MaxPoints ?? rule.MaxPoints ?? 0),
     weight: Number(criterion?.MaxPoints ?? rule.MaxPoints ?? 0),
-    scoringStrategy: rule.IsManualOnly ? 'Manual' : strategies[String(criterion?.ValidationType || '').toUpperCase()] || 'Manual',
+    scoringStrategy: rule.IsManualOnly ? 'Manual' : config.sqlProbe ? 'SqlExecutionProbe' : strategies[String(criterion?.ValidationType || '').toUpperCase()] || 'Manual',
     passCondition: config.passCondition || '', failCondition: config.failCondition || '',
   }
 }
@@ -18,6 +18,7 @@ export function criterionView(rule: any, criterion?: any) {
 export function examTestCasesView(tests: any[], staff: boolean) {
   return tests.filter(test => staff || (test.IsHidden ?? test.isHidden) === false).map((test, index) => ({
     id: test.Id || test.id || `TC${index + 1}`,
+    questionId: test.questionId, entryFile: test.entryFile,
     input: test.Input ?? test.input ?? '',
     expectedOutput: test.ExpectedOutput ?? test.expectedOutput ?? '',
     points: Number(test.Points ?? test.points ?? 0),

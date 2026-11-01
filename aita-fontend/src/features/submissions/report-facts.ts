@@ -15,13 +15,32 @@ export function reportFacts(submission: any) {
       const key = `${ruleId}:${kind}:${test.caseId ?? test.id ?? test.name ?? index}`
       if (seen.has(key)) return
       seen.add(key)
-      tests.push({ ...test, key, kind, ruleId, name: test.name || test.caseId || test.id || `Case ${index + 1}`, passed: typeof test.passed === 'boolean' ? test.passed : typeof test.success === 'boolean' ? test.success : null })
+      tests.push({ ...test, key, kind, ruleId, ruleIds: ruleId ? [ruleId] : [], name: test.name || test.title || test.caseId || test.id || `Case ${index + 1}`, passed: typeof test.passed === 'boolean' ? test.passed : typeof test.success === 'boolean' ? test.success : null,
+        error: test.error || test.errorMessage || test.stderr, expected: test.expected ?? test.expectedOutput ?? (test.expectedRows ? {columns:test.expectedColumns,rows:test.expectedRows} : undefined), actual: test.actual ?? test.actualOutput ?? (test.actualRows ? {columns:test.actualColumns,rows:test.actualRows} : undefined) })
     })
   }
   for (const rule of evaluations) {
     add(rule.evidence?.ioTestCases, 'I/O', rule.ruleId)
     add(rule.evidence?.sqlTestCases, 'SQL', rule.ruleId)
     add(rule.evidence?.httpSteps, 'HTTP', rule.ruleId)
+    add(rule.evidence?.unitTestCases, 'Unit test', rule.ruleId)
+    add(rule.evidence?.desktopTestCases, 'Ứng dụng', rule.ruleId)
+    for (const workflow of rule.evidence?.browserWorkflows || []) {
+      if (workflow.type !== 'browser.workflow.completed' || !workflow.payload?.testId) continue
+      const payload = workflow.payload
+      const assertion = payload.failedStep || [...(payload.steps || [])].reverse().find((step: any) => /^(assert|waitFor)/.test(step.action || ''))
+      const key = `Browser:${payload.testId}`
+      const existing = tests.find(test => test.key === key)
+      if (existing) {
+        if (rule.ruleId && !existing.ruleIds.includes(rule.ruleId)) existing.ruleIds.push(rule.ruleId)
+        continue
+      }
+      tests.push({ ...payload, caseId: payload.testId, key, kind: 'Trình duyệt', name: payload.testName || payload.testId, ruleId: '', ruleIds: rule.ruleId ? [rule.ruleId] : [],
+        passed: payload.executionError ? null : typeof payload.success === 'boolean' ? payload.success : null,
+        stepsExecuted: payload.stepsExecuted, executedAt: workflow.timestamp,
+        expected: payload.expected ?? assertion?.expected, actual: payload.actual ?? assertion?.actual,
+        error: payload.error || (payload.executionError ? 'Thực thi bị gián đoạn; cần chạy lại.' : undefined) })
+    }
   }
   add(report.ioTestCases, 'I/O'); add(report.sqlTestCases, 'SQL'); add(report.httpSteps || report.probeSteps, 'HTTP')
   if (report.consoleVerification?.status === 'completed') add(report.consoleVerification.caseResults, 'I/O')
@@ -39,6 +58,7 @@ export function reportFacts(submission: any) {
 }
 
 interface AssessmentEvidence {
+  browserWorkflows?: { type?: string; payload?: { testId?: string; success?: boolean; executionError?: boolean } }[]
   ioTestCases?: { passed?: boolean; success?: boolean }[]
   sqlTestCases?: { passed?: boolean; success?: boolean }[]
   httpSteps?: { passed?: boolean; success?: boolean }[]
@@ -47,6 +67,7 @@ interface AssessmentEvidence {
 }
 export function assessmentMethod(rule: { evidence?: AssessmentEvidence; scoringStrategy?: string }): string {
   const evidence = rule.evidence || {}
+  if (evidence.browserWorkflows?.some(test => test.type === 'browser.workflow.completed' && test.payload?.testId && typeof test.payload.success === 'boolean')) return 'Kiểm thử giao diện bằng trình duyệt'
   if ([...(evidence.ioTestCases || []), ...(evidence.sqlTestCases || []), ...(evidence.httpSteps || [])].some(test => typeof test.passed === 'boolean' || typeof test.success === 'boolean')) return 'Kiểm thử thực thi'
   if (['UniversalStatic', 'StaticAnalysis'].includes(rule.scoringStrategy || '')) return 'Phân tích tĩnh'
   if (rule.scoringStrategy === 'AIVision') return 'AI đánh giá hình ảnh'
