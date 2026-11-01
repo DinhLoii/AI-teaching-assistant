@@ -113,8 +113,9 @@ export interface StudentRow {
 }
 
 export interface AssignmentRow {
+  starterFiles?: string[]
   runtimeLanguage?: string | null
-  testCases?: { id: string; input: string; expectedOutput: string; points: number; isHidden: boolean }[]
+  testCases?: { questionId?: string; entryFile?: string; id: string; input: string; expectedOutput: string; points: number; isHidden: boolean }[]
   documentContent?: string
   documentAnalysis?: {
     language?: string | null
