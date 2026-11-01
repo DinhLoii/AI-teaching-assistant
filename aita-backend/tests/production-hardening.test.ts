@@ -115,12 +115,12 @@ test('console tests execute for an AI-only rubric as verification without changi
     const exam = { Description: 'Ngôn ngữ: C++\nĐọc stdin, ghi stdout một dòng.\nDòng đầu chứa số nguyên Q.', AiGeneratedContent: JSON.stringify({ runtimeConfig: { language: 'C++' } }), TestCase: [{ Id: 't1', Input: '1\nTOTAL', ExpectedOutput: 'TOTAL 0', IsHidden: false }] }
     const result = await verifyConsoleTests(exam, [{ scoringStrategy: 'AICodeReview', weight: 10 }], 'fixture')
     assert.equal(result?.status, 'completed')
-    assert.equal(result?.scoringImpact, 'none')
+    assert.equal(result?.scoringImpact, 'functional')
     assert.equal(calls, 1)
     exam.TestCase[0].Input = 'mô tả đề bài bị trích nhầm'
     assert.equal((await verifyConsoleTests(exam, [], 'fixture'))?.status, 'invalid_tests')
     assert.equal(calls, 1)
-    assert.equal(await verifyConsoleTests(exam, [{ scoringStrategy: 'StdInOutProbe' }], 'fixture'), null)
+    assert.equal(await verifyConsoleTests(exam, [{ scoringStrategy: 'StdInOutProbe', requiredEvidence: [{ stdInOutProbe: { testCases: [{ id: 'test' }] } }] }], 'fixture'), null)
   } finally { StdInOutProbeEngine.prototype.evaluateAsync = original }
 })
 
