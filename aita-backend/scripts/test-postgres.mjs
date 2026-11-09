@@ -33,7 +33,12 @@ try {
     migrationFile = temporaryMigration
     console.log('Local relational-module tests: pgvector column omitted. CI uses the full pgvector migration.')
   }
-  for (const file of [migrationFile, 'prisma/migrations/20261017000000_durable_grading_realtime/migration.sql']) {
+  const migrations = [
+    migrationFile,
+    'prisma/migrations/20261017000000_durable_grading_realtime/migration.sql',
+    'prisma/migrations/20261105000000_github_submissions/migration.sql'
+  ]
+  for (const file of migrations) {
     const migrate = spawnSync(process.execPath, ['node_modules/prisma/build/index.js', 'db', 'execute', '--schema', 'prisma/schema.prisma', '--file', file], { env, encoding: 'utf8', timeout: 120000 })
     if (migrate.status !== 0) {
       console.error((migrate.stderr || migrate.stdout || String(migrate.error || '')).replace(/postgres(?:ql)?:\/\/[^\s]+/gi, '[test connection]'))

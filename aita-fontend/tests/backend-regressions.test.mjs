@@ -33,16 +33,18 @@ const fallbackZod = (() => {
     string: () => {
       let isOptional = false;
       let minLen = 0;
+      let maxLen = Infinity;
       const v = {
         min: (n) => { minLen = n; return v; },
+        max: (n) => { maxLen = n; return v; },
         optional: () => { isOptional = true; return v; },
         _validate: (val) => {
           if (val === undefined || val === null) {
             if (!isOptional) throw new Error('Field required');
             return val;
           }
-          if (typeof val !== 'string' || val.length < minLen) {
-            throw new Error(`String too short (min ${minLen})`);
+          if (typeof val !== 'string' || val.length < minLen || val.length > maxLen) {
+            throw new Error(`String length out of bounds [${minLen}, ${maxLen}]`);
           }
           return val;
         },
