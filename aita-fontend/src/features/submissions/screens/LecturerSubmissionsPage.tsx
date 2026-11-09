@@ -55,6 +55,7 @@ export default function LecturerSubmissionsPage() {
   const [submissions, setSubmissions] = React.useState<any[]>([])
   const [roster, setRoster] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [pollingError, setPollingError] = React.useState<string | null>(null)
   const [loadError, setLoadError] = React.useState<string | null>(null)
   const loadVersion = React.useRef(0)
   const [search, setSearch] = React.useState('')
@@ -173,8 +174,8 @@ export default function LecturerSubmissionsPage() {
         busy = true
         try {
           const subs = await submissionsApi.getSubmissions({ assignmentId, view: 'summary' }, true)
-          if (!cancelled) setSubmissions(subs || [])
-        } catch (err) { console.error(err) }
+          if (!cancelled) { setSubmissions(subs || []); setPollingError(null) }
+        } catch (err) { if (!cancelled) setPollingError(errorMessage(err) || 'Chưa cập nhật được danh sách bài nộp. Hệ thống sẽ thử lại.') }
         finally { busy = false }
       }, 3500)
       return () => { cancelled = true; clearInterval(interval) }
@@ -615,7 +616,8 @@ export default function LecturerSubmissionsPage() {
       {/* Submissions Table */}
       <div className="rounded-2xl border border-orange-100/90 dark:border-orange-900/30 overflow-hidden shadow-xs bg-white dark:bg-slate-900">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-sm">
+          {pollingError && <p role="status" className="m-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">{pollingError} · Dữ liệu hiện có được giữ lại; hệ thống sẽ thử cập nhật lại.</p>}
+              <table className="w-full text-left border-collapse text-sm">
             <thead>
               <tr className="border-b border-orange-100/90 dark:border-slate-800 bg-gradient-to-r from-orange-50/70 via-amber-50/40 to-orange-50/50 dark:bg-slate-950/60 text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 <th className="p-4 pl-6 w-10">
@@ -727,6 +729,7 @@ export default function LecturerSubmissionsPage() {
                           )}
                         </td>
                         <td className="p-4 text-xs">
+                          {sub.githubUrl && <div className="mb-2 flex flex-wrap gap-2"><a href={sub.githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">GitHub</a><a href={sub.vercelUrl || undefined} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Vercel demo</a><span className="text-slate-500" title={sub.sourceCommit || ''}>{sub.sourceCommit?.slice(0, 7)}</span></div>}
                           {sub.downloadUrl || sub.zipFileUrl ? (
                             <button
                               onClick={() => handleDownload(sub)}

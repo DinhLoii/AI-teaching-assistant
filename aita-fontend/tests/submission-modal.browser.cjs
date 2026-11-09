@@ -27,6 +27,7 @@ test('student submission modal lifecycle in a real browser', async (t) => {
       window.testState = { requests: [], successes: [], complete: 0, close: 0, downloads: [] };
       window.fetch = (url, options) => new Promise((resolve, reject) => {
         window.testState.requests.push({ url, method: options.method, file: options.body?.get?.('file')?.name, note: options.body?.get?.('content'), assignment: options.body?.get?.('assignmentId') });
+        window.testState.lastLinks = { githubUrl: options.body?.get?.('githubUrl'), vercelUrl: options.body?.get?.('vercelUrl') };
         window.respond = (data, status = 200) => resolve(new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } }));
         window.rejectRequest = () => reject(new Error('network disconnected'));
       });
@@ -77,6 +78,18 @@ test('student submission modal lifecycle in a real browser', async (t) => {
     assert.deepEqual(await page.evaluate(() => window.testState.downloads), ['saved-1'])
     await page.getByText('Xác nhận & Xem bài nộp', { exact: true }).click()
     assert.equal(await page.evaluate(() => window.testState.complete), 1)
+    await page.close()
+  })
+  await t.test('FER202 links use the existing receipt flow with one POST and no file', async () => {
+    const links = { githubUrl: 'https://github.com/student/fer202', vercelUrl: 'https://ai-teaching-assistant-roan.vercel.app/login' }
+    const page = await setup({ file: null, links, subjectCode: 'FER202', fileName: 'GitHub source.zip' })
+    await requested(page)
+    assert.deepEqual(await page.evaluate(() => window.testState.lastLinks), links)
+    assert.equal(await page.evaluate(() => window.testState.requests[0].file), undefined)
+    await page.evaluate(() => window.respond({ data: { id: 'github-attempt-2', attemptNumber: 2, gradingStatus: 'Pending' } }))
+    await received(page)
+    assert.equal(await page.evaluate(() => window.testState.successes.length), 1)
+    assert.equal(await page.evaluate(() => window.testState.requests.length), 1)
     await page.close()
   })
   await t.test('business rejection: shows server error and closing never fires success completion', async () => {

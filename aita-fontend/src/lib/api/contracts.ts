@@ -184,6 +184,9 @@ export interface SubmissionRow {
   language?: string | null
   filename?: string
   downloadUrl?: string
+  githubUrl?: string | null
+  vercelUrl?: string | null
+  sourceCommit?: string | null
   zipFileUrl?: string
   status: string
   gradingStatus?: string | null

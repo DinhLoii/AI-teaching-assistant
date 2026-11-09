@@ -349,6 +349,7 @@ export default function AdminSubmissionsPage() {
                           )}
                         </td>
                         <td className="p-4 text-xs">
+                          {sub.githubUrl && <div className="mb-2 flex flex-wrap gap-2"><a href={sub.githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">GitHub</a><a href={sub.vercelUrl || undefined} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Vercel demo</a><span className="text-slate-500" title={sub.sourceCommit || ''}>{sub.sourceCommit?.slice(0, 7)}</span></div>}
                           {sub.downloadUrl || sub.zipFileUrl ? (
                             <button
                               onClick={() => gradingApi.downloadSubmission(sub.id, 'submission').catch(() => alert('Không tải được bài nộp. Vui lòng thử lại.'))}
