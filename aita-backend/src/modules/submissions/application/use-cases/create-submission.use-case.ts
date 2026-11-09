@@ -1,3 +1,4 @@
+import { downloadGithubSubmission, validateSubmissionLinks } from '../../infrastructure/github-submission.js'
 import { publishNotification } from '../../../../shared/infrastructure/publish-notification.js'
 import { randomUUID } from 'crypto'
 import type { IUseCase } from '../../../../shared/application/base-use-case.js'
@@ -172,6 +173,17 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
     }
 
     if (dto.data.zipFileUrl) throw new ValidationError('Vui lòng tải ZIP lên trực tiếp; không chấp nhận đường dẫn bài nộp bên ngoài.')
+    let links: { githubUrl: string; vercelUrl: string } | undefined
+    let sourceCommit: string | undefined
+    if (dto.data.githubUrl !== undefined || dto.data.vercelUrl !== undefined) {
+      if (file) throw new ValidationError('Chỉ chọn một hình thức: ZIP hoặc GitHub + Vercel.')
+      if (String(subjectInfo.subjectCode || subjectInfo.SubjectCode || subjectInfo.Code || '').toUpperCase() !== 'FER202') throw new ValidationError('Nộp GitHub + Vercel chỉ áp dụng cho FER202.')
+      links = validateSubmissionLinks(dto.data.githubUrl, dto.data.vercelUrl)
+      const snapshot = await downloadGithubSubmission(links.githubUrl)
+      file = snapshot.file
+      sourceCommit = snapshot.commit
+    }
+    if (!file) throw new ValidationError('Vui lòng chọn ZIP hoặc nhập đủ GitHub và Vercel.')
     let fileUrl = ''
     let localFilePath: string | undefined;
 
@@ -179,6 +191,7 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
       if (path.extname(file.originalname).toLowerCase() !== '.zip') throw new ValidationError('Bài nộp phải là tệp ZIP.')
       let archive: ReturnType<typeof inspectSourceArchive>
       try { archive = inspectSourceArchive(file.buffer) } catch { throw new ValidationError('Tệp ZIP không hợp lệ hoặc vượt giới hạn đọc an toàn.') }
+      if (links && !archive.files.length) throw new ValidationError('Repo GitHub chưa có mã nguồn được hỗ trợ để chấm.')
       assertSubmissionLanguage(examConfiguration(exam), archive.files.map(source => source.path))
       // Sanitized here, not at the call sites: these also become a local directory
       // path in the >10MB fallback below, so a stray "/" or ".." must never survive.
@@ -215,6 +228,9 @@ export class CreateSubmissionUseCase implements IUseCase<{ dto: CreateSubmission
         1, // attemptNumber
         fileUrl
       )
+      targetSubmission.githubUrl = links?.githubUrl
+      targetSubmission.vercelUrl = links?.vercelUrl
+      targetSubmission.sourceCommit = sourceCommit
       if (dto.data.content) {
         (targetSubmission as any).content = dto.data.content;
       }
