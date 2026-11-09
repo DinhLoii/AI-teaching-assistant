@@ -669,7 +669,7 @@ export class SubmissionController extends BaseController {
                         : `[Môi trường] Runtime: ${sandboxHandle.runtimeStack}; chưa thể chạy ứng dụng. ${sandboxHandle.crashLogs || 'Không có runner phù hợp với loại dự án này.'}` });
 
                     if (!sandboxHandle.isReady && (sandboxHandle.projectType === 'frontend' || requiresManualUiStart(publishedAssignment))) {
-                        throw new Error('UI_RUNTIME_UNAVAILABLE: Không khởi động được môi trường giao diện. Kiểm tra Docker Desktop rồi bắt đầu chấm lại; chưa tạo điểm UI.');
+                        throw new Error('UI_RUNTIME_UNAVAILABLE: Không khởi động được môi trường giao diện; chưa tạo điểm UI. ' + (sandboxHandle.crashLogs || 'Kiểm tra Docker Desktop rồi bắt đầu chấm lại.'));
                     }
                     if (sandboxHandle.isReady && sandboxHandle.baseUrl) {
                         checkCancelled();

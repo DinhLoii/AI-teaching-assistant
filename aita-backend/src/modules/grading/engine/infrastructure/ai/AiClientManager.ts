@@ -56,6 +56,14 @@ export class AiClientManager {
     public static lastFailureDiagnostic: { kind: string; status: number; name: string } | null = null;
     private static currentKeyIndex = 0;
     private static rateLimitExpiry = new Map<string, number>();
+    private static keyFailures = new Map<string, any>();
+
+    public static cooldownMs(error: any, attempt: number): number {
+        const raw = error?.headers?.get?.('retry-after') ?? error?.headers?.['retry-after'];
+        const seconds = Number(raw);
+        const providerDelay = raw == null ? 0 : Number.isFinite(seconds) ? seconds * 1000 : Math.max(0, Date.parse(raw) - Date.now());
+        return Math.max(Math.min(30000, 5000 * 2 ** (attempt - 1)), Number.isFinite(providerDelay) ? providerDelay : 0);
+    }
 
     public static async executeStub<T>(
         apiCall: (client: any, model: string) => Promise<T>,
@@ -119,7 +127,7 @@ export class AiClientManager {
         }
 
         let lastError: any;
-        const maxGlobalAttempts = 2;
+        const maxGlobalAttempts = 3;
 
         for (let globalAttempt = 1; globalAttempt <= maxGlobalAttempts; globalAttempt++) {
             // 0. Try Groq (LPU Ultra-fast inference with 120B / 20B / Qwen parameter models)
@@ -218,7 +226,8 @@ export class AiClientManager {
                     if (expiry > now) {
                         const wait = expiry - now;
                         if (wait < minWaitTime) minWaitTime = wait;
-                        continue; // Skip key because it is on cooldown
+                        lastError = AiClientManager.keyFailures.get(key) || Object.assign(new Error("AI provider cooldown"), { status: 503 });
+                        continue; // Respect cooldown across concurrent requests.
                     }
 
                     triedAnyKey = true;
@@ -385,6 +394,7 @@ export class AiClientManager {
                         }
                     } catch (err: any) {
                         lastError = err;
+                        AiClientManager.keyFailures.set(key, err);
 
                         // A response-format/evidence failure is not an API key outage.
                         // Let the next attempt request valid JSON without cooling down the key.
@@ -397,8 +407,8 @@ export class AiClientManager {
                         const errBody = err.error ? JSON.stringify(err.error) : (err.message || String(err));
 
                         if (status === 429 || (err.message && err.message.includes('429'))) {
-                            console.warn(`[AiClientManager] Key #${keyIndex + 1} rate limited (429). Short cooldown 2s...`);
-                            const newExpiry = Date.now() + 2000;
+                            console.warn(`[AiClientManager] Key #${keyIndex + 1} rate limited (429). Waiting before retry...`);
+                            const newExpiry = Date.now() + AiClientManager.cooldownMs(err, globalAttempt);
                             AiClientManager.rateLimitExpiry.set(key, newExpiry);
 
                             const wait = newExpiry - Date.now();
@@ -415,16 +425,15 @@ export class AiClientManager {
                                 }
                             }).catch(() => {});
 
-                            // Put key on short 5s cooldown instead of 1h to allow quick recovery
-                            AiClientManager.rateLimitExpiry.set(key, Date.now() + 5000);
+                            // Preserve provider Retry-After and use bounded exponential backoff.
+                            AiClientManager.rateLimitExpiry.set(key, Date.now() + AiClientManager.cooldownMs(err, globalAttempt));
                             continue;
                         }
                     }
                 } // End of key loop
 
                 if (!triedAnyKey) {
-                    console.warn(`[AiClientManager] All keys are cooling down. Clearing cooldown locks...`);
-                    AiClientManager.rateLimitExpiry.clear();
+                    console.warn(`[AiClientManager] All keys are cooling down; preserving provider backoff.`);
                 }
             }
 
@@ -469,9 +478,10 @@ export class AiClientManager {
 
             const isTimeoutOrRateLimit = lastError && ([429, 500, 502, 503, 504].includes(Number(lastError.status || lastError.statusCode)) || lastError.message?.includes('429') || /AI_TIMEOUT|timed? out|timeout|abort|fetch failed|ECONN/i.test(lastError.message || ''));
             if (globalAttempt < maxGlobalAttempts && isTimeoutOrRateLimit) {
-                console.warn(`[AiClientManager] Global Pool Exhausted (Attempt ${globalAttempt}/${maxGlobalAttempts}). Cooling down for 3 seconds...`);
-                AiClientManager.rateLimitExpiry.clear(); // Reset cooldowns on retry attempt
-                await new Promise(resolve => setTimeout(resolve, 3000));
+                const activeExpiries = [...AiClientManager.rateLimitExpiry.values()].filter(expiry => expiry > Date.now());
+                const waitMs = Math.min(30000, Math.max(5000 * 2 ** (globalAttempt - 1), activeExpiries.length ? Math.min(...activeExpiries) - Date.now() : 0));
+                console.warn('[AiClientManager] Providers unavailable; retry ' + globalAttempt + '/' + maxGlobalAttempts + ' after ' + Math.ceil(waitMs / 1000) + 's.');
+                await new Promise(resolve => setTimeout(resolve, waitMs));
             } else {
                 break;
             }
@@ -487,7 +497,7 @@ export class AiClientManager {
         if (errMsg.includes('429') || lastError?.status === 429) {
             throw new AppError(
                 'AI_RATE_LIMIT',
-                'Hệ thống AI đang quá tải lượt gọi (Rate Limit 429). Vui lòng thử lại sau 5–10 giây.',
+                'Hệ thống AI đang quá tải lượt gọi (Rate Limit 429). Hệ thống sẽ thử lại theo thời gian chờ của dịch vụ.',
                 503
             );
         }

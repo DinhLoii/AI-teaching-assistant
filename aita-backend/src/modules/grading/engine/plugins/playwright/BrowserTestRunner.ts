@@ -52,17 +52,25 @@ export class BrowserTestRunner {
 
         try {
             if (!test.steps?.length) throw new Error('Browser test has no actions');
+            // Independent paper cases start with a fresh browser profile. Reloads within
+            // a case retain storage, so persistence is still tested against the app.
+            if (test.isolateStorage) {
+                await this.context!.close();
+                this.context = await this.browser!.newContext({ baseURL: this.executionContext.baseUrl, viewport: this.visible ? null : { width: 1280, height: 720 } });
+                this.page = await this.context.newPage();
+                this.page.setDefaultTimeout(10000);
+            }
             if (test.startUrl) {
                 await this.navigateToSubmission(test.startUrl);
             }
             if (this.visible) await this.page.bringToFront();
             for (const step of test.steps) {
                 stepsExecuted++;
-                const names = { navigate: 'Mở trang', click: 'Bấm nút/phần tử', fill: 'Điền thông tin', waitForSelector: 'Chờ phần tử', assertVisible: 'Kiểm tra hiển thị', assertText: 'Đối chiếu nội dung kết quả', assertValidation: 'Kiểm tra form từ chối dữ liệu không hợp lệ', screenshot: 'Chụp ảnh' };
+                const names = { navigate: 'Mở trang', reload: 'Tải lại trang', click: 'Bấm nút/phần tử', fill: 'Điền thông tin', waitForSelector: 'Chờ phần tử', assertVisible: 'Kiểm tra hiển thị', assertCount: 'Đối chiếu số dòng', assertValue: 'Đối chiếu giá trị nhập', assertText: 'Đối chiếu nội dung kết quả', assertValidation: 'Kiểm tra form từ chối dữ liệu không hợp lệ', screenshot: 'Chụp ảnh' };
                 this.executionContext.onBrowserMessage?.(`[Thao tác UI ${stepsExecuted}/${test.steps.length}] ${names[step.action] || step.action}${step.target ? ': ' + step.target : ''}`);
                 if (this.visible) await this.presentStep(test.id, stepsExecuted, test.steps.length, names[step.action] || step.action, step.target);
                 const trace: any = { index: stepsExecuted, action: step.action, target: step.target,
-                    expected: step.action === 'assertText' ? step.value : ['assertVisible','waitForSelector'].includes(step.action) ? 'Phần tử xuất hiện và hiển thị' : step.action === 'assertValidation' ? 'Form từ chối dữ liệu không hợp lệ' : names[step.action] || step.action,
+                    expected: ['assertText','assertValue'].includes(step.action) ? step.value : step.action === 'assertCount' ? step.count : ['assertVisible','waitForSelector'].includes(step.action) ? 'Phần tử xuất hiện và hiển thị' : step.action === 'assertValidation' ? 'Form từ chối dữ liệu không hợp lệ' : names[step.action] || step.action,
                     status: 'running' };
                 stepResults.push(trace);
                 let evidence;
@@ -110,6 +118,22 @@ export class BrowserTestRunner {
         const page = this.page!;
 
         switch (action.action) {
+            case 'assertCount':
+            case 'assertValue': {
+                if (!action.target || (action.action === 'assertCount' ? !Number.isInteger(action.count) || action.count! < 0 : action.value === undefined)) throw new Error('Assertion needs a selector and expected count/value');
+                const locator = page.locator(action.target);
+                const expected = action.action === 'assertCount' ? action.count : action.value;
+                const deadline = Date.now() + 10000;
+                let actual;
+                do {
+                    actual = action.action === 'assertCount' ? await locator.count() : await locator.inputValue();
+                    if (actual === expected) break;
+                    await page.waitForTimeout(100);
+                } while (Date.now() < deadline);
+                if (actual !== expected) throw new Error(`${action.action}: ${action.target}; expected ${expected}, actual ${actual}`);
+                evidence.push(this.createEvidence('browser.assertion.verified', 1, { selector: action.target, expected, actual }));
+                break;
+            }
             case 'reload':
                 await page.reload({ waitUntil: 'domcontentloaded' });
                 evidence.push(this.createEvidence('browser.navigation.completed', 1, { reload: true }));

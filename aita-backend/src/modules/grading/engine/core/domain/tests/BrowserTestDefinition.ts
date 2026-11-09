@@ -1,9 +1,10 @@
 // @ts-nocheck
 export interface BrowserAction {
-    action: 'navigate' | 'reload' | 'click' | 'fill' | 'waitForSelector' | 'assertVisible' | 'assertText' | 'assertValidation' | 'screenshot';
+    action: 'navigate' | 'reload' | 'click' | 'fill' | 'waitForSelector' | 'assertVisible' | 'assertText' | 'assertValidation' | 'assertCount' | 'assertValue' | 'screenshot';
     target?: string; // CSS Selector
     value?: string;  // Text input or expected text
     screenshotName?: string;
+    count?: number;
 }
 
 /**
@@ -14,5 +15,6 @@ export interface BrowserTestDefinition {
     name: string;
     startUrl: string;
     steps: BrowserAction[];
+    isolateStorage?: boolean;
 }
 

@@ -11,6 +11,12 @@ export type QueueLane = 'continuous' | 'batch'
 
 const maxAttempts = 3
 
+export function shouldRetryGradingFailure(message: string, attempts: number) {
+  // Invalid submissions cannot recover by repeating the same download/install.
+  if (/UI_PROJECT_ROOT_AMBIGUOUS|SUBMISSION_LANGUAGE|SANDBOX_DISABLED|unsupported runtime/i.test(message)) return false
+  return attempts < maxAttempts && /timeout|timed out|503|502|429|unavailable|overload|provider|ECONN|fetch failed/i.test(message)
+}
+
 export class DurableGradingQueue {
   private timer?: ReturnType<typeof setInterval>
   private polling = false
@@ -128,14 +134,16 @@ export class DurableGradingQueue {
       const completed = await this.db.$executeRaw`UPDATE "SubmissionGradingTask" SET "Status"='completed', "LeaseOwner"=NULL, "LeaseUntil"=NULL, "LastError"=NULL WHERE "SubmissionId"=${id} AND "LeaseOwner"=${owner} AND "Status"='running'`
       if (!completed) throw new Error('Cancelled by user or grading lease expired')
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Grading failed'
+      const errorCode = (error as any)?.code
+      const message = error instanceof Error ? (typeof errorCode === 'string' && errorCode.startsWith('AI_') ? errorCode + ': ' : '') + error.message : 'Grading failed'
       const state = await this.db.$queryRaw`SELECT "Status" FROM "SubmissionGradingTask" WHERE "SubmissionId"=${id} AND "LeaseOwner"=${owner}`
       const cancelled = state[0]?.Status === 'cancelled' || /cancelled by user/i.test(message)
-      const retry = !cancelled && task.Attempts < maxAttempts && /timeout|timed out|503|502|429|unavailable|overload|provider|ECONN|fetch failed/i.test(message)
+      const retry = !cancelled && shouldRetryGradingFailure(message, task.Attempts)
       const updated = await this.db.$executeRaw`UPDATE "SubmissionGradingTask" SET "Status"=${cancelled ? 'cancelled' : retry ? 'pending' : 'failed'}, "LastError"=${message.slice(0, 2000)}, "AvailableAt"=NOW()+INTERVAL '30 seconds', "LeaseOwner"=NULL, "LeaseUntil"=NULL WHERE "SubmissionId"=${id} AND "LeaseOwner"=${owner}`
       if (updated && retry) {
         await this.db.submission.updateMany({ where: { Id: id, GradingTask: { is: { Status: 'pending' } } }, data: { GradingStatus: 'Processing' } })
-        globalJobManager.initJob(id, 'Dịch vụ chấm tạm gián đoạn; hệ thống sẽ tự thử lại trong 30 giây.', { requestVersion: new Date(task.RequestedAt).getTime(), attempt: task.Attempts + 1 })
+        globalJobManager.initJob(id, 'Lượt chấm chưa hoàn tất; sẽ thử lại trong 30 giây (' + task.Attempts + '/' + maxAttempts + ').', { requestVersion: new Date(task.RequestedAt).getTime(), attempt: task.Attempts + 1 })
+        globalJobManager.recordEvent(id, { stage: 1, status: 'warning', message: '[Nguyên nhân thử lại] ' + message })
       }
       else if (updated) await this.persistFailure(id, message, cancelled ? 'cancelled' : 'failed')
     } finally { clearInterval(heartbeat) }
