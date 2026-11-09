@@ -25,6 +25,7 @@ export function SubmissionHistory({ submissionId }: { submissionId: string }) {
     {state.rows.map(row => <div key={row.id} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-2 text-sm">
       <div className="flex flex-wrap justify-between gap-2"><strong>Lần nộp #{row.attemptNumber ?? '—'}{row.id === submissionId ? ' · Đang xem' : ''}</strong><span>{row.score == null ? (row.isPublished ? 'Chưa có điểm' : 'Chưa công bố điểm') : `${Number(row.score)}${row.maxScore ? ` / ${Number(row.maxScore)}` : ''} điểm`}</span></div>
       <p className="text-xs text-slate-500">{row.submittedAt ? new Date(row.submittedAt).toLocaleString('vi-VN') : 'Chưa rõ thời gian'} · {row.filename || 'Chưa có tên tệp'} · {row.gradingStatus || 'Chưa có trạng thái'}</p>
+      {row.githubUrl && <div className="flex flex-wrap gap-3 text-xs"><a href={row.githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">GitHub</a><a href={row.vercelUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Vercel demo</a><span title={row.sourceCommit}>Commit: {row.sourceCommit?.slice(0, 7)}</span></div>}
       {row.id !== submissionId && <Link className="text-orange-600 text-xs font-semibold" href={role === 'student' ? `/student/results/${row.id}` : `/lecturer/grading/result/${row.id}`}>Xem lần nộp này →</Link>}
     </div>)}
   </div>

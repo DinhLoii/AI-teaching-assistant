@@ -40,9 +40,10 @@ export const submissionsApi = {
     }
   },
 
-  submitAssignment: (file: File | null, content: string, assignmentId: string) => {
+  submitAssignment: (file: File | null, content: string, assignmentId: string, links?: { githubUrl: string; vercelUrl: string }) => {
     const formData = new FormData()
     if (file) formData.append('file', file)
+    if (links) { formData.append('githubUrl', links.githubUrl); formData.append('vercelUrl', links.vercelUrl) }
     formData.append('content', content)
     formData.append('assignmentId', assignmentId)
     return request<{ submissionId: string, id?: string, zipFileUrl?: string, status?: string }>('/submissions', {

@@ -1,0 +1,190 @@
+{
+  "testedAt": "2026-11-05T15:05:04.219Z",
+  "repository": "https://github.com/DinhLoii/AI-teaching-assistant",
+  "deployment": "https://ai-teaching-assistant-roan.vercel.app/login",
+  "source": {
+    "status": 200,
+    "commit": "2ccb4a9846ec2471e8dc5330e70e01ebc758b18d"
+  },
+  "suite": "Exact instructor TC01-TC13, same clean context, no selector substitutions",
+  "passed": 0,
+  "total": 13,
+  "results": [
+    {
+      "id": "TC01",
+      "name": "Hiển thị trang đăng nhập",
+      "status": "failed",
+      "step": {
+        "action": "assertVisible",
+        "target": "[data-testid=login-page]"
+      },
+      "error": "locator.waitFor: Timeout 1200ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=login-page]') to be visible\u001b[22m\n",
+      "url": "https://ai-teaching-assistant-roan.vercel.app/login#login"
+    },
+    {
+      "id": "TC02",
+      "name": "Đăng ký thiếu họ tên",
+      "status": "failed",
+      "step": {
+        "action": "click",
+        "target": "[data-testid=register-submit]"
+      },
+      "error": "locator.click: Timeout 1200ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=register-submit]')\u001b[22m\n",
+      "url": "https://ai-teaching-assistant-roan.vercel.app/login#register"
+    },
+    {
+      "id": "TC03",
+      "name": "Email đăng ký sai định dạng",
+      "status": "failed",
+      "step": {
+        "action": "fill",
+        "target": "[data-testid=register-name]",
+        "value": "Nguyễn Văn A"
+      },
+      "error": "locator.fill: Timeout 1200ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=register-name]')\u001b[22m\n",
+      "url": "https://ai-teaching-assistant-roan.vercel.app/login#register"
+    },
+    {
+      "id": "TC04",
+      "name": "Mật khẩu đăng ký quá ngắn",
+      "status": "failed",
+      "step": {
+        "action": "fill",
+        "target": "[data-testid=register-name]",
+        "value": "Nguyễn Văn A"
+      },
+      "error": "locator.fill: Timeout 1200ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=register-name]')\u001b[22m\n",
+      "url": "https://ai-teaching-assistant-roan.vercel.app/login#register"
+    },
+    {
+      "id": "TC05",
+      "name": "Xác nhận mật khẩu không khớp",
+      "status": "failed",
+      "step": {
+        "action": "fill",
+        "target": "[data-testid=register-name]",
+        "value": "Nguyễn Văn A"
+      },
+      "error": "locator.fill: Timeout 1200ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=register-name]')\u001b[22m\n",
+      "url": "https://ai-teaching-assistant-roan.vercel.app/login#register"
+    },
+    {
+      "id": "TC06",
+      "name": "Đăng ký thành công",
+      "status": "failed",
+      "step": {
+        "action": "fill",
+        "target": "[data-testid=register-name]",
+        "value": "Nguyễn Văn A"
+      },
+      "error": "locator.fill: Timeout 1200ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=register-name]')\u001b[22m\n",
+      "url": "https://ai-teaching-assistant-roan.vercel.app/login#register"
+    },
+    {
+      "id": "TC07",
+      "name": "Chặn email trùng không phân biệt hoa thường",
+      "status": "failed",
+      "step": {
+        "action": "fill",
+        "target": "[data-testid=register-name]",
+        "value": "Nguyễn Văn A"
+      },
+      "error": "locator.fill: Timeout 1200ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=register-name]')\u001b[22m\n",
+      "url": "https://ai-teaching-assistant-roan.vercel.app/login#register"
+    },
+    {
+      "id": "TC08",
+      "name": "Đăng nhập sai mật khẩu",
+      "status": "failed",
+      "step": {
+        "action": "fill",
+        "target": "[data-testid=login-email]",
+        "value": "student1@demo.test"
+      },
+      "error": "locator.fill: Timeout 1200ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=login-email]')\u001b[22m\n",
+      "url": "https://ai-teaching-assistant-roan.vercel.app/login#login"
+    },
+    {
+      "id": "TC09",
+      "name": "Đăng nhập tài khoản chưa tồn tại",
+      "status": "failed",
+      "step": {
+        "action": "fill",
+        "target": "[data-testid=login-email]",
+        "value": "unknown@demo.test"
+      },
+      "error": "locator.fill: Timeout 1200ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=login-email]')\u001b[22m\n",
+      "url": "https://ai-teaching-assistant-roan.vercel.app/login#login"
+    },
+    {
+      "id": "TC10",
+      "name": "Đăng nhập đúng và hiển thị hồ sơ",
+      "status": "failed",
+      "step": {
+        "action": "fill",
+        "target": "[data-testid=login-email]",
+        "value": "STUDENT1@DEMO.TEST"
+      },
+      "error": "locator.fill: Timeout 1200ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=login-email]')\u001b[22m\n",
+      "url": "https://ai-teaching-assistant-roan.vercel.app/login#login"
+    },
+    {
+      "id": "TC11",
+      "name": "Tải lại vẫn giữ phiên trong cùng tab",
+      "status": "failed",
+      "step": {
+        "action": "assertVisible",
+        "target": "[data-testid=dashboard-page]"
+      },
+      "error": "locator.waitFor: Timeout 1200ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=dashboard-page]') to be visible\u001b[22m\n",
+      "url": "https://ai-teaching-assistant-roan.vercel.app/login#dashboard"
+    },
+    {
+      "id": "TC12",
+      "name": "Đăng xuất trở lại trang đăng nhập",
+      "status": "failed",
+      "step": {
+        "action": "click",
+        "target": "[data-testid=logout]"
+      },
+      "error": "locator.click: Timeout 1200ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=logout]')\u001b[22m\n",
+      "url": "https://ai-teaching-assistant-roan.vercel.app/login#dashboard"
+    },
+    {
+      "id": "TC13",
+      "name": "Chặn truy cập trang cá nhân khi chưa đăng nhập",
+      "status": "failed",
+      "step": {
+        "action": "assertVisible",
+        "target": "[data-testid=login-page]"
+      },
+      "error": "locator.waitFor: Timeout 1200ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-testid=login-page]') to be visible\u001b[22m\n",
+      "url": "https://ai-teaching-assistant-roan.vercel.app/login#dashboard"
+    }
+  ],
+  "actual": {
+    "url": "https://ai-teaching-assistant-roan.vercel.app/login",
+    "text": "AI Teaching & Grading Assistant\n\nAI-powered grading and analytics system tailored for FPTU students and lecturers.\n\nAI Teaching & Grading Assistant\n\nAITA Intelligent Grading & Analytics System\n\nUSERNAME OR EMAIL\nPASSWORD\nCAMPUS\nFPT Hanoi (Hòa Lạc) (FU-HN)\nFPT Ho Chi Minh City (FU-HCM)\nFPT Da Nang (FU-DN)\nFPT Can Tho (FU-CT)\nFPT Quy Nhon (FU-QN)\nRemember me\nForgot password?\nSign In\nOR\nSign in with Gmail\n\n© 2026 AI Teaching Assistant — FPT University.",
+    "inputs": [
+      {
+        "type": "text",
+        "id": "",
+        "testid": null
+      },
+      {
+        "type": "password",
+        "id": "",
+        "testid": null
+      },
+      {
+        "type": "checkbox",
+        "id": "",
+        "testid": null
+      }
+    ],
+    "registerLinks": [],
+    "keyboardFocusedTag": "INPUT",
+    "mobileNoHorizontalOverflow": true
+  },
+  "limitation": "Deployed AITA login is not the FER202 frontend-only registration app. No grading score or database record is changed."
+}

@@ -16,7 +16,7 @@ import { GetAiHintUseCase } from '../application/use-cases/get-ai-hint.use-case.
 import { ReopenSubmissionUseCase } from '../application/use-cases/reopen-submission.use-case.js'
 import { DetectDuplicateSubmissionsUseCase } from '../application/use-cases/detect-duplicate-submissions.use-case.js'
 import { ApplyDuplicatePenaltyUseCase } from '../application/use-cases/apply-duplicate-penalty.use-case.js'
-import { ListSubmissionsQueryDto, ReopenSubmissionRequestDto } from '../application/dtos/submission.dto.js'
+import { CreateSubmissionRequestDto, ListSubmissionsQueryDto, ReopenSubmissionRequestDto } from '../application/dtos/submission.dto.js'
 import type { ILogger } from '../../../shared/application/ports/logger.interface.js'
 import { memoryCache } from '../../../shared/infrastructure/memory-cache.js'
 
@@ -80,11 +80,11 @@ export class SubmissionsController extends BaseController {
         const rows = await prisma.submission.findMany({
             where: current.studentId && current.examId ? { StudentId: current.studentId, ExamId: current.examId, ClassId: current.classId ?? null } : { Id: current.id },
             orderBy: [{ AttemptNumber: 'desc' }, { SubmittedAt: 'desc' }],
-            select: { Id: true, AttemptNumber: true, SubmittedAt: true, GradedAt: true, ZipFileUrl: true, GradingStatus: true, ReviewStatus: true, FinalScore: true, RawScore: true, Exam: { select: { TotalPoints: true } } },
+            select: { Id: true, AttemptNumber: true, SubmittedAt: true, GradedAt: true, ZipFileUrl: true, GithubUrl: true, VercelUrl: true, SourceCommit: true, GradingStatus: true, ReviewStatus: true, FinalScore: true, RawScore: true, Exam: { select: { TotalPoints: true } } },
         })
         res.setHeader('Cache-Control', 'no-store')
         this.ok(res, rows.map(row => ({
-            id: row.Id, attemptNumber: row.AttemptNumber, submittedAt: row.SubmittedAt, gradedAt: row.GradedAt,
+            id: row.Id, githubUrl: row.GithubUrl, vercelUrl: row.VercelUrl, sourceCommit: row.SourceCommit, attemptNumber: row.AttemptNumber, submittedAt: row.SubmittedAt, gradedAt: row.GradedAt,
             filename: row.ZipFileUrl ? new URL(row.ZipFileUrl, 'http://local').searchParams.get('filename') || path.basename(row.ZipFileUrl.split('?')[0]) : null,
             gradingStatus: row.GradingStatus, isPublished: row.ReviewStatus === 'PUBLISHED',
             score: String(req.user!.role).toUpperCase() === 'STUDENT' && row.ReviewStatus !== 'PUBLISHED' ? null : row.FinalScore ?? row.RawScore,
@@ -98,7 +98,7 @@ export class SubmissionsController extends BaseController {
         
         // Pass the uploaded file buffer to the usecase
         const result = await this.submitUseCase.execute({ 
-            dto: { data } as any, 
+            dto: CreateSubmissionRequestDto.from(data),
             file: req.file,
             user: req.user! 
         })

@@ -214,6 +214,9 @@ export class ExecutionSandboxService {
           // Uploaded exams may store SubmissionFormat=project/zip rather than frontend.
           // Provision a standalone React package from its code, not that label.
           const nodePackages = await this.findAllFiles(submissionPath, 'package.json');
+          if (projectType === 'frontend' && nodePackages.length > 1) {
+            throw new Error('UI_PROJECT_ROOT_AMBIGUOUS: Repo chứa nhiều package.json. Chỉ nộp thư mục source của ứng dụng cần chấm; không khởi động backend hoặc các bài mẫu trong repo. Với link deploy, cần chạy bộ kiểm thử trình duyệt trực tiếp trên website riêng.')
+          }
           if (nodePackages.length === 1 && fingerprintFile) {
             const frontendPlan = frontendRuntimePlan(JSON.parse(await fs.readFile(fingerprintFile, 'utf8')), runDir);
             if (frontendPlan) {
@@ -379,7 +382,7 @@ function findDeps(dir) {
 }
 try {
     const builtin = new Set(require('module').builtinModules);
-    let deps = Array.from(findDeps('/sandbox')).filter(d => !builtin.has(d) && !d.startsWith('node:'));
+    let deps = Array.from(findDeps('/sandbox')).filter(d => !builtin.has(d) && !d.startsWith('node:') && !d.startsWith('@/') && !d.startsWith('#') && !d.startsWith('~/'));
     deps = deps.map(d => d.startsWith('@') ? d.split('/').slice(0,2).join('/') : d.split('/')[0]);
     deps = [...new Set(deps)];
     deps = deps.map(d => d === 'express' ? 'express@4' : d);
@@ -429,7 +432,7 @@ function findDeps(dir) {
 }
 try {
     const builtin = new Set(require('module').builtinModules);
-    let deps = Array.from(findDeps('/sandbox')).filter(d => !builtin.has(d) && !d.startsWith('node:'));
+    let deps = Array.from(findDeps('/sandbox')).filter(d => !builtin.has(d) && !d.startsWith('node:') && !d.startsWith('@/') && !d.startsWith('#') && !d.startsWith('~/'));
     deps = deps.map(d => d.startsWith('@') ? d.split('/').slice(0,2).join('/') : d.split('/')[0]);
     deps = [...new Set(deps)];
     deps = deps.map(d => d === 'express' ? 'express@4' : d);

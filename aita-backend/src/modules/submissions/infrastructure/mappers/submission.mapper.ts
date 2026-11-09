@@ -23,6 +23,9 @@ export class SubmissionMapper {
       raw.StudentFeedback
     )
     
+    submission.githubUrl = raw.GithubUrl ?? null
+    submission.vercelUrl = raw.VercelUrl ?? null
+    submission.sourceCommit = raw.SourceCommit ?? null
     // Attach unmapped fields for DTO compatibility
     if (raw.User_Submission_StudentIdToUser) {
       (submission as any).student = {
@@ -87,6 +90,9 @@ export class SubmissionMapper {
       IsLatest: submission.isLatest,
       SubmittedAt: submission.submittedAt,
       ZipFileUrl: submission.zipFileUrl,
+      GithubUrl: submission.githubUrl,
+      VercelUrl: submission.vercelUrl,
+      SourceCommit: submission.sourceCommit,
       GradingStatus: submission.gradingStatus,
       ReviewStatus: submission.reviewStatus,
       TotalScore: submission.totalScore,

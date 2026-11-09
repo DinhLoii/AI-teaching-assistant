@@ -1,0 +1,58 @@
+{
+  "tests": [
+    {
+      "id": "TC01",
+      "passed": true
+    },
+    {
+      "id": "TC02",
+      "passed": true
+    },
+    {
+      "id": "TC03",
+      "passed": true
+    },
+    {
+      "id": "TC04",
+      "passed": true
+    },
+    {
+      "id": "TC05",
+      "passed": true
+    },
+    {
+      "id": "TC06",
+      "passed": true
+    },
+    {
+      "id": "TC07",
+      "passed": true
+    },
+    {
+      "id": "TC08",
+      "passed": true
+    },
+    {
+      "id": "TC09",
+      "passed": true
+    },
+    {
+      "id": "TC10",
+      "passed": true
+    },
+    {
+      "id": "TC11",
+      "passed": true
+    },
+    {
+      "id": "TC12",
+      "passed": true
+    },
+    {
+      "id": "TC13",
+      "passed": true
+    }
+  ],
+  "mobileNoHorizontalOverflow": true,
+  "productionBuild": true
+}

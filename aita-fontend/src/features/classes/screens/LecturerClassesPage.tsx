@@ -14,7 +14,9 @@ import { BookOpen, Users, ArrowRight, School } from 'lucide-react'
 export default function LecturerClassesPage() {
   const [classes, setClasses] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  const isVi = language === 'vi'
+  const semesterCodes = [...new Set(classes.map(c => c.semester?.code).filter(Boolean))]
 
   React.useEffect(() => {
     classesApi.getClasses(1, 1000)
@@ -67,7 +69,7 @@ export default function LecturerClassesPage() {
             </div>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {classes.reduce((sum, c) => sum + (c.studentCount ?? 30), 0)}
+                {classes.reduce((sum, c) => sum + (c.studentCount ?? 0), 0)}
               </span>
               <span className="text-xs font-semibold text-slate-500">SV</span>
             </div>
@@ -110,11 +112,13 @@ export default function LecturerClassesPage() {
               </div>
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Spring 2026</span>
+              <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                {semesterCodes.length === 1 ? semesterCodes[0] : `${semesterCodes.length} ${isVi ? 'học kỳ' : 'semesters'}`}
+              </span>
             </div>
             <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
-              <span>Học kỳ hiện tại</span>
+              <span>{isVi ? 'Học kỳ của các lớp được phân công' : 'Semesters of assigned classes'}</span>
             </p>
           </div>
         </div>
@@ -139,11 +143,11 @@ export default function LecturerClassesPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border border-orange-200/80 dark:border-orange-900/60">
-                      {c.classCode}
+                      {c.code}
                     </span>
                     <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 font-medium">
                       <Users className="w-3.5 h-3.5 text-orange-500" />
-                      {c.studentCount ?? 30} {t('lecturer.classes.students', 'SV')}
+                      {c.studentCount ?? 0} {t('lecturer.classes.students', 'SV')}
                     </span>
                   </div>
 
@@ -156,7 +160,9 @@ export default function LecturerClassesPage() {
                 </div>
 
                 <div className="pt-4 border-t border-orange-100/70 dark:border-slate-800/60 flex items-center justify-between">
-                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{t('lecturer.classes.semester', 'Kỳ: Spring 2026')}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    {isVi ? 'Học kỳ' : 'Semester'}: {c.semester?.code || c.semester?.season || '—'}
+                  </span>
                   <Link href={`/lecturer/classes/${c.id}`}>
                     <Button variant="ghost" size="sm" className="text-xs text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950/30 gap-1 font-bold">
                       <span>{t('lecturer.classes.class_exercises', 'Bài tập lớp')}</span>

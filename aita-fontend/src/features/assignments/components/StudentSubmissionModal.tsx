@@ -25,6 +25,7 @@ export interface StudentSubmissionModalProps {
   onClose: () => void
   submissionId?: string
   assignmentId?: string
+  links?: { githubUrl: string; vercelUrl: string }
   file?: File | null
   noteContent?: string
   assignmentTitle?: string
@@ -69,6 +70,7 @@ export function StudentSubmissionModal({
   submissionId: initialSubId,
   assignmentId,
   file,
+  links,
   noteContent = '',
   assignmentTitle = 'Bài tập thực hành',
   subjectCode = 'CNTT',
@@ -131,6 +133,7 @@ export function StudentSubmissionModal({
 
   const submissionDataRef = React.useRef({
     file,
+    links,
     noteContent,
     assignmentId,
     initialSubId,
@@ -141,6 +144,7 @@ export function StudentSubmissionModal({
   React.useEffect(() => {
   submissionDataRef.current = {
     file,
+    links,
     noteContent,
     assignmentId,
     initialSubId,
@@ -148,7 +152,7 @@ export function StudentSubmissionModal({
     formattedSize,
     detectedStack,
   }
-  }, [file, noteContent, assignmentId, initialSubId, effectiveFileName, formattedSize, detectedStack])
+  }, [file, links, noteContent, assignmentId, initialSubId, effectiveFileName, formattedSize, detectedStack])
 
   const formattedDateStr = React.useMemo(() => {
     if (confirmedSubmittedAt) return formatDate(confirmedSubmittedAt)
@@ -212,10 +216,10 @@ export function StudentSubmissionModal({
         if (initialMode === 'processing' && data.initialSubId) {
           return submissionsApi.getSubmission(data.initialSubId)
         }
-        if (!data.file || !data.assignmentId) {
+        if ((!data.file && !data.links) || !data.assignmentId) {
           throw new Error('Vui lòng chọn tệp bài làm và bài tập trước khi nộp.')
         }
-        return submissionsApi.submitAssignment(data.file, data.noteContent, data.assignmentId)
+        return submissionsApi.submitAssignment(data.file || null, data.noteContent, data.assignmentId, data.links)
       }).then((result) => {
         const id = result?.id || (result && 'submissionId' in result ? result.submissionId : undefined)
         if (!id) throw new Error('Máy chủ chưa xác nhận mã bài nộp. Hãy kiểm tra lịch sử nộp bài trước khi thử lại.')

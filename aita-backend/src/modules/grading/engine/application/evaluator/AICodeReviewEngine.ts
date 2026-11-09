@@ -319,25 +319,13 @@ STRICT RULES:
         return resolveCodeReviewResult(presentedFiles, finalParsed);
       } catch (error: any) {
         lastError = error;
-        const isTimeoutOrRateLimit = error.code === 'AI_UNAVAILABLE' || error.code === 'AI_TIMEOUT' ||
-          error.message?.includes('AI_CODE_EVIDENCE_MISSING') ||
-          error.message?.includes('AI_REVIEW_INVALID') ||
-          error.message?.includes('AI_TIMEOUT') ||
-          error.message?.includes('abort') ||
-          error.status === 429 ||
-          error.status === 503 ||
-          error.message?.includes('fetch failed') ||
-          error instanceof SyntaxError;
-
-        if (error.status === 429 || (error.message && error.message.includes('429'))) {
-          console.error(`[AICodeReviewEngine] Global rate limit (429) hit. Aborting code review for this rule to prevent nested retry floods.`);
-          break;
-        }
-
-        if (isTimeoutOrRateLimit && attempt < maxContextLengths.length) {
-          if (error.code === 'AI_UNAVAILABLE' || error.code === 'AI_TIMEOUT') await new Promise(resolve => setTimeout(resolve, 1500 * attempt));
-          console.warn(`[AICodeReviewEngine] Attempt ${attempt} failed (Error: ${error.message}). Retrying with reduced context (${maxContextLengths[attempt]} chars)...`);
-          continue; // Retry loop
+        const isResponseValidation = error instanceof SyntaxError || /AI_CODE_EVIDENCE_MISSING|AI_REVIEW_INVALID|AI_JSON_INVALID/.test(error.message || '');
+        // Provider retries belong to AiClientManager and the durable queue. Shrinking
+        // the prompt after a 503 wastes successful cache entries and floods providers.
+        if (!isResponseValidation) throw error;
+        if (attempt < maxContextLengths.length) {
+          console.warn('[AICodeReviewEngine] Invalid response on attempt ' + attempt + '; repairing with context limit ' + maxContextLengths[attempt] + '.');
+          continue;
         }
 
         // If it's a completely different error, or we exhausted all retries, break and return failure

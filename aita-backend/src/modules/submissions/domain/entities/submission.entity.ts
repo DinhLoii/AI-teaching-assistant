@@ -90,6 +90,9 @@ export class Submission extends AggregateRoot {
   attemptNumber: number | null
   isLatest: boolean | null
   submittedAt: Date | null
+  githubUrl?: string | null
+  vercelUrl?: string | null
+  sourceCommit?: string | null
   zipFileUrl: string | null
   gradingStatus: GradingStatusValue | null
   reviewStatus: ReviewStatusValue | null

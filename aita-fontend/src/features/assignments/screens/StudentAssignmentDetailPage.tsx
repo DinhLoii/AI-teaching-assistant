@@ -117,6 +117,9 @@ export default function StudentAssignmentDetailPage() {
   const [reportError, setReportError] = React.useState('')
   const loadSequence = React.useRef(0)
   const [uploading, setUploading] = React.useState(false)
+  const [submissionMethod, setSubmissionMethod] = React.useState<'zip' | 'links'>('zip')
+  const [githubUrl, setGithubUrl] = React.useState('')
+  const [vercelUrl, setVercelUrl] = React.useState('')
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null)
   const [dragActive, setDragActive] = React.useState(false)
   const [noteContent, setNoteContent] = React.useState('')
@@ -131,6 +134,7 @@ export default function StudentAssignmentDetailPage() {
     open: boolean
     mode: 'processing' | 'receipt' | 'uploading'
     subId: string
+    links?: { githubUrl: string; vercelUrl: string }
     file?: File | null
     noteContent?: string
     fileName: string
@@ -472,7 +476,11 @@ export default function StudentAssignmentDetailPage() {
       setErrorMsg(isVi ? 'Chưa xác nhận được trạng thái bài nộp. Vui lòng tải lại trang để thử lại.' : 'Submission status is not available. Please reload to retry.')
       return
     }
-    if (!selectedFile) {
+    if (submissionMethod === 'links' && (!githubUrl.trim() || !vercelUrl.trim())) {
+      setErrorMsg(isVi ? 'Vui lòng nhập đủ link GitHub và Vercel.' : 'Enter both GitHub and Vercel links.')
+      return
+    }
+    if (submissionMethod === 'zip' && !selectedFile) {
       setErrorMsg(t('student.assignment.select_zip_warning', 'Vui lòng chọn file .zip bài làm trước khi nộp.'))
       return
     }
@@ -482,7 +490,7 @@ export default function StudentAssignmentDetailPage() {
       return
     }
 
-    const fileToUpload = selectedFile
+    const fileToUpload = submissionMethod === 'zip' ? selectedFile : null
     const note = noteContent
 
     // Preserve the selected file and note until the server confirms acceptance.
@@ -496,9 +504,10 @@ export default function StudentAssignmentDetailPage() {
       mode: 'uploading',
       subId: '',
       file: fileToUpload,
+      links: submissionMethod === 'links' ? { githubUrl: githubUrl.trim(), vercelUrl: vercelUrl.trim() } : undefined,
       noteContent: note,
-      fileName: fileToUpload.name,
-      fileSize: fileToUpload.size,
+      fileName: fileToUpload?.name || 'GitHub source.zip',
+      fileSize: fileToUpload?.size,
       attemptNumber: (submission?.attemptNumber || 0) + 1,
       submittedAt: new Date(),
     })
@@ -571,6 +580,56 @@ export default function StudentAssignmentDetailPage() {
     void loadData()
     setSuccessMsg(t('student.assignment.graded_success', 'Bài làm đã được hệ thống tiếp nhận an toàn và chuyển tới Giảng viên để duyệt và công bố điểm chính thức.'))
   }, [loadData, t])
+
+
+  const submissionOptions = String(assignment?.subjectCode || '').toUpperCase() === 'FER202' ? (
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+      <fieldset className="p-4 sm:p-5">
+        <legend className="sr-only">{isVi ? 'Hình thức nộp bài' : 'Submission method'}</legend>
+        <p className="text-sm font-semibold text-slate-900 dark:text-white">{isVi ? 'Chọn cách nộp bài' : 'Choose a submission method'}</p>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{isVi ? 'Tải mã nguồn lên hoặc nộp đường dẫn dự án của bạn.' : 'Upload your source code or submit your project links.'}</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {([
+            { value: 'zip', icon: FileArchive, title: isVi ? 'Tệp ZIP' : 'ZIP archive', description: isVi ? 'Một tệp mã nguồn, tối đa 100 MB' : 'One source archive, up to 100 MB' },
+            { value: 'links', icon: Code2, title: 'GitHub + Vercel', description: isVi ? 'Kho mã nguồn và website đã triển khai' : 'Repository and deployed website' },
+          ] as const).map(option => (
+            <label key={option.value} className={'flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors focus-within:ring-2 focus-within:ring-orange-500/40 ' + (submissionMethod === option.value ? 'border-orange-500 bg-orange-50/70 dark:bg-orange-500/10' : 'border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800')}>
+              <input type="radio" name="submissionMethod" value={option.value} checked={submissionMethod === option.value} onChange={() => { setSubmissionMethod(option.value); setErrorMsg(null) }} className="sr-only" />
+              <span className={'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ' + (submissionMethod === option.value ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-800')}><option.icon className="h-4 w-4" aria-hidden="true" /></span>
+              <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-slate-900 dark:text-white">{option.title}</span><span className="mt-1 block text-xs leading-relaxed text-slate-500 dark:text-slate-400">{option.description}</span></span>
+              <span aria-hidden="true" className={'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ' + (submissionMethod === option.value ? 'border-orange-500 bg-orange-500 text-white' : 'border-slate-300 dark:border-slate-600')}>{submissionMethod === option.value && <Check className="h-3 w-3" />}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      {submissionMethod === 'links' && (
+        <div className="space-y-5 border-t border-slate-100 p-4 sm:p-5 dark:border-slate-800">
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div>
+              <label htmlFor="submission-github" className="block text-sm font-medium text-slate-800 dark:text-slate-200">{isVi ? 'Kho mã nguồn GitHub' : 'GitHub repository'} <span className="text-orange-600" aria-hidden="true">*</span></label>
+              <input id="submission-github" type="url" required autoComplete="off" spellCheck={false} aria-describedby="submission-github-help" value={githubUrl} onChange={e => setGithubUrl(e.target.value)} placeholder="https://github.com/username/repository" className="mt-2 block w-full rounded-xl border border-slate-200 bg-slate-50/60 px-3.5 py-3 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/15 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white" />
+              <p id="submission-github-help" className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{isVi ? 'Dùng liên kết gốc của repository và bật chế độ công khai (Public).' : 'Use the repository root URL and set its visibility to Public.'}</p>
+            </div>
+            <div>
+              <label htmlFor="submission-vercel" className="block text-sm font-medium text-slate-800 dark:text-slate-200">{isVi ? 'Website trên Vercel' : 'Vercel website'} <span className="text-orange-600" aria-hidden="true">*</span></label>
+              <input id="submission-vercel" type="url" required autoComplete="off" spellCheck={false} aria-describedby="submission-vercel-help" value={vercelUrl} onChange={e => setVercelUrl(e.target.value)} placeholder="https://your-project.vercel.app" className="mt-2 block w-full rounded-xl border border-slate-200 bg-slate-50/60 px-3.5 py-3 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/15 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white" />
+              <p id="submission-vercel-help" className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{isVi ? 'Liên kết HTTPS dạng *.vercel.app để giảng viên xem sản phẩm.' : 'An HTTPS URL on *.vercel.app for your instructor to view.'}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2.5 rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+            <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">{isVi ? 'Mã nguồn được lưu theo phiên bản tại thời điểm nộp. Hãy kiểm tra cả hai liên kết trước khi xác nhận.' : 'Your source code is saved at its current version. Check both links before confirming.'}</p>
+          </div>
+          <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
+            <p className="text-xs text-slate-500 dark:text-slate-400">{isVi ? 'Cần điền đầy đủ cả hai liên kết.' : 'Both project links are required.'}</p>
+            <button type="button" disabled={!githubUrl.trim() || !vercelUrl.trim() || !submissionStatusReady || uploading || !!studentSubmissionModal?.open} onClick={handleSubmit} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">
+              <Send className="h-4 w-4" aria-hidden="true" />{isVi ? 'Xác nhận nộp bài' : 'Confirm submission'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  ) : null
 
   if (loading) {
     return (
@@ -844,7 +903,8 @@ export default function StudentAssignmentDetailPage() {
               </div>
 
               {/* Form nộp lại bài nếu toggle */}
-              {showUploadForm && (
+              {showUploadForm && submissionOptions}
+              {showUploadForm && submissionMethod === 'zip' && (
                 <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
@@ -897,6 +957,11 @@ export default function StudentAssignmentDetailPage() {
               )}
             </div>
 
+            {submission?.githubUrl && <div className="px-6 py-3 flex flex-wrap gap-3 text-sm">
+              <a href={submission.githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">GitHub</a>
+              <a href={submission.vercelUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Vercel demo</a>
+              <span className="text-xs text-slate-500">Commit: {submission.sourceCommit}</span>
+            </div>}
             {/* PHẦN 2: THƯ MỤC DỰ ÁN ĐÃ NỘP */}
             <div className="p-5 md:p-6 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -1014,7 +1079,8 @@ export default function StudentAssignmentDetailPage() {
               ) : (
                 /* VÙNG UPLOAD TRỰC TIẾP KHI CHƯA NỘP */
                 <div className="space-y-3">
-                  <div
+                  {submissionOptions}
+                  <div style={{ display: submissionMethod === 'zip' ? undefined : 'none' }}
                     onDragEnter={handleDrag}
                     onDragLeave={handleDrag}
                     onDragOver={handleDrag}
@@ -1053,7 +1119,7 @@ export default function StudentAssignmentDetailPage() {
                     )}
                   </div>
 
-                  {selectedFile && (
+                  {submissionMethod === 'zip' && selectedFile && (
                     <div className="flex justify-end gap-2 pt-1">
                       <button
                         type="button"
@@ -1283,6 +1349,7 @@ export default function StudentAssignmentDetailPage() {
             submissionId={studentSubmissionModal.subId}
             assignmentId={assignmentId}
             file={studentSubmissionModal.file}
+            links={studentSubmissionModal.links}
             noteContent={studentSubmissionModal.noteContent}
             assignmentTitle={assignment?.title}
             subjectCode={assignment?.subjectCode || assignment?.SubjectCode}

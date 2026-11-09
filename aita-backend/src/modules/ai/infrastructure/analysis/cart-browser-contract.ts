@@ -23,19 +23,22 @@ export function extractCartBrowserContract(text: string): any | null {
  const click=(target:string)=>({action:'click',target})
  const add=(id:string,n=1)=>Array.from({length:n},()=>click(`[data-testid=add-${id}]`))
  const total=(n:number)=>visible(`[data-testid=cart-total]:text-is("${n}")`)
- const qty=(id:string,n:number)=>visible(`[data-testid=quantity-${id}][value="${n}"]`)
+ const qty=(id:string,n:number)=>({action:'assertValue',target:`[data-testid=quantity-${id}]`,value:String(n)})
+ const count=(n:number)=>({action:'assertCount',target:'[data-testid^="cart-row-"]',count:n})
+ const line=(id:string,n:number)=>visible(`[data-testid=line-total-${id}]:text-is("${n}")`)
  const actions=[
   products.flatMap(p=>[visible(`[data-testid=product-${p.id}]:has-text("${p.name}")`),visible(`[data-testid=price-${p.id}]:text-is("${p.price}")`) ]).concat([visible('[data-testid=cart-empty]'),total(0)]),
-  [...add(a.id),qty(a.id,1),total(totals[1])],
-  [...add(a.id,2),qty(a.id,2),total(totals[2])],
+  [...add(a.id),visible('[data-testid=cart-row-P01]'),count(1),qty(a.id,1),line(a.id,totals[1]),total(totals[1])],
+  [...add(a.id,2),visible('[data-testid=cart-row-P01]'),count(1),qty(a.id,2),total(totals[2])],
   [...add(a.id),{action:'fill',target:'[data-testid=quantity-P01]',value:'3'},click('[data-testid=cart-total]'),qty(a.id,3),visible(`[data-testid=line-total-P01]:text-is("${totals[3]}")`),total(totals[3])],
-  [...add(a.id),...add(b.id),click('[data-testid=remove-P01]'),qty(b.id,1),total(totals[4])],
-  [...add(a.id,2),...add(b.id),...add(c.id),qty(a.id,2),qty(b.id,1),qty(c.id,1),total(totals[5])],
-  [...add(a.id),...add(b.id),visible('[data-testid=cart-row-P01]'),visible('[data-testid=cart-row-P02]'),click('[data-testid=clear-cart]'),visible('[data-testid=cart-empty]'),total(0)],
-  [...add(b.id,2),{action:'reload'},qty(b.id,2),total(totals[7])],
+  [...add(a.id),...add(b.id),click('[data-testid=remove-P01]'),{action:'assertCount',target:'[data-testid=cart-row-P01]',count:0},visible('[data-testid=cart-row-P02]'),count(1),qty(b.id,1),total(totals[4])],
+  [...add(a.id,2),...add(b.id),...add(c.id),count(3),qty(a.id,2),qty(b.id,1),qty(c.id,1),total(totals[5])],
+  [...add(a.id),...add(b.id),visible('[data-testid=cart-row-P01]'),visible('[data-testid=cart-row-P02]'),click('[data-testid=clear-cart]'),count(0),visible('[data-testid=cart-empty]:text-is("Giỏ hàng trống")'),total(0)],
+  [...add(b.id,2),visible('[data-testid=cart-row-P02]'),count(1),qty(b.id,2),total(totals[7]),{action:'reload'},visible('[data-testid=cart-row-P02]'),count(1),qty(b.id,2),total(totals[7])],
   [...add(a.id,6),qty(a.id,5),total(totals[8]),visible('[data-testid=cart-error]:text-is("Không đủ hàng trong kho.")')],
  ]
- const tests=scenarios.map((s,i)=>({id:s!.id,name:s!.name,startUrl:`/?case=${s!.id}`,steps:[click('[data-testid=clear-cart]'),...actions[i]],source:'EXTRACTED',evidence:s!.sourceQuote}))
+ actions[0].push(count(0),visible('[data-testid=cart-empty]:text-is("Giỏ hàng trống")'))
+ const tests=scenarios.map((s,i)=>({id:s!.id,name:s!.name,startUrl:'/',isolateStorage:true,steps:actions[i],source:'EXTRACTED',evidence:s!.sourceQuote}))
  const criteria=scenarios.map(s=>({id:s!.id,name:s!.id+' - '+s!.name,description:s!.steps+' '+s!.expectedResult,maxPoints:s!.points,method:'ai_assessment',passCondition:s!.expectedResult,failCondition:'Không đạt '+s!.id+' khi thực thi trình duyệt.',aiGuidance:'Dùng kết quả testcase đã liên kết; không thay bằng nhận xét mã nguồn.',source:'EXTRACTED',evidence:s!.sourceQuote,reviewNeeded:false,browserProbe:{testIds:[s!.id],description:s!.name,path:'/'}}))
  const visual=text.match(/Giao diện và chất lượng React:\s*1 điểm\.([\s\S]*?)(?=HỢP ĐỒNG|FER202\s*\||$)/)
  if(!visual)return null

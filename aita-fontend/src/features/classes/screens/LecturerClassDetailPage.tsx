@@ -126,7 +126,7 @@ export default function LecturerClassDetailPage() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', `Bang_Diem_${classData?.classCode || classId}_${new Date().toISOString().slice(0, 10)}.csv`)
+    link.setAttribute('download', `Bang_Diem_${classData?.code || classId}_${new Date().toISOString().slice(0, 10)}.csv`)
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -193,7 +193,7 @@ export default function LecturerClassDetailPage() {
       title="AITA Lecturer"
       roleLabel="Giảng viên"
       requiredRole="lecturer"
-      headerTitle={`${classData.classCode || 'Lớp học'} · ${classData.subject?.code || ''}`}
+      headerTitle={`${classData.code || 'Lớp học'} · ${classData.subject?.code || ''}`}
       headerSubtitle={classData.subject?.name || 'Chi tiết lớp học'}
     >
       <div className="space-y-6 w-full pb-12">
@@ -203,7 +203,7 @@ export default function LecturerClassDetailPage() {
             <ArrowLeft className="w-4 h-4" />
             Quay lại danh sách lớp
           </Button>
-          <Badge variant="orange" className="font-mono">{classData.semester?.season} {classData.semester?.code}</Badge>
+          <Badge variant="orange" className="font-mono">{classData.semester?.code || classData.semester?.season}</Badge>
         </div>
 
         {/* Hero card */}
@@ -211,7 +211,7 @@ export default function LecturerClassDetailPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-lg bg-white/20 text-xs font-bold font-mono">{classData.classCode}</span>
+                <span className="px-3 py-1 rounded-lg bg-white/20 text-xs font-bold font-mono">{classData.code}</span>
                 <span className="px-3 py-1 rounded-lg bg-white/15 text-xs font-bold">{classData.subject?.code}</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">{classData.subject?.name || 'Lớp học'}</h1>

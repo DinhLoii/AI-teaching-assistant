@@ -21,17 +21,17 @@ test('independent console verification exposes real test outcomes without adding
   assert.equal(facts.evaluations.length, 0)
 })
 const backend = path.resolve('../aita-backend')
-function backendModule(file, mocks = {}) {
+function backendModule(file, mocks = {}, runtime = {}) {
   const filename = path.join(backend, 'src', file)
   const require = createRequire(filename)
   const source = fs.readFileSync(filename, 'utf8').replaceAll('import.meta.url', JSON.stringify(pathToFileURL(filename).href))
   const output = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText
   const module = { exports: {} }
-  vm.runInNewContext(`(function(require,module,exports){${output}\n})`, { Buffer, URL, AbortSignal, AbortController, setTimeout, clearTimeout, process: { ...process, env: {} }, console })(name => {
+  vm.runInNewContext(`(function(require,module,exports){${output}\n})`, { Buffer, URL, AbortSignal, AbortController, setTimeout, clearTimeout, process: { ...process, env: {} }, console, ...runtime })(name => {
     if (name in mocks) return mocks[name]
     if (name.startsWith('../application/use-cases/')) return {}
     const target = path.resolve(path.dirname(filename), name.replace(/\.js$/, '.ts'))
-    if (name.startsWith('.') && fs.existsSync(target)) return backendModule(path.relative(path.join(backend, 'src'), target), mocks)
+    if (name.startsWith('.') && fs.existsSync(target)) return backendModule(path.relative(path.join(backend, 'src'), target), mocks, runtime)
     return require(name)
   }, module, module.exports)
   return module.exports
@@ -152,7 +152,7 @@ test('an exact archive path wins over a nested basename; file IDs cannot contrad
   assert.throws(() => resolveCodeReviewResult(files, { ...base, relevantSnippets: [{ fileId: 'F2', filePath: 'src/Main.java', startLine: 1, endLine: 1 }] }), /AI_CODE_EVIDENCE_MISSING/)
 })
 
-test('missing evidence and a transient provider outage recover before the full six-criterion rubric completes', async () => {
+test('missing evidence is repaired before the full six-criterion rubric completes', async () => {
   const evidence = backendModule('modules/grading/engine/application/evaluator/source-evidence.ts')
   let calls = 0
   const keys = [], cached = new Map()
@@ -160,7 +160,6 @@ test('missing evidence and a transient provider outage recover before the full s
     '../../config': {}, './source-evidence.js': evidence,
     '../../infrastructure/ai/AiClientManager': { AiClientManager: { executeWithFallback: async (callback, key) => {
       keys.push(key)
-      if (keys.length === 2) throw Object.assign(new Error('Temporary provider outage'), { code: 'AI_UNAVAILABLE' })
       const result = await callback({ chat: { completions: { create: async ({ messages }) => {
         calls++
         assert.match(messages[0].content, /\[L2\]/)
@@ -184,7 +183,7 @@ test('missing evidence and a transient provider outage recover before the full s
   const rubric = { title: 'Personal Expense Tracker', totalWeight: 10, passThreshold: 0.5, rules: [3, 1.5, 1.5, 1, 1.5, 1.5].map((weight, index) => ({ id: `R${index}`, title: `Tiêu chí ${index}`, description: 'Kotlin Room logic', weight, scoringStrategy: 'AICodeReview' })) }
   const report = await new RubricEvaluator({ generateOverallFeedbackAsync: async () => 'Nhận xét thử nghiệm.' }, {}).evaluateAsync('submission', 'exam', 'student', rubric, { sourceSnapshot: { projectType: 'kotlin', files: [{ relativePath: 'app/Main.kt', content: 'class Main {\n  val amount = 120000\n}' }] }, evidencePool: [] })
   assert.equal(calls, 7)
-  assert.equal(keys.length, 8)
+  assert.equal(keys.length, 7)
   assert.equal(cached.size, 6)
   assert.notEqual(keys[0], keys[1])
   assert.equal(report.totalScore, 10)
@@ -313,4 +312,45 @@ test('attempt history stays in the same student/exam/class scope and hides unpub
   assert.equal(where.StudentId, 'student'); assert.equal(where.ExamId, 'exam'); assert.equal(where.ClassId, null)
   assert.equal(response[0].score, null)
   assert.equal(response[1].score, 0)
+})
+
+test('AI overload respects Retry-After and does not clear key cooldown on another request', async () => {
+  let now = 100000, calls = 0
+  const waits = []
+  class Clock extends Date { static now() { return now } }
+  const { AiClientManager } = backendModule('modules/grading/engine/infrastructure/ai/AiClientManager.ts', {
+    '../../config/index.js': { config: { ai: { stubMode: false, geminiKeys: ['fixture-key'], geminiModel: 'test', timeoutMs: 1000 } } },
+    '../../../../../database/prisma.js': { prisma: { aiUsageLog: { create: async () => ({}) } } },
+  }, { Date: Clock, setTimeout: (fn, ms) => { waits.push(ms); now += ms; queueMicrotask(fn); return 0 } })
+  const unavailable = async () => { calls++; throw Object.assign(new Error('high demand'), { status: 503, headers: { 'retry-after': '120' } }) }
+  await assert.rejects(AiClientManager.executeWithFallback(unavailable), e => e.code === 'AI_UNAVAILABLE')
+  assert.equal(calls, 1, 'must not contact the provider during its cooldown')
+  assert.deepEqual(waits, [30000, 30000])
+  await assert.rejects(AiClientManager.executeWithFallback(unavailable), e => e.code === 'AI_UNAVAILABLE')
+  assert.equal(calls, 2, 'only retry when the full 120 second cooldown has expired')
+})
+
+test('transient AI failure recovers with bounded backoff and caches only successful results', async () => {
+  let now = 100000, calls = 0
+  const waits = []
+  class Clock extends Date { static now() { return now } }
+  const { AiClientManager } = backendModule('modules/grading/engine/infrastructure/ai/AiClientManager.ts', {
+    '../../config/index.js': { config: { ai: { stubMode: false, geminiKeys: ['fixture-key'], geminiModel: 'test', timeoutMs: 1000 } } },
+    '../../../../../database/prisma.js': { prisma: { aiUsageLog: { create: async () => ({}) } } },
+  }, { Date: Clock, setTimeout: (fn, ms) => { waits.push(ms); now += ms; queueMicrotask(fn); return 0 } })
+  const callback = async () => { if (++calls === 1) throw Object.assign(new Error('overload'), { status: 503 }); return { verified: true } }
+  assert.equal((await AiClientManager.executeWithFallback(callback, 'recovery-cache')).verified, true)
+  await AiClientManager.executeWithFallback(callback, 'recovery-cache')
+  assert.equal(calls, 2)
+  assert.deepEqual(waits, [5000])
+})
+
+test('provider outage leaves evaluator repair loop immediately and preserves its retryable error code', async () => {
+  let calls = 0
+  const failure = Object.assign(new Error('temporary outage'), { code: 'AI_UNAVAILABLE', statusCode: 503 })
+  const { AICodeReviewEngine } = backendModule('modules/grading/engine/application/evaluator/AICodeReviewEngine.ts', {
+    '../../infrastructure/ai/AiClientManager': { AiClientManager: { executeWithFallback: async () => { calls++; throw failure } } },
+  })
+  await assert.rejects(new AICodeReviewEngine().evaluateAsync({ projectType: 'frontend', files: [{ relativePath: 'src/App.jsx', content: 'export default function App(){ return null }' }] }, 'Check frontend form'), e => e === failure)
+  assert.equal(calls, 1)
 })
